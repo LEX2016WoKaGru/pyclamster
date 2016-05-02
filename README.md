@@ -1,2 +1,2 @@
 # pyClamster
-Python CLoud cAMera STEReo analysis system
+Python **CL**oud c**AM**era **STER**eo analysis system
