@@ -7,7 +7,7 @@
 ## variables
 
 ```python
-variable_nam = "variable value"
+variable_name = "variable value"
 some_other_long_variable = "other content"
 ```
 
