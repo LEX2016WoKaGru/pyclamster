@@ -15,7 +15,7 @@ print(__doc__)
 import numpy as np
 import scipy.misc
 import scipy.ndimage
-from sklearn.cluster import KMeans, DBSCAN, MiniBatchKMeans
+from sklearn.cluster import DBSCAN, MiniBatchKMeans
 from sklearn.preprocessing import StandardScaler
 from time import time
 
