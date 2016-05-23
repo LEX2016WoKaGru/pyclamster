@@ -23,9 +23,11 @@ Created for pyClamster
 # External modules
 
 # Internal modules
+from .camera import *
 from .image import *
+from .maskstore import *
 
 __version__ = ""
 
-__all__ = ["Image"]
+__all__ = ["Image", "Camera", "MaskStore"]
 
