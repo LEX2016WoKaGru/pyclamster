@@ -50,6 +50,9 @@ class Image(object):
     def saveImage(self, path):
         pass
 
+    def applyMask(self, mask):
+	     pass
+
     def _calcCenter(self):
         pass
 
@@ -62,6 +65,7 @@ class Image(object):
         pass
 
     def cropDegree(self, deg=45):
+        pass
 
     def mean(self):
         pass
@@ -82,6 +86,10 @@ class MaskedImage(object):
         self.raw = raw
         self.masks = masks
 
+
+    def addMask(self, mask):
+        self.masks.append(mask)
+
 class TrashDetector(object):
     def detect(self, image):
         return Image(image_wo_trash)
@@ -89,7 +97,7 @@ class TrashDetector(object):
 
 class Cloud(MaskedImage):
     def __add__(self, other):
-    pass
+        pass
 
 
 class CloudMatcher(object):
@@ -113,4 +121,4 @@ if "__name__" == "__main__":
     raw.loadImage(path)
     raw.cropDegree(60)
     cleaned = TrashDetector().detect(raw)
-    =Cloud_cam1+Cloud_cam2
+    #=Cloud_cam1+Cloud_cam2
