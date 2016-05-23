@@ -147,3 +147,5 @@ $RECYCLE.BIN/
 *.lnk
 
 # Created by .ignore support plugin (hsz.mobi)
+
+*.jpg

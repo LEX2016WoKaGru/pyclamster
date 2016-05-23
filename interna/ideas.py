@@ -24,6 +24,8 @@ Created for pyClamster
 import os,sys,time
 
 # External modules
+import scipy.ndimage
+import scipy.misc
 import scipy as sp
 import numpy as np
 
@@ -71,14 +73,14 @@ class Image(object):
         """
         read image from path
         """
-        img = sp.ndimage.imread(path, mode="RGB")
+        img = scipy.ndimage.imread(path, mode="RGB")
         self.data = img
 
     def saveImage(self, path):
         """
         save image to path
         """
-        img = sp.misc.imsave(path, self.data)
+        img = scipy.misc.imsave(path, self.data)
 
     def _calcCenter(self):
         pass
@@ -164,7 +166,7 @@ class TrashDetector(object):
         return Image(image_wo_trash)
 
 
-class Cloud(MaskedImage):
+class Cloud(Image):
     def __add__(self, other):
         pass
 
@@ -184,10 +186,8 @@ class Ceilometer(object):
     pass
 
 
-
-if "__name__" == "__main__":
+if __name__ == "__main__":
     raw = Image()
-    raw.loadImage(path)
-    raw.cropDegree(60)
-    cleaned = TrashDetector().detect(raw)
+    raw.loadImage("/home/tfinn/Projects/pyclamster/src/k-means/test/Image_Wkm_Aktuell_2.jpg")
+    raw.saveImage("2.jpg")
     #=Cloud_cam1+Cloud_cam2
