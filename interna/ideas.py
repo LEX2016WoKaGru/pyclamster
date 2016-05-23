@@ -51,7 +51,7 @@ class Image(object):
         pass
 
     def applyMask(self, mask):
-	     pass
+        pass
 
     def _calcCenter(self):
         pass
