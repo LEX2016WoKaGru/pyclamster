@@ -188,6 +188,6 @@ class Ceilometer(object):
 
 if __name__ == "__main__":
     raw = Image()
-    raw.loadImage("/home/tfinn/Projects/pyclamster/src/k-means/test/Image_Wkm_Aktuell_2.jpg")
+    raw.loadImage("/home/tfinn/Projects/pyclamster/pyclamster/k-means/test/Image_Wkm_Aktuell_2.jpg")
     raw.saveImage("2.jpg")
     #=Cloud_cam1+Cloud_cam2
