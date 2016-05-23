@@ -149,3 +149,6 @@ $RECYCLE.BIN/
 # Created by .ignore support plugin (hsz.mobi)
 
 *.jpg
+
+# installation folder
+*.egg-info
