@@ -1,0 +1,5 @@
+pyclamster/__init__.py
+pyclamster.egg-info/PKG-INFO
+pyclamster.egg-info/SOURCES.txt
+pyclamster.egg-info/dependency_links.txt
+pyclamster.egg-info/top_level.txt

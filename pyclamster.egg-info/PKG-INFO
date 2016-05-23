@@ -1,0 +1,11 @@
+Metadata-Version: 1.0
+Name: pyclamster
+Version: 0.1
+Summary: A cloud camera processing package for python
+Home-page: https://github.com/LEX2016WoKaGru/pyclamster
+Author: Tobias Sebastian Finn, Yann Büchau, Maximilian Scharper
+Author-email: t.finn@meteowindow.com, yann.buechau@web.de, bla
+License: GPL3
+Description: UNKNOWN
+Keywords: cloud camera meteorology filter stereo image
+Platform: UNKNOWN

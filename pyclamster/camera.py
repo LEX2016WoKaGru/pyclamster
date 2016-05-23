@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-Created on 18.05.16
-Created for pyClamster
+Created on 23.05.16
+
+Created for pyclamster
 
     Copyright (C) {2016}
 
@@ -19,53 +20,29 @@ Created for pyClamster
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 # System modules
-import os,sys,time
 
 # External modules
-import scipy.ndimage
-import scipy.misc
-import scipy as sp
-import numpy as np
 
 # Internal modules
+from .image import Image
 
 
-__version__ = "0.0.0.1"
+__version__ = "0.1"
 
 
+class Camera(object):
+    """
+    class that holds a series of images
+    and camera properties
+    """
+    def __init__(self):
+        self.image_series     = {timestamp: Image}
+        self.Azi_displacement = {timestamp: Azi}
+        self.Ele_displacement = {timestamp: Ele}
 
-
-
-
-        
-
-class TrashDetector(object):
-    def detect(self, image):
-        return Image(image_wo_trash)
-
-
-class Cloud(Image):
-    def __add__(self, other):
-        pass
-
-
-class CloudMatcher(object):
-    def match(self, Cloud1, Cloud2):
-        pass
-
-    def match_bulk(self, clouds=[]):
-        pass
-
-class WettermastData(object):
-    pass
-
-
-class Ceilometer(object):
-    pass
-
-
-if __name__ == "__main__":
-    raw = Image()
-    raw.loadImage("/home/tfinn/Projects/pyclamster/pyclamster/k-means/test/Image_Wkm_Aktuell_2.jpg")
-    raw.saveImage("2.jpg")
-    #=Cloud_cam1+Cloud_cam2
+    def getImage(self,timestamp):
+        """
+        return an instance of class Image() for the timestamp timestamp
+        """
+        image = Image(timestamp) # TODO
+        return image
