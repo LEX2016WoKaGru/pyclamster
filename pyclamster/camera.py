@@ -48,30 +48,33 @@ class Camera(object):
         self.image_series = []
         self.time_series  = []
 
-        ### not specified ###
-        if images is None:
-            # empty lists
-            images = []
-            time   = []
+        ### determine what kind the argument 'images' is ###
+        # start with empty file list
+        filelist = []
 
-        ### looks like list ###
-        elif isinstance(images, list):
-            # check images in list
-            images, time = self._get_images_and_time_series_from_filelist( images )
+        ### argument is a list ###
+        if isinstance(images, list):
+            # filelist is directly the argument
+            filelist = images
 
-        ### looks like folder ###
-        elif os.path.isdir(images): # if images is a folder
-            logger.debug("'{}' is a folder. Search for image files in it...".format(images))
-            folder = images
-            # get image files and times from file list
-            files = [os.path.join(folder,f) for f in os.listdir(folder)]
-            images, time = self._get_images_and_time_series_from_filelist( files )
+        ### argument is a string ###
+        elif isinstance(images, str):
+            ### looks like glob ###
+            gl = glob.glob(images)
+            if gl: # the glob yielded someting
+                logger.debug("'{}' looks like glob expression.".format(images))
+                if len(gl) == 1 and os.path.isdir(images): # only one, may be a folder
+                    logger.debug("'{}' is a folder. Search for image files in it...".format(images))
+                    # filelist is all files in the folder
+                    folder = gl[0] # folder ist single element
+                    filelist = [os.path.join(folder,f) for f in os.listdir(folder)]
+                else: # multiple globbed files
+                    # filelist is all globbed files
+                    logger.debug("'{}' yielded {} files".format(images,len(gl)))
+                    filelist = gl
 
-        ### looks like nothing ###
-        else:
-            # empty lists
-            images = []
-            time   = []
+        # get images and time series from filelist
+        images, time = self._get_images_and_time_series_from_filelist( filelist )
 
         # append found data to attribute
         self.image_series.extend( images )
@@ -85,20 +88,26 @@ class Camera(object):
         image_series = []
         time_series = []
 
+        # counters
+        count_times  = 0
+        count_images = 0
+
         # find all image files from file list
         for f in files: # iterate over all files
             basename = os.path.basename(f) # basename
             if self.imagefile_regex.search(f): # if this looks like an image file
+                time = None # start with empty time
                 logger.debug("filename '{}' looks like an image file.".format(basename))
                 img  = Image.open(f) # open image
+                count_images += 1 # count up images found
                 if hasattr(img, '_getexif'): # check if EXIF data is available
                     logger.debug("reading EXIF data...")
                     exif = img._getexif() # get EXIF data
-                    if exif:
+                    try: # try to read time
                         time = exif[0x9003] # get exif ctime value
-                    else:
+                        count_times += 1 # count up times
+                    except: # reading time didn't work
                         logger.warning("cannot read EXIF time from image '{}'.".format(basename))
-                        time = None
                 else: # no EXIF data available
                     logger.warning("cannot read EXIF time from image '{}'.".format(basename))
                     time = None
@@ -108,6 +117,8 @@ class Camera(object):
                 time_series.append(time)
             else:
                 logger.debug("filename '{}' does not look like an image file. skipping...".format(basename))
+
+        logger.debug("SUMMARY: {} files given, {} images found, {} images with times found".format(len(files),count_images,count_times))
 
         # return list of images and time
         return [image_series, time_series]
