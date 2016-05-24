@@ -49,7 +49,7 @@ setup(
 
     # Author details
     author='Tobias Sebastian Finn, Yann Büchau, Maximilian Scharper',
-    author_email='t.finn@meteowindow.com, yann.buechau@web.de, bla',
+    author_email='t.finn@meteowindow.com, yann.buechau@web.de, maximilian-schaper@t-online.de',
 
     # Choose your license
     license='GPL3',
