@@ -1,13 +1,11 @@
 # -*- coding: utf-8 -*-
 """
 Created on 09.05.16
-Created for pyExtremeLM
+Created for pyclamster
 
 Based on: https://github.com/pypa/sampleproject
 
-@author: Tobias Sebastian Finn, tobias.sebastian.finn@studium.uni-hamburg.de
-
-    Copyright (C) {2016}  {Tobias Sebastian Finn}
+    Copyright (C) {2016}
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by

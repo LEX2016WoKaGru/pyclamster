@@ -4,9 +4,8 @@ Created on 23.05.16
 
 Created for pyclamster
 
-@author: Tobias Sebastian Finn, tobias.sebastian.finn@studium.uni-hamburg.de
 
-    Copyright (C) {2016}  {Tobias Sebastian Finn}
+    Copyright (C) {2016}
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
