@@ -27,7 +27,7 @@ good_angle_dpi = int(np.round(1920/180*good_angle))
 
 
 # Load the Wettermast photo
-wm = scipy.ndimage.imread("Image_Wkm_Aktuell_2.jpg", mode="RGB")
+wm = scipy.ndimage.imread("cloudy.jpg", mode="RGB")
 scipy.misc.imsave(
     "test_original.jpg", wm[1920/2-good_angle_dpi:1920/2+good_angle_dpi,
         1920/2-good_angle_dpi:1920/2+good_angle_dpi, :])
