@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 Created on 10.05.16
-Created for pyClamster
+Created for pyclamster
 
     Copyright (C) {2016}
 
@@ -23,11 +23,11 @@ Created for pyClamster
 # External modules
 
 # Internal modules
-from .camera import *
 from .image import *
 from .maskstore import *
+from .camera import *
 
 __version__ = ""
 
-__all__ = ["Image", "Camera", "MaskStore"]
+__all__ = ["Image"]
 

@@ -22,85 +22,233 @@ Created for pyclamster
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 # System modules
+import logging
+import sys
 
 # External modules
 import scipy.ndimage
 import scipy.misc
+import numpy as np
 
 # Internal modules
 
 
 __version__ = "0.1"
 
+logger = logging.getLogger(__name__)
 
 class Image(object):
-    def __init__(self, path=None, data=None, elevation=None, azimuth=None):
+    def __init__(self, 
+                 path = None, 
+                 data = None,
+                 azimuth = None,
+                 elevation = None,
+                 zenith_pixel = None,
+                 elevation_angle_per_pixel = None,
+                 azimuth_north_angle = 90.*np.pi/180.,
+                 azimuth_direction = 'anticlockwise',
+                 timestamp = None):
         """
         args:
-            data(numpy array): RBG values for each pixel  - shape(width,height,3)
-            elevation(numpy array): elevation for each pixel - shape(width,height)
-            azimuth(numpy array): azimuth for each pixel - shape(width,height)
+            path(optional[str]): path to import image data form
+            data(optinal[numpy array]): RBG values for each pixel  - shape(width,height,3)
+            azimuth(optional[numpy array]): azimuth for each pixel - shape(width,height)
+            elevation(optinal[numpy array]): elevation for each pixel - shape(width,height)
+            zenith_pixel(optinoal[numpy array]): pixel with 0 elevation and center point for azimuth - shape(2)
+            elevation_angle_per_pixel(optinal[float]): elevation angle per pixel (assuming equidistant projection)
+            azimuth_north_angle(optional[float]): offset from mathematical north 
         """
         self.data = data
-        self.elevation = elevation
         self.azimuth = azimuth
+        self.elevation = elevation
+        self.zenith_pixel = zenith_pixel #TODO add possibility to adjust zenith_pixel for camera correction
+        self.elevation_angle_per_pixel = elevation_angle_per_pixel
+        self.azimuth_north_angle = azimuth_north_angle
+        self.azimuth_direction = azimuth_direction
+        self.timestamp = timestamp
 
         # load image from path if specified
         if isinstance(path, str) and os.path.isfile(path):
             self.loadImage(path)
+        else:
+            self.setMissingParameters()
+
+    def setMissingParameters(self):
+        ### set zenith pixel ###
+        if not isinstance(self.zenith_pixel,np.ndarray) and isinstance(self.data,np.ndarray):
+            self.zenith_pixel = self._calcCenter()
+        
+        ### set elevation-angle per pixel ###
+        if not (isinstance(self.elevation_angle_per_pixel,float) or     \
+                isinstance(self.elevation_angle_per_pixel,int)     ) and\
+           isinstance(self.data,np.ndarray):
+
+            self.elevation_angle_per_pixel = np.pi/self.data.shape[0]
 
     def loadImage(self, path):
         """
-        read image from path
+        read image from given path and store the RGB-values in self.data
+        
+        args:
+            path (str): path to load the image from - shape(1)
         """
         img = scipy.ndimage.imread(path, mode="RGB")
         self.data = img
+        self.setDefaultParameters()
+        self.applyCameraCorrections()
+        
 
     def saveImage(self, path):
         """
-        save image to path
+        save image RGB-values to given path
+        
+        args:
+            path (str): path to store the image to - shape(1)
         """
         img = scipy.misc.imsave(path, self.data)
 
     def _calcCenter(self):
-        pass
-
-    def crop(self, px_x=960, px_y=960, center=True):
-        center = self._calcCenter()
-        self.data = self.data[center[0] - px_x:center[0] + px_x, center[1]]
-        pass
-
-    def cropRound(self, px=1920):
-        pass
-
-    def cropDegree(self, deg=45):
-        pass
-
-    def mean(self):
-        pass
-
-    def std(self):
-        pass
-
-    def getElevation(self, timestamp):
         """
-        return elevation for each pixel as a numpy array
-
+        calculates the center pixel of the image
+        
+        returns:
+            center (numpy array): center pixel of the image - shape(2)
         """
-        pass
+        center = np.round(np.array(self.data.shape) * 0.5)
+        return center
+
+    def crop(self, px_x=960, px_y=960, center=None):
+        """
+        cut rectangle out of the image around the pixel specified by 'center'
+        there for use crop margins 
+        
+        returns:
+            cropped_image (Image): image with rectangle cut out of data - data.shape(px_x * 2, px_y * 2)
+        """
+        # check if given center is in bounds or set center to center of image if not given
+        if isinstance(center, np.ndarray):
+            if center[0] < 0 or center[0] > self.data.shape[0] or\
+               center[1] < 0 or center[1] > self.data.shape[1]:
+                logger.error("can't crop image, center pixel out of bounds (center = (%d, %d))"%center[0],center[1])
+                sys.exit()
+        else:
+            center = self._calcCenter()
+
+        # calculate margins for new image
+        xbounds = (center[0] - px_x, center[0] + px_x)
+        ybounds = (center[1] - px_y, center[1] + px_y)
+
+        # test if new margins are within the current image
+        if xbounds[0] < 0                  or\
+           xbounds[1] > self.data.shape[0] or\
+           xbounds[0] > xbounds[1]:
+            logger.error("can't crop image, requested margins out of bounds (xbounds = (%d, %d))"%xbounds)
+            logger.debug("image margins = (%d, %d))"%(0,self.data.shape[0]))
+            sys.exit()
+
+        if ybounds[0] < 0                  or\
+           ybounds[1] > self.data.shape[1] or\
+           ybounds[0] > ybounds[1]:
+            logger.error("can't crop image, requested margins out of bounds (ybounds = (%d, %d))"%ybounds)
+            logger.debug("image margins = (%d, %d))"%(0,self.data.shape[1]))
+            sys.exit()
+
+        logger.debug("xbounds %d %d"%xbounds)
+        logger.debug("ybounds %d %d"%ybounds)
+
+        ### crop image and reset corresponding values ###
+        # crop data
+        cropped_data      = self.data[xbounds[0] : xbounds[1], ybounds[0] : ybounds[1]]
+
+        # crop zenith
+        cropped_zenith    = self.zenith_pixel - np.array([xbounds[0],ybounds[0]])
+        logger.debug("old zenith %d %d"%(self.zenith_pixel[0],self.zenith_pixel[1]))
+        logger.debug("new zenith %d %d"%(cropped_zenith[0],cropped_zenith[1]))
+
+        # crop elevation if existent
+        cropped_elevation = None
+        if isinstance(self.elevation,np.ndarray):
+            cropped_elevation = self.elevation[xbounds[0] : xbounds[1], ybounds[0] : ybounds[1]]
+
+        # crop azimuth if existent
+        cropped_azimuth = None
+        if isinstance(self.azimuth,np.ndarray):
+            cropped_azimuth   = self.azimuth[xbounds[0] : xbounds[1], ybounds[0] : ybounds[1]]
+
+        ### create new image ###
+        cropped_image = Image(data = cropped_data,
+                              azimuth = cropped_azimuth,
+                              elevation = cropped_elevation,
+                              zenith_pixel = cropped_zenith,
+                              elevation_angle_per_pixel = self.elevation_angle_per_pixel,
+                              azimuth_north_angle = self.azimuth_north_angle,
+                              azimuth_direction = self.azimuth_direction,
+                              timestamp = self.timestamp)
+        return cropped_image
+
+    def cropDegree(self, deg=45.*np.pi/180.):
+        """
+        cut a circle around the 'center' pixel of the image
+        
+        args:
+            deg (optional[float]): max degrees of view the image should be cut to (max = 90.0 degree)
+        returns:
+            cropped_image (Image): image with circle cut out of data - data.shape(px_x * 2, px_y * 2)
+        """
+        #TODO check if given values are in bounds
+        #TODO if deg used calc px
+        #TODO check if px > self.data.shape * 0.5:  cut not possible
+        #TODO set border-values to NaN -> mask np.array
+        #     x, y = np.mgrid[:cropped_data.shape[0],:cropped_data.shape[1]]
+        #     r    = deg / 90.0 * self.data.shape[0] # if deg used
+        #  OR r    = px                              # if px  used 
+        #     mask = x**2 + y**2 < r**2
+        #TODO crop elevation
+        #TODO crop azimuth
+        #TODO add Image init variables
+        cropped_image = Image()
+        return cropped_image
+
+    def getElevation(self):#TODO only equidistant -> create _getEquidistantElevation()
+        """
+        store the elevation for each pixel as a numpy array
+        """
+        #TODO return 
+        x, y = np.mgrid[:self.data.shape[0],:self.data.shape[1]]
+        x = x - self.zenith_pixel[0]
+        y = y - self.zenith_pixel[1]
+        r = np.sqrt(x**2 + y**2)
+        elevation = r * self.elevation_angle_per_pixel
+        return elevation
 
     def getAzimuth(self):
         """
-        return elevation for each pixel as a numpy array
-
+        store the azimuth for each pixel as a numpy array
         """
-        pass
+        x, y = np.mgrid[:self.data.shape[0],:self.data.shape[1]]
+        x = x - self.zenith_pixel[0]
+        y = y - self.zenith_pixel[1]
+
+        if self.azimuth_direction != 'anticlockwise':
+            x = -x
+
+        azimuth = np.arctan2(x,-y) + np.pi + self.azimuth_north_angle
+        azimuth[azimuth > 2*np.pi] = azimuth[azimuth > 2*np.pi] - 2*np.pi
+        return azimuth
 
     def applyMask(self, mask):
         """
         args:
             mask (numpy mask): mask to be applied
         returns:
-            maskedimage( Image ): new instance of Image class with applied mask
+            maskedimage (Image): new instance of Image class with applied mask
         """
         pass
+
+if __name__ == '__main__':
+    import matplotlib.pyplot as plt
+    img = Image(data=np.zeros((50,50)))
+    plt.imshow(img.getAzimuth(),interpolation='none')
+    plt.colorbar()
+    plt.show()
+
