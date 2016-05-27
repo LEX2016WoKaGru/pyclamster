@@ -4,7 +4,6 @@ Created on 23.05.16
 
 Created for pyclamster
 
-
     Copyright (C) {2016}
 
     This program is free software: you can redistribute it and/or modify
@@ -24,11 +23,10 @@ Created for pyclamster
 import logging
 import os
 import sys
+import datetime
 
 # External modules
-import scipy.ndimage
 import PIL.Image
-import scipy.misc
 import numpy as np
 
 # Internal modules
@@ -36,10 +34,26 @@ import numpy as np
 
 __version__ = "0.1"
 
+# create logger
 logger = logging.getLogger(__name__)
 
 
+# image class
 class Image(object):
+    """
+    class to deal with images. This class is basically a subclass to 
+    PIL.Image.Image, but since it is not made for directly subclassing,
+    this class is a wrapper that redirects attribute requests to an instance
+    of class PIL.Image.Image.
+    
+    This class adds a simple possiblity to work with the underlying image
+    data as numpy.ndarray. To get this array, use the Image.data property.
+    You may also set this property to change the image. Note that currently
+    only updating the image with information of the same image type is 
+    possible.
+    To get the underlying PIL.Image.Image, use the Image.image property. 
+    You may also set this property to change the image.
+    """
 
     ###################
     ### constructor ###
@@ -57,6 +71,7 @@ class Image(object):
             azimuth_north_angle(optional[float]): offset from mathematical north 
         """
 
+        # load the image
         self.loadImage(image)
 
         #        self.azimuth = azimuth
@@ -82,7 +97,11 @@ class Image(object):
     def __getattr__(self, key):
         if key == '_image':
             #  http://nedbatchelder.com/blog/201010/surprising_getattr_recursion.html
-            raise AttributeError()
+            raise AttributeError(" ".join([
+                "Can't access _image attribute.",
+                "Did you try to access image or data property before",
+                "loading an image?"
+                ]))
         return getattr(self._image, key)
 
     # the image property is a wrapper around _image
@@ -99,6 +118,10 @@ class Image(object):
         args:
             newdata(PIL.Image.Image): the new image
         """
+        if not isinstance(image, PIL.Image.Image):
+            raise TypeError("image property has to be a PIL.Image.Image")
+
+        # set values
         self._image = image
         self._data  = np.array( self._image ) 
 
@@ -111,17 +134,87 @@ class Image(object):
     @data.setter
     def data(self, newdata):
         """
-        set the underlying image data and update the image
+        set the underlying image data and update the image. It is only possible
+        to use the same image format (L,RGB,RGBA, etc...) as before.
 
         args:
             newdata(numpy.ndarray): the new image data, shape(width, height, {1,3})
         """
+        try: # check if image is set
+            mode = self._image.mode
+        except: # no image set
+            raise AttributeError(" ".join([
+                "No image was specified until now.",
+                "Can't determine image mode to set new data."
+                ]))
+
+        # set new data
         self._data = newdata
-        self._image = PIL.Image.fromarray( self._data , self._image.mode)
+        self._image = PIL.Image.fromarray( self._data , mode)
+            
+
 
     ###############
     ### methods ###
     ###############
+    # try to load the time from image EXIF data
+    def loadTime(self):
+        try: # try to read time
+            exif = self.image._getexif() # get EXIF data
+            t = exif[0x9003] # get exif ctime value
+            logger.info("EXIF ctime of image is '{}'".format(t))
+            try: # try to convert to datetime object
+                t = datetime.datetime.strptime(str(t), "%Y:%m:%d %H:%M:%S")
+                self.time = t # set attribute
+                logger.debug(
+                   "converted EXIF ctime to datetime object.")
+            except:
+                logger.warning(
+                    "cannot convert EXIF ctime to datetime object.".format(t))
+        except (AttributeError, ValueError, TypeError): # reading didn't work
+            logger.warning("cannot read EXIF time from image")
+
+
+    # load the image
+    def loadImage(self, image=None):
+        """
+        load image either from path, PIL.Image or numpy.ndarray
+        
+        args:
+            image (str/path or PIL.Image or numpy.ndarray): image to load
+        """
+        ### create self._image according to specified argument ###
+        # looks like PIL image
+        if isinstance(image, PIL.Image.Image):
+            logger.info("reading image directly from PIL.Image.Image object")
+            self.image = image
+        # argument looks like path
+        elif isinstance(image, str):
+            logger.debug("argument is a string")
+            if os.path.isfile(image):
+                logger.debug("argument is a valid path")
+                logger.info("reading image from path")
+                self.image = PIL.Image.open(image)
+            else:
+                logger.warning(
+                    "argument is not a valid path! Can't read image.")
+                #self.image = PIL.Image.new(mode="RGB", size=(1, 1))
+        # looks like numpy array
+        elif isinstance(image, np.ndarray):
+            logger.debug("argument is a numpy array")
+            logger.debug("creating image from numpy array")
+            self.data = image
+            # TODO: does not work like this, mode has to be specified somehow
+        # nothing correct specified
+        else:
+            logger.info("nothing specified to read image. Nothing loaded.")
+            #self.image = PIL.Image.new(mode="RGB", size=(1, 1)) # hard coded
+
+        # init things
+        #self.setDefaultParameters()
+        #self.applyCameraCorrections()
+
+
     def setMissingParameters(self):
         ### set zenith pixel ###
         if not isinstance(self.zenith_pixel, np.ndarray) \
@@ -134,40 +227,6 @@ class Image(object):
                 isinstance(self.data, np.ndarray):
             self.elevation_angle_per_pixel = np.pi / self.data.shape[0]
 
-    def loadImage(self, image=None):
-        """
-        load image either from path, PIL.Image or numpy.ndarray
-        
-        args:
-            path (str/path or PIL.Image or numpy.ndarray): image to load
-        """
-        ### create self._image according to specified argument ###
-        # looks like PIL image
-        if isinstance(image, PIL.Image.Image):
-            logger.debug("reading image directly from PIL.Image.Image object")
-            self.image = image
-        # argument looks like path
-        elif isinstance(image, str):
-            logger.debug("path argument is specified and a string")
-            if os.path.isfile(image):
-                logger.debug("path argument is a valid path")
-                self.image = PIL.Image.open(image)
-            else:
-                logger.warning(
-                    "path argument is not a valid path! Can't read image.")
-                self.image = PIL.Image.new(mode="RGB", size=(1, 1))
-        # data is a numpy array
-        elif isinstance(image, np.ndarray):
-            logger.debug("data argument is specified and a numpy array")
-            self.image = PIL.Image.fromarray(image, "RGB")  # TODO hard-coded 
-        # nothing correct specified
-        else:
-            logger.warning("nothing specified to read image.")
-            self.image = PIL.Image.new(mode="RGB", size=(1, 1))
-
-        # init things
-        #self.setDefaultParameters()
-        #self.applyCameraCorrections()
 
     def _calcCenter(self):
         """
