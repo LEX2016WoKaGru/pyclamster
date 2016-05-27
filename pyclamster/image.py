@@ -23,10 +23,12 @@ Created for pyclamster
 """
 # System modules
 import logging
+import os
 import sys
 
 # External modules
 import scipy.ndimage
+import PIL.Image
 import scipy.misc
 import numpy as np
 
@@ -38,18 +40,10 @@ __version__ = "0.1"
 logger = logging.getLogger(__name__)
 
 class Image(object):
-    def __init__(self, 
-                 path = None, 
-                 data = None,
-                 azimuth = None,
-                 elevation = None,
-                 zenith_pixel = None,
-                 elevation_angle_per_pixel = None,
-                 azimuth_north_angle = 90.*np.pi/180.,
-                 azimuth_direction = 'anticlockwise',
-                 timestamp = None):
+    def __init__(self,image = None, path = None, data = None): # TODO: fill with arguments
         """
         args:
+            image(optional[PIL.Image.Image]) image as PIL.Image.Image
             path(optional[str]): path to import image data form
             data(optinal[numpy array]): RBG values for each pixel  - shape(width,height,3)
             azimuth(optional[numpy array]): azimuth for each pixel - shape(width,height)
@@ -58,20 +52,55 @@ class Image(object):
             elevation_angle_per_pixel(optinal[float]): elevation angle per pixel (assuming equidistant projection)
             azimuth_north_angle(optional[float]): offset from mathematical north 
         """
-        self.data = data
-        self.azimuth = azimuth
-        self.elevation = elevation
-        self.zenith_pixel = zenith_pixel #TODO add possibility to adjust zenith_pixel for camera correction
-        self.elevation_angle_per_pixel = elevation_angle_per_pixel
-        self.azimuth_north_angle = azimuth_north_angle
-        self.azimuth_direction = azimuth_direction
-        self.timestamp = timestamp
+        if isinstance(image, PIL.Image.Image):
+            logger.debug("reading image directly from PIL.Image.Image object")
+            self._image = image
+        elif isinstance(path, str):
+            logger.debug("path argument is specified and a string")
+            if os.path.isfile(path):
+                logger.debug("path argument is a valid path")
+                self._image = PIL.Image.open(path)
+            else:
+                logger.warning("path argument is not a valid path! Can't read image.")
+                self._image = PIL.Image.new(mode="RGB", size = (1,1))
+        elif isinstance(data, np.ndarray):
+            logger.debug("data argument is specified and a numpy array")
+            self._image = PIL.Image.fromarray(newdata, "RGB") # TODO hard-coded RGB here...
+        else:
+            logger.warning("nothing specified to read image.")
+            self._image = PIL.Image.new(mode="RGB", size = (1,1))
+            
+#        self.azimuth = azimuth
+#        self.elevation = elevation
+#        self.zenith_pixel = zenith_pixel #TODO add possibility to adjust zenith_pixel for camera correction
+#        self.elevation_angle_per_pixel = elevation_angle_per_pixel
+#        self.azimuth_north_angle = azimuth_north_angle
+#        self.azimuth_direction = azimuth_direction
+#        self.timestamp = timestamp
 
         # load image from path if specified
-        if isinstance(path, str) and os.path.isfile(path):
-            self.loadImage(path)
-        else:
-            self.setMissingParameters()
+#        if isinstance(path, str) and os.path.isfile(path):
+#            self.loadImage(path)
+#        else:
+#            self.setMissingParameters()
+
+    # if you request data attribute, this method is called
+    @property
+    def data(self):
+        return np.array(self._image)
+
+    # if you set self.data = newdata, this method is called
+    @data.setter
+    def data(self, newdata):
+        self._image = PIL.Image.fromarray(newdata, self._image.mode)
+
+    # every attribute request (except _image itself goes directly to self._image)
+    # this makes this class practically a subclass to PIL.Image.Image
+    def __getattr__(self,key):
+        if key == '_image':
+            #  http://nedbatchelder.com/blog/201010/surprising_getattr_recursion.html
+            raise AttributeError()
+        return getattr(self._image,key)
 
     def setMissingParameters(self):
         ### set zenith pixel ###
