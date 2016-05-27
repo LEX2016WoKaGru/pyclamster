@@ -40,8 +40,11 @@ logger = logging.getLogger(__name__)
 
 
 class Image(object):
-    def __init__(self, image=None, path=None,
-                 data=None):  # TODO: fill with arguments
+
+    ###################
+    ### constructor ###
+    ###################
+    def __init__(self, image=None):  # TODO: fill with arguments
         """
         args:
             image(optional[PIL.Image.Image]) image as PIL.Image.Image
@@ -53,25 +56,8 @@ class Image(object):
             elevation_angle_per_pixel(optional[float]): elevation angle per pixel (assuming equidistant projection)
             azimuth_north_angle(optional[float]): offset from mathematical north 
         """
-        if isinstance(image, PIL.Image.Image):
-            logger.debug("reading image directly from PIL.Image.Image object")
-            self._image = image
-        elif isinstance(path, str):
-            logger.debug("path argument is specified and a string")
-            if os.path.isfile(path):
-                logger.debug("path argument is a valid path")
-                self._image = PIL.Image.open(path)
-            else:
-                logger.warning(
-                    "path argument is not a valid path! Can't read image.")
-                self._image = PIL.Image.new(mode="RGB", size=(1, 1))
-        elif isinstance(data, np.ndarray):
-            logger.debug("data argument is specified and a numpy array")
-            self._image = PIL.Image.fromarray(newdata,
-                                              "RGB")  # TODO hard-coded RGB here...
-        else:
-            logger.warning("nothing specified to read image.")
-            self._image = PIL.Image.new(mode="RGB", size=(1, 1))
+
+        self.loadImage(image)
 
         #        self.azimuth = azimuth
         #        self.elevation = elevation
@@ -87,7 +73,11 @@ class Image(object):
         #        else:
         #            self.setMissingParameters()
 
-    # every attribute request (except _image itself goes directly to self._image)
+
+    #############################################
+    ### attributes/properties getters/setters ###
+    #############################################
+    # every attribute request (except _image itself) goes directly to _image
     # this makes this class practically a subclass to PIL.Image.Image
     def __getattr__(self, key):
         if key == '_image':
@@ -95,21 +85,47 @@ class Image(object):
             raise AttributeError()
         return getattr(self._image, key)
 
+    # the image property is a wrapper around _image
+    @property
+    def image(self):
+        return self._image
 
-    # if you request data attribute, this method is called
+    # when you set the image property, both _image and _data are updated
+    @image.setter
+    def image(self, image):
+        """
+        set the underlying image and update the data
+
+        args:
+            newdata(PIL.Image.Image): the new image
+        """
+        self._image = image
+        self._data  = np.array( self._image ) 
+
+    # the data property is a wrapper around _data
     @property
     def data(self):
-        return np.array(self._image)
+        return self._data
 
-    # if you set self.data = newdata, this method is called
+    # when you set the data property, both _image and _data are updated
     @data.setter
     def data(self, newdata):
-        self._image = PIL.Image.fromarray(newdata, self._image.mode)
+        """
+        set the underlying image data and update the image
 
+        args:
+            newdata(numpy.ndarray): the new image data, shape(width, height, {1,3})
+        """
+        self._data = newdata
+        self._image = PIL.Image.fromarray( self._data , self._image.mode)
+
+    ###############
+    ### methods ###
+    ###############
     def setMissingParameters(self):
         ### set zenith pixel ###
-        if not isinstance(self.zenith_pixel, np.ndarray) and isinstance(
-                self.data, np.ndarray):
+        if not isinstance(self.zenith_pixel, np.ndarray) \
+           and isinstance(self.data, np.ndarray):
             self.zenith_pixel = self._calcCenter()
 
         ### set elevation-angle per pixel ###
@@ -118,26 +134,40 @@ class Image(object):
                 isinstance(self.data, np.ndarray):
             self.elevation_angle_per_pixel = np.pi / self.data.shape[0]
 
-    def loadImage(self, path):
+    def loadImage(self, image=None):
         """
-        read image from given path and store the RGB-values in self.data
+        load image either from path, PIL.Image or numpy.ndarray
         
         args:
-            path (str): path to load the image from - shape(1)
+            path (str/path or PIL.Image or numpy.ndarray): image to load
         """
-        img = scipy.ndimage.imread(path, mode="RGB")
-        self.data = img
-        self.setDefaultParameters()
-        self.applyCameraCorrections()
+        ### create self._image according to specified argument ###
+        # looks like PIL image
+        if isinstance(image, PIL.Image.Image):
+            logger.debug("reading image directly from PIL.Image.Image object")
+            self.image = image
+        # argument looks like path
+        elif isinstance(image, str):
+            logger.debug("path argument is specified and a string")
+            if os.path.isfile(image):
+                logger.debug("path argument is a valid path")
+                self.image = PIL.Image.open(image)
+            else:
+                logger.warning(
+                    "path argument is not a valid path! Can't read image.")
+                self.image = PIL.Image.new(mode="RGB", size=(1, 1))
+        # data is a numpy array
+        elif isinstance(image, np.ndarray):
+            logger.debug("data argument is specified and a numpy array")
+            self.image = PIL.Image.fromarray(image, "RGB")  # TODO hard-coded 
+        # nothing correct specified
+        else:
+            logger.warning("nothing specified to read image.")
+            self.image = PIL.Image.new(mode="RGB", size=(1, 1))
 
-    def saveImage(self, path):
-        """
-        save image RGB-values to given path
-        
-        args:
-            path (str): path to store the image to - shape(1)
-        """
-        img = scipy.misc.imsave(path, self.data)
+        # init things
+        #self.setDefaultParameters()
+        #self.applyCameraCorrections()
 
     def _calcCenter(self):
         """
@@ -157,7 +187,8 @@ class Image(object):
         returns:
             cropped_image (Image): image with rectangle cut out of data - data.shape(px_x * 2, px_y * 2)
         """
-        # check if given center is in bounds or set center to center of image if not given
+        # check if given center is in bounds or 
+        # set center to center of image if not given
         if isinstance(center, np.ndarray):
             if center[0] < 0 or center[0] > self.data.shape[0] or \
                             center[1] < 0 or center[1] > self.data.shape[1]:
