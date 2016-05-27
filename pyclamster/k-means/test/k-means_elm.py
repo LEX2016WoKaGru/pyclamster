@@ -52,12 +52,12 @@ from sklearn.preprocessing import StandardScaler
 
 __version__ = "0.1"
 
-k_cluster = 2
+k_cluster = 5
 good_angle = 45
 good_angle_dpi = int(np.round(1920 / 180 * good_angle))
 neighbour_size = 10
 
-denoising_ratio = 6
+denoising_ratio = 10
 
 anomaly_images = None
 
@@ -71,6 +71,9 @@ for i in range(1, 5):
 
     image_mean = scipy.ndimage.filters.uniform_filter(
         image, size=(neighbour_size, neighbour_size, 3), mode="constant")
+    # #
+    # image_mean = scipy.ndimage.filters.gaussian_filter(
+    #     image, neighbour_size, mode="constant")
 
     anomaly_image = image - image_mean
 
@@ -90,12 +93,10 @@ kmeans = MiniBatchKMeans(n_clusters=k_cluster, random_state=0).fit(
     anomaly_images)
 anomaly_labels = kmeans.labels_
 
-targets = None
-mini_images = None
-
 for i in range(0, 4):
     anomaly_single_label = anomaly_labels[i * (w * h):(i + 1) * (w * h)]
     anomaly_single_label = np.reshape(anomaly_single_label, (w, h))
+
     # erosion_label = scipy.ndimage.binary_erosion(
     #     anomaly_single_label,
     #     structure=np.ones((6, 6)))
