@@ -24,6 +24,7 @@ import logging
 import os
 import sys
 import datetime
+import copy
 
 # External modules
 import PIL.Image
@@ -71,8 +72,25 @@ class Image(object):
             azimuth_north_angle(optional[float]): offset from mathematical north 
         """
 
+
         # load the image
         self.loadImage(image)
+
+        # set metadata
+        self.time = None
+
+        # create empty elevation and azimuth
+        try: # if image is already defined
+            width, height, *rest  = np.shape(self.image)
+            self.elevation = np.empty( (width, height) )
+            self.azimuth   = np.empty( (width, height) )
+        except: # image not yet defined
+            # self.data      = np.empty( (0) ) # TODO does not work like this
+            #self.elevation = np.empty( (0) )
+            #self.azimuth   = np.empty( (0) )
+            # don't do anything for now.
+            pass
+            
 
         #        self.azimuth = azimuth
         #        self.elevation = elevation
@@ -95,11 +113,11 @@ class Image(object):
     # every attribute request (except _image itself) goes directly to _image
     # this makes this class practically a subclass to PIL.Image.Image
     def __getattr__(self, key):
+        #logger.debug("requested attribute '{}'".format(key))
         if key == '_image':
-            #  http://nedbatchelder.com/blog/201010/surprising_getattr_recursion.html
             raise AttributeError(" ".join([
                 "Can't access _image attribute.",
-                "Did you try to access image or data property before",
+                "Did you try to access properties before",
                 "loading an image?"
                 ]))
         return getattr(self._image, key)
@@ -151,8 +169,43 @@ class Image(object):
         # set new data
         self._data = newdata
         self._image = PIL.Image.fromarray( self._data , mode)
-            
 
+
+    @property
+    def elevation(self):
+        return self._elevation
+
+    @elevation.setter
+    def elevation(self, newelevation):
+        try:
+            widthnew, heightnew  = np.shape(newelevation)
+            logger.debug("widthnew: {}, heightnew: {}".format(widthnew,heightnew))
+            width, height, *rest = np.shape(self.image)
+            logger.debug("width: {}, height: {}".format(width,height))
+            if (width,height) == (widthnew,heightnew):
+                self._elevation = newelevation
+            else:
+                raise ValueError("shape of new elevation does not match image shape.")
+        except:
+            raise ValueError("elevation must be a numpy.ndarray with shape according to image.")
+            
+    @property
+    def azimuth(self):
+        return self._azimuth
+
+    @azimuth.setter
+    def azimuth(self, newazimuth):
+        try:
+            widthnew, heightnew  = np.shape(newazimuth)
+            logger.debug("widthnew: {}, heightnew: {}".format(widthnew,heightnew))
+            width, height, *rest = np.shape(self.image)
+            logger.debug("width: {}, height: {}".format(width,height))
+            if (width,height) == (widthnew,heightnew):
+                self._azimuth = newazimuth
+            else:
+                raise ValueError("shape of new azimuth does not match image shape.")
+        except:
+            raise ValueError("azimuth must be a numpy.ndarray with shape according to image.")
 
     ###############
     ### methods ###
@@ -165,7 +218,7 @@ class Image(object):
             logger.info("EXIF ctime of image is '{}'".format(t))
             try: # try to convert to datetime object
                 t = datetime.datetime.strptime(str(t), "%Y:%m:%d %H:%M:%S")
-                self.time = t # set attribute
+                self.setTime(t) # set time
                 logger.debug(
                    "converted EXIF ctime to datetime object.")
             except:
@@ -188,6 +241,14 @@ class Image(object):
         if isinstance(image, PIL.Image.Image):
             logger.info("reading image directly from PIL.Image.Image object")
             self.image = image
+        # argument is an image aleady
+        elif isinstance(image, Image):
+            logger.info("copying image directly from Image")
+            # copy over attributes
+            for key in vars(image).keys():
+                setattr(self,key, copy.deepcopy(getattr(image,key)))
+                
+                
         # argument looks like path
         elif isinstance(image, str):
             logger.debug("argument is a string")
@@ -214,6 +275,18 @@ class Image(object):
         #self.setDefaultParameters()
         #self.applyCameraCorrections()
 
+    # set time of image
+    def setTime(self, time):
+        """
+        set internal image time
+        
+        args:
+            time (datetime object): time to set
+        """
+        if isinstance(time, datetime.datetime):
+            self.time = time
+        else:
+            logger.warning("time is not a datetime object. Ignoring time setting.")
 
     def setMissingParameters(self):
         ### set zenith pixel ###
@@ -238,84 +311,126 @@ class Image(object):
         center = np.round(np.array(self.data.shape) * 0.5)
         return center
 
-    def crop(self, px_x=960, px_y=960, center=None):
+
+    ##########################
+    ### Image manipulation ###
+    ##########################
+    def crop(self, box):
         """
-        cut rectangle out of the image around the pixel specified by 'center'
-        there for use crop margins 
-        
+        crop the image in-place to a box
+
+        args:
+            box (4-tuple of int): (left, top, right, bottom) (see PIL documentation)
+        """
+
+        # crop image
+        self.image = self.image.crop( box )
+        # crop metadata
+        self.elevation = self.elevation[box[0]:box[2],box[1]:box[3]] # TODO: check this!
+        self.azimuth   = self.azimuth  [box[0]:box[2],box[1]:box[3]] # TODO: check this!
+
+
+    def cut(self, box):
+        """
+        cut out a box of the image and return it
+
+        args:
+            box (4-tuple of int): (left, top, right, bottom) (see PIL documentation)
+
         returns:
-            cropped_image (Image): image with rectangle cut out of data - data.shape(px_x * 2, px_y * 2)
+            a new cut image
         """
-        # check if given center is in bounds or 
-        # set center to center of image if not given
-        if isinstance(center, np.ndarray):
-            if center[0] < 0 or center[0] > self.data.shape[0] or \
-                            center[1] < 0 or center[1] > self.data.shape[1]:
-                logger.error(
-                    "can't crop image, center pixel out of bounds (center = (%d, %d))" %
-                    center[0], center[1])
-                sys.exit()
-        else:
-            center = self._calcCenter()
 
-        # calculate margins for new image
-        xbounds = (center[0] - px_x, center[0] + px_x)
-        ybounds = (center[1] - px_y, center[1] + px_y)
+        # copy image
+        cutimage = Image( self )
+        #print(vars(cutimage))
 
-        # test if new margins are within the current image
-        if xbounds[0] < 0 or \
-                        xbounds[1] > self.data.shape[0] or \
-                        xbounds[0] > xbounds[1]:
-            logger.error(
-                "can't crop image, requested margins out of bounds (xbounds = (%d, %d))" % xbounds)
-            logger.debug("image margins = (%d, %d))" % (0, self.data.shape[0]))
-            sys.exit()
+        # crop image
+        cutimage.crop( box )
+        # crop metadata
+        #cutimage.elevation = cutimage.elevation[box[0]:box[2],box[1]:box[3]] # TODO: check this!
+        #cutimage.azimuth   = cutimage.azimuth  [box[0]:box[2],box[1]:box[3]] # TODO: check this!
 
-        if ybounds[0] < 0 or \
-                        ybounds[1] > self.data.shape[1] or \
-                        ybounds[0] > ybounds[1]:
-            logger.error(
-                "can't crop image, requested margins out of bounds (ybounds = (%d, %d))" % ybounds)
-            logger.debug("image margins = (%d, %d))" % (0, self.data.shape[1]))
-            sys.exit()
+        return cutimage
 
-        logger.debug("xbounds %d %d" % xbounds)
-        logger.debug("ybounds %d %d" % ybounds)
-
-        ### crop image and reset corresponding values ###
-        # crop data
-        cropped_data = self.data[xbounds[0]: xbounds[1],
-                       ybounds[0]: ybounds[1]]
-
-        # crop zenith
-        cropped_zenith = self.zenith_pixel - np.array([xbounds[0], ybounds[0]])
-        logger.debug(
-            "old zenith %d %d" % (self.zenith_pixel[0], self.zenith_pixel[1]))
-        logger.debug(
-            "new zenith %d %d" % (cropped_zenith[0], cropped_zenith[1]))
-
-        # crop elevation if existent
-        cropped_elevation = None
-        if isinstance(self.elevation, np.ndarray):
-            cropped_elevation = self.elevation[xbounds[0]: xbounds[1],
-                                ybounds[0]: ybounds[1]]
-
-        # crop azimuth if existent
-        cropped_azimuth = None
-        if isinstance(self.azimuth, np.ndarray):
-            cropped_azimuth = self.azimuth[xbounds[0]: xbounds[1],
-                              ybounds[0]: ybounds[1]]
-
-        ### create new image ###
-        cropped_image = Image(data=cropped_data,
-                              azimuth=cropped_azimuth,
-                              elevation=cropped_elevation,
-                              zenith_pixel=cropped_zenith,
-                              elevation_angle_per_pixel=self.elevation_angle_per_pixel,
-                              azimuth_north_angle=self.azimuth_north_angle,
-                              azimuth_direction=self.azimuth_direction,
-                              timestamp=self.timestamp)
-        return cropped_image
+#    def crop(self, px_x=960, px_y=960, center=None):
+#        """
+#        cut rectangle out of the image around the pixel specified by 'center'
+#        there for use crop margins 
+#        
+#        returns:
+#            cropped_image (Image): image with rectangle cut out of data - data.shape(px_x * 2, px_y * 2)
+#        """
+#        # check if given center is in bounds or 
+#        # set center to center of image if not given
+#        if isinstance(center, np.ndarray):
+#            if center[0] < 0 or center[0] > self.data.shape[0] or \
+#                            center[1] < 0 or center[1] > self.data.shape[1]:
+#                logger.error(
+#                    "can't crop image, center pixel out of bounds (center = (%d, %d))" %
+#                    center[0], center[1])
+#                sys.exit()
+#        else:
+#            center = self._calcCenter()
+#
+#        # calculate margins for new image
+#        xbounds = (center[0] - px_x, center[0] + px_x)
+#        ybounds = (center[1] - px_y, center[1] + px_y)
+#
+#        # test if new margins are within the current image
+#        if xbounds[0] < 0 or \
+#                        xbounds[1] > self.data.shape[0] or \
+#                        xbounds[0] > xbounds[1]:
+#            logger.error(
+#                "can't crop image, requested margins out of bounds (xbounds = (%d, %d))" % xbounds)
+#            logger.debug("image margins = (%d, %d))" % (0, self.data.shape[0]))
+#            sys.exit()
+#
+#        if ybounds[0] < 0 or \
+#                        ybounds[1] > self.data.shape[1] or \
+#                        ybounds[0] > ybounds[1]:
+#            logger.error(
+#                "can't crop image, requested margins out of bounds (ybounds = (%d, %d))" % ybounds)
+#            logger.debug("image margins = (%d, %d))" % (0, self.data.shape[1]))
+#            sys.exit()
+#
+#        logger.debug("xbounds %d %d" % xbounds)
+#        logger.debug("ybounds %d %d" % ybounds)
+#
+#        ### crop image and reset corresponding values ###
+#        # crop data
+#        cropped_data = self.data[xbounds[0]: xbounds[1],
+#                       ybounds[0]: ybounds[1]]
+#
+#        # crop zenith
+#        cropped_zenith = self.zenith_pixel - np.array([xbounds[0], ybounds[0]])
+#        logger.debug(
+#            "old zenith %d %d" % (self.zenith_pixel[0], self.zenith_pixel[1]))
+#        logger.debug(
+#            "new zenith %d %d" % (cropped_zenith[0], cropped_zenith[1]))
+#
+#        # crop elevation if existent
+#        cropped_elevation = None
+#        if isinstance(self.elevation, np.ndarray):
+#            cropped_elevation = self.elevation[xbounds[0]: xbounds[1],
+#                                ybounds[0]: ybounds[1]]
+#
+#        # crop azimuth if existent
+#        cropped_azimuth = None
+#        if isinstance(self.azimuth, np.ndarray):
+#            cropped_azimuth = self.azimuth[xbounds[0]: xbounds[1],
+#                              ybounds[0]: ybounds[1]]
+#
+#        ### create new image ###
+#        cropped_image = Image(data=cropped_data,
+#                              azimuth=cropped_azimuth,
+#                              elevation=cropped_elevation,
+#                              zenith_pixel=cropped_zenith,
+#                              elevation_angle_per_pixel=self.elevation_angle_per_pixel,
+#                              azimuth_north_angle=self.azimuth_north_angle,
+#                              azimuth_direction=self.azimuth_direction,
+#                              timestamp=self.timestamp)
+#        return cropped_image
 
     def cropDegree(self, deg=45. * np.pi / 180.):
         """
