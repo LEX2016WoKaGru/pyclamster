@@ -69,7 +69,7 @@ class Image(object):
                  ):  # TODO: fill with arguments
         """
         args:
-            image(optional[PIL.Image.Image]) image as PIL.Image.Image
+            image(optional[PIL.Image.Image,str/path,Image]) something to read the image from
             time(optional[datetime.datetime]) time for image
             projection(optional[str]) projection used for image
             azimuth(optional[numpy array]): azimuth for each pixel - shape(width,height)
@@ -220,9 +220,9 @@ class Image(object):
         if not newelevation is None:
             try:
                 widthnew, heightnew  = np.shape(newelevation)
-                logger.debug("widthnew: {}, heightnew: {}".format(widthnew,heightnew))
+                #logger.debug("widthnew: {}, heightnew: {}".format(widthnew,heightnew))
                 width, height, *rest = np.shape(self.image)
-                logger.debug("width: {}, height: {}".format(width,height))
+                #logger.debug("width: {}, height: {}".format(width,height))
                 if (width,height) == (widthnew,heightnew):
                     self._elevation = newelevation
                 else:
