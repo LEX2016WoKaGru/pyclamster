@@ -59,17 +59,22 @@ class Image(object):
     ###################
     ### constructor ###
     ###################
-    def __init__(self, image=None):  # TODO: fill with arguments
+    def __init__(self,
+                 image=None,
+                 time=None,
+                 projection=None,
+                 azimuth=None,
+                 elevation=None,
+                 zenith_pixel=None
+                 ):  # TODO: fill with arguments
         """
         args:
             image(optional[PIL.Image.Image]) image as PIL.Image.Image
-            path(optional[str]): path to import image data form
-            data(optional[numpy array]): RBG values for each pixel  - shape(width,height,3)
+            time(optional[datetime.datetime]) time for image
+            projection(optional[str]) projection used for image
             azimuth(optional[numpy array]): azimuth for each pixel - shape(width,height)
             elevation(optional[numpy array]): elevation for each pixel - shape(width,height)
             zenith_pixel(optional[numpy array]): pixel with 0 elevation and center point for azimuth - shape(2)
-            elevation_angle_per_pixel(optional[float]): elevation angle per pixel (assuming equidistant projection)
-            azimuth_north_angle(optional[float]): offset from mathematical north 
         """
 
 
@@ -77,7 +82,11 @@ class Image(object):
         self.loadImage(image)
 
         # set metadata
-        self.time = None
+        self.time = time
+        self.projection = projection
+        self.azimuth = azimuth
+        self.elevation = elevation
+        self.zenith_pixel = zenith_pixel
 
         # create empty elevation and azimuth
         try: # if image is already defined
@@ -121,6 +130,36 @@ class Image(object):
                 "loading an image?"
                 ]))
         return getattr(self._image, key)
+
+    @property
+    def projection(self):
+        return self._projection
+
+    @projection.setter
+    def projection(self, newprojection):
+        #if newprojection in (None,"equidistant","stereographic","orthogonal","equiangle"):
+        self._projection = newprojection
+        #else:
+            #raise ValueError("unimplemented projection '{}'".format(newprojection))
+
+    @property
+    def time(self):
+        return self._time
+
+    @time.setter
+    def time(self, newtime):
+        if isinstance(newtime,datetime.datetime) or newtime is None:
+            self._time = newtime
+        else:
+            raise ValueError("time has to be a datetime.datetime object.")
+
+    @property
+    def zenith_pixel(self):
+        return self._zenith_pixel
+
+    @zenith_pixel.setter
+    def zenith_pixel(self, newzenith_pixel):
+        self._zenith_pixel = newzenith_pixel
 
     # the image property is a wrapper around _image
     @property
@@ -177,17 +216,18 @@ class Image(object):
 
     @elevation.setter
     def elevation(self, newelevation):
-        try:
-            widthnew, heightnew  = np.shape(newelevation)
-            logger.debug("widthnew: {}, heightnew: {}".format(widthnew,heightnew))
-            width, height, *rest = np.shape(self.image)
-            logger.debug("width: {}, height: {}".format(width,height))
-            if (width,height) == (widthnew,heightnew):
-                self._elevation = newelevation
-            else:
-                raise ValueError("shape of new elevation does not match image shape.")
-        except:
-            raise ValueError("elevation must be a numpy.ndarray with shape according to image.")
+        if not newelevation is None:
+            try:
+                widthnew, heightnew  = np.shape(newelevation)
+                #logger.debug("widthnew: {}, heightnew: {}".format(widthnew,heightnew))
+                width, height, *rest = np.shape(self.image)
+                #logger.debug("width: {}, height: {}".format(width,height))
+                if (width,height) == (widthnew,heightnew):
+                    self._elevation = newelevation
+                else:
+                    raise ValueError("shape of new elevation does not match image shape.")
+            except:
+                raise ValueError("elevation must be a numpy.ndarray with shape according to image.")
             
     @property
     def azimuth(self):
@@ -195,17 +235,18 @@ class Image(object):
 
     @azimuth.setter
     def azimuth(self, newazimuth):
-        try:
-            widthnew, heightnew  = np.shape(newazimuth)
-            logger.debug("widthnew: {}, heightnew: {}".format(widthnew,heightnew))
-            width, height, *rest = np.shape(self.image)
-            logger.debug("width: {}, height: {}".format(width,height))
-            if (width,height) == (widthnew,heightnew):
-                self._azimuth = newazimuth
-            else:
-                raise ValueError("shape of new azimuth does not match image shape.")
-        except:
-            raise ValueError("azimuth must be a numpy.ndarray with shape according to image.")
+        if not newazimuth is None:
+            try:
+                widthnew, heightnew  = np.shape(newazimuth)
+                #logger.debug("widthnew: {}, heightnew: {}".format(widthnew,heightnew))
+                width, height, *rest = np.shape(self.image)
+                #logger.debug("width: {}, height: {}".format(width,height))
+                if (width,height) == (widthnew,heightnew):
+                    self._azimuth = newazimuth
+                else:
+                    raise ValueError("shape of new azimuth does not match image shape.")
+            except:
+                raise ValueError("azimuth must be a numpy.ndarray with shape according to image.")
 
     ###############
     ### methods ###
@@ -245,20 +286,22 @@ class Image(object):
         elif isinstance(image, Image):
             logger.info("copying image directly from Image")
             # copy over attributes
-            for key in vars(image).keys():
-                setattr(self,key, copy.deepcopy(getattr(image,key)))
+#            for key in vars(image).keys():
+#                logger.debug("copying attribute {} - {}".format(key,getattr(image,key)))
+#                setattr(self,key, copy.deepcopy(getattr(image,key)))
+            self.__dict__.update(image.__dict__)
                 
                 
         # argument looks like path
         elif isinstance(image, str):
-            logger.debug("argument is a string")
+            logger.debug("image argument is a string")
             if os.path.isfile(image):
-                logger.debug("argument is a valid path")
+                logger.debug("image argument is a valid path")
                 logger.info("reading image from path")
                 self.image = PIL.Image.open(image)
             else:
                 logger.warning(
-                    "argument is not a valid path! Can't read image.")
+                    "image argument is not a valid path! Can't read image.")
                 #self.image = PIL.Image.new(mode="RGB", size=(1, 1))
         # looks like numpy array
         elif isinstance(image, np.ndarray):
@@ -343,94 +386,12 @@ class Image(object):
 
         # copy image
         cutimage = Image( self )
-        #print(vars(cutimage))
+        logger.debug("projection after copying: {}".format(cutimage.projection))
 
         # crop image
         cutimage.crop( box )
-        # crop metadata
-        #cutimage.elevation = cutimage.elevation[box[0]:box[2],box[1]:box[3]] # TODO: check this!
-        #cutimage.azimuth   = cutimage.azimuth  [box[0]:box[2],box[1]:box[3]] # TODO: check this!
 
         return cutimage
-
-#    def crop(self, px_x=960, px_y=960, center=None):
-#        """
-#        cut rectangle out of the image around the pixel specified by 'center'
-#        there for use crop margins 
-#        
-#        returns:
-#            cropped_image (Image): image with rectangle cut out of data - data.shape(px_x * 2, px_y * 2)
-#        """
-#        # check if given center is in bounds or 
-#        # set center to center of image if not given
-#        if isinstance(center, np.ndarray):
-#            if center[0] < 0 or center[0] > self.data.shape[0] or \
-#                            center[1] < 0 or center[1] > self.data.shape[1]:
-#                logger.error(
-#                    "can't crop image, center pixel out of bounds (center = (%d, %d))" %
-#                    center[0], center[1])
-#                sys.exit()
-#        else:
-#            center = self._calcCenter()
-#
-#        # calculate margins for new image
-#        xbounds = (center[0] - px_x, center[0] + px_x)
-#        ybounds = (center[1] - px_y, center[1] + px_y)
-#
-#        # test if new margins are within the current image
-#        if xbounds[0] < 0 or \
-#                        xbounds[1] > self.data.shape[0] or \
-#                        xbounds[0] > xbounds[1]:
-#            logger.error(
-#                "can't crop image, requested margins out of bounds (xbounds = (%d, %d))" % xbounds)
-#            logger.debug("image margins = (%d, %d))" % (0, self.data.shape[0]))
-#            sys.exit()
-#
-#        if ybounds[0] < 0 or \
-#                        ybounds[1] > self.data.shape[1] or \
-#                        ybounds[0] > ybounds[1]:
-#            logger.error(
-#                "can't crop image, requested margins out of bounds (ybounds = (%d, %d))" % ybounds)
-#            logger.debug("image margins = (%d, %d))" % (0, self.data.shape[1]))
-#            sys.exit()
-#
-#        logger.debug("xbounds %d %d" % xbounds)
-#        logger.debug("ybounds %d %d" % ybounds)
-#
-#        ### crop image and reset corresponding values ###
-#        # crop data
-#        cropped_data = self.data[xbounds[0]: xbounds[1],
-#                       ybounds[0]: ybounds[1]]
-#
-#        # crop zenith
-#        cropped_zenith = self.zenith_pixel - np.array([xbounds[0], ybounds[0]])
-#        logger.debug(
-#            "old zenith %d %d" % (self.zenith_pixel[0], self.zenith_pixel[1]))
-#        logger.debug(
-#            "new zenith %d %d" % (cropped_zenith[0], cropped_zenith[1]))
-#
-#        # crop elevation if existent
-#        cropped_elevation = None
-#        if isinstance(self.elevation, np.ndarray):
-#            cropped_elevation = self.elevation[xbounds[0]: xbounds[1],
-#                                ybounds[0]: ybounds[1]]
-#
-#        # crop azimuth if existent
-#        cropped_azimuth = None
-#        if isinstance(self.azimuth, np.ndarray):
-#            cropped_azimuth = self.azimuth[xbounds[0]: xbounds[1],
-#                              ybounds[0]: ybounds[1]]
-#
-#        ### create new image ###
-#        cropped_image = Image(data=cropped_data,
-#                              azimuth=cropped_azimuth,
-#                              elevation=cropped_elevation,
-#                              zenith_pixel=cropped_zenith,
-#                              elevation_angle_per_pixel=self.elevation_angle_per_pixel,
-#                              azimuth_north_angle=self.azimuth_north_angle,
-#                              azimuth_direction=self.azimuth_direction,
-#                              timestamp=self.timestamp)
-#        return cropped_image
 
     def cropDegree(self, deg=45. * np.pi / 180.):
         """
