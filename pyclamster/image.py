@@ -78,8 +78,6 @@ class Image(object):
         """
 
 
-        # load the image
-        self.loadImage(image)
 
         # set metadata
         self.time = time
@@ -87,6 +85,9 @@ class Image(object):
         self.azimuth = azimuth
         self.elevation = elevation
         self.zenith_pixel = zenith_pixel
+
+        # load the image
+        self.loadImage(image)
 
         # create empty elevation and azimuth
         try: # if image is already defined
@@ -219,9 +220,9 @@ class Image(object):
         if not newelevation is None:
             try:
                 widthnew, heightnew  = np.shape(newelevation)
-                #logger.debug("widthnew: {}, heightnew: {}".format(widthnew,heightnew))
+                logger.debug("widthnew: {}, heightnew: {}".format(widthnew,heightnew))
                 width, height, *rest = np.shape(self.image)
-                #logger.debug("width: {}, height: {}".format(width,height))
+                logger.debug("width: {}, height: {}".format(width,height))
                 if (width,height) == (widthnew,heightnew):
                     self._elevation = newelevation
                 else:
@@ -286,10 +287,8 @@ class Image(object):
         elif isinstance(image, Image):
             logger.info("copying image directly from Image")
             # copy over attributes
-#            for key in vars(image).keys():
-#                logger.debug("copying attribute {} - {}".format(key,getattr(image,key)))
-#                setattr(self,key, copy.deepcopy(getattr(image,key)))
             self.__dict__.update(image.__dict__)
+
                 
                 
         # argument looks like path
@@ -367,10 +366,12 @@ class Image(object):
         """
 
         # crop image
+        # somehow, self.image.crop( box ) alone does not work,
+        # the self.image property has to be set...
         self.image = self.image.crop( box )
         # crop metadata
-        self.elevation = self.elevation[box[0]:box[2],box[1]:box[3]] # TODO: check this!
-        self.azimuth   = self.azimuth  [box[0]:box[2],box[1]:box[3]] # TODO: check this!
+        self.elevation = self.elevation[box[1]:box[3],box[0]:box[2]] 
+        self.azimuth   = self.azimuth  [box[1]:box[3],box[0]:box[2]]
 
 
     def cut(self, box):
@@ -385,8 +386,9 @@ class Image(object):
         """
 
         # copy image
+        # deepcopy does not work somehow, so create a new image exactly like
+        # this one
         cutimage = Image( self )
-        logger.debug("projection after copying: {}".format(cutimage.projection))
 
         # crop image
         cutimage.crop( box )
