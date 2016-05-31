@@ -395,6 +395,8 @@ class Image(object):
 
         return cutimage
 
+
+
     def cropDegree(self, deg=45. * np.pi / 180.):
         """
         cut a circle around the 'center' pixel of the image
@@ -418,33 +420,6 @@ class Image(object):
         cropped_image = Image()
         return cropped_image
 
-    def getElevation(self):
-        # TODO only equidistant -> create _getEquidistantElevation()
-        """
-        store the elevation for each pixel as a numpy array
-        """
-        # TODO return
-        x, y = np.mgrid[:self.data.shape[0], :self.data.shape[1]]
-        x = x - self.zenith_pixel[0]
-        y = y - self.zenith_pixel[1]
-        r = np.sqrt(x ** 2 + y ** 2)
-        elevation = r * self.elevation_angle_per_pixel
-        return elevation
-
-    def getAzimuth(self):
-        """
-        store the azimuth for each pixel as a numpy array
-        """
-        x, y = np.mgrid[:self.data.shape[0], :self.data.shape[1]]
-        x = x - self.zenith_pixel[0]
-        y = y - self.zenith_pixel[1]
-
-        if self.azimuth_direction != 'anticlockwise':
-            x = -x
-
-        azimuth = np.arctan2(x, -y) + np.pi + self.azimuth_north_angle
-        azimuth[azimuth > 2 * np.pi] = azimuth[azimuth > 2 * np.pi] - 2 * np.pi
-        return azimuth
 
     def applyMask(self, mask):
         """
