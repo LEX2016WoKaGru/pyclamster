@@ -24,6 +24,7 @@ import logging
 
 # External modules
 import numpy as np
+import numpy.ma as ma
 
 # Internal modules
 
@@ -67,7 +68,7 @@ class FisheyeProjection(object):
     ###############
     ### Methods ###
     ###############
-    def createElevation(self, shape, center=None, maxangle=None, projection=None):
+    def createElevation(self, shape, center=None, maxangle=None, maxanglepos=None,projection=None):
         """
         create a np.ndarray that holds an elevation for each pixel of an image
         according to fisheye projection type
@@ -75,7 +76,9 @@ class FisheyeProjection(object):
         args:
             shape(2-tuple of int): shape of image (width, height)
             center(optional[2-tuple of int]): center/optical axis position on image (row,col).
-                if not specified, the center of the image is assumed
+                if not specified, the center of the image is assumed.
+            maxanglepos(optional[2-tuple of int]): position of pixel with maxangle visible (row,col).
+                if not specified, the left center of the image is assumed.
             maxangle(optional[float]): the maximum angle (rad) from optical axis/center visible on the image
 
         returns:
@@ -95,8 +98,18 @@ class FisheyeProjection(object):
             center_row, center_col = int(height/2),int(width/2) # image center
 
         # maxangle
-        # maxangle = maxangle :-)
-            
+        if maxangle is None:
+            logger.debug("maxangle not defined, assuming 90 degrees.")
+            maxangle = np.pi / 4
+
+        # maxangle pixel position
+        try:
+            maxangle_row, maxangle_col = maxanglepos
+        except:
+            logger.debug("maxangle position not specified as 2-tuple, assuming left image center")
+            maxangle_row, maxangle_col = int(height/2),int(0) # left center
+
+
         # projection
         if projection is None: # projection defined?
             projection = self.projection # default projection from object
@@ -104,14 +117,39 @@ class FisheyeProjection(object):
             raise ValueError("no fisheye projection specified.")
 
             
+        # width, height:          width and height of resulting array
+        # center_row, center_col: center position / optical axis
+        # maxangle:               maximum angle visible on resulting array
+        # projection:             fisheye projection type
+
         # now create arrays based on projection
         if projection == "equidistant":
-            # equidistant
-            pass
+            ### equidistant projection ###
+            # create grid with only rows and cols
+            row, col = np.mgrid[:height, :width]
+            # center rows and cols
+            col = col - center_col
+            row = row - center_row
+            # calculate radius from center
+            r = np.sqrt(col ** 2 + row ** 2)
+            # norm radius
+            norm = np.sqrt( (center_row - maxangle_row) ** 2 + \
+                            (center_col - maxangle_col) ** 2 )
+            # norm
+            elevation = ma.masked_greater_equal( \
+                # norm the radius to the maximum angle
+                r / norm * maxangle,             \
+                # mask everything with an angle greater than the maxangle
+                maxangle                         \
+                )
         else:
-            logger.debug(" ".join(("unimplemented fisheye projection '{}'",
-                                   "You should never see this...")
-                                   ).format(projection))
+            raise ValueError(" ".join((
+                "unimplemented fisheye projection '{}'",
+                "You should never see this...")
+                ).format(projection))
+
+        # return
+        return elevation
 
 
         
