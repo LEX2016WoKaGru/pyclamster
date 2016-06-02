@@ -92,6 +92,7 @@ for i in range(1, 5):
 kmeans = MiniBatchKMeans(n_clusters=k_cluster, random_state=0).fit(
     anomaly_images)
 anomaly_labels = kmeans.labels_
+anomaly_labels = np.abs(anomaly_labels-1)
 
 for i in range(0, 4):
     anomaly_single_label = anomaly_labels[i * (w * h):(i + 1) * (w * h)]

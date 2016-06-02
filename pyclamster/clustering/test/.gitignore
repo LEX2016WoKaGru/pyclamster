@@ -7,5 +7,6 @@
 *.iml
 out
 gen
+*.jpg
 anomaly_*.jpg
 test*.jpg
