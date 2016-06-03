@@ -253,22 +253,43 @@ class Image(object):
     ###############
     ### methods ###
     ###############
-    # try to load the time from image EXIF data
-    def loadTime(self):
+    # try to read the time from image EXIF data
+    def getEXIFtime(self, path=None):
+        """
+        get the EXIF time from either this image or an image specified by path
+
+        args:
+            path(optional[str/path]): an image to get the EXIF time from
+
+        returns:
+            datetime.datetime object or None
+        """
+        ret = None
         try: # try to read time
-            exif = self.image._getexif() # get EXIF data
+            try: # try to read Image from path
+                image = PIL.Image.open(path)
+            except: # otherwise take current image
+                image = self
+            exif = image._getexif() # read EXIF data
             t = exif[0x9003] # get exif ctime value
             logger.info("EXIF ctime of image is '{}'".format(t))
             try: # try to convert to datetime object
                 t = datetime.datetime.strptime(str(t), "%Y:%m:%d %H:%M:%S")
-                self.setTime(t) # set time
                 logger.debug(
                    "converted EXIF ctime to datetime object.")
+                ret = t
             except:
                 logger.warning(
                     "cannot convert EXIF ctime to datetime object.".format(t))
         except (AttributeError, ValueError, TypeError): # reading didn't work
             logger.warning("cannot read EXIF time from image")
+
+        return ret # result
+        
+
+    # try to load the time from image EXIF data
+    def loadEXIFtime(self):
+        self.time = self.getEXIFtime()
 
 
     # load the image
