@@ -85,6 +85,7 @@ class Image(object):
         self.azimuth = azimuth
         self.elevation = elevation
         self.zenith_pixel = zenith_pixel
+        self.path = None
 
         # load the image
         self.loadImage(image)
@@ -298,6 +299,7 @@ class Image(object):
                 logger.debug("image argument is a valid path")
                 logger.info("reading image from path")
                 self.image = PIL.Image.open(image)
+                self.path = image # set path
             else:
                 logger.warning(
                     "image argument is not a valid path! Can't read image.")
@@ -306,6 +308,11 @@ class Image(object):
         elif isinstance(image, np.ndarray):
             logger.debug("argument is a numpy array")
             logger.debug("creating image from numpy array")
+            self.path = None # reset path because data comes from array
+            raise Exception(" ".join([
+                    "Creating Image from ndarray is not implemented yet.",
+                    "use PIL.Image.fromarray and pass that to loadImage() instead."
+                    ]))
             self.data = image
             # TODO: does not work like this, mode has to be specified somehow
         # nothing correct specified
