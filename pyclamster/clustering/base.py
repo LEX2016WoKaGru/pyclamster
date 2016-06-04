@@ -34,7 +34,8 @@ class Scaler(object):
     """
     Base class for the pre-processing steps to cluster the data
     """
-    def __init__(self):
+    def __init__(self, replace=False):
+        self.replace = replace
         self.parameters = {}
         self.fitted = False
 

@@ -38,12 +38,13 @@ algorithms.
 
 
 class LocalBrightness(Scaler):
-    def __init__(self, neighbourhood_size=10, mode="constant"):
+    def __init__(self, neighbourhood_size=10, mode="constant", replace=False):
         assert isinstance(neighbourhood_size, int)
         self.nb_size = neighbourhood_size
         self.mode = mode
         self.parameters = None
         self.fitted = False
+        self.replace = False
 
     def fit(self, data):
         len_dim2 = 1

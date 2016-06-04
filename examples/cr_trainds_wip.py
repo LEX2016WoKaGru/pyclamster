@@ -45,7 +45,7 @@ algorithm with an unsupervised approach.
 Possible new version of k-means necessary.
 """
 
-directory = "/home/tfinn/Projects/pyclamster/examples/images/stereo"
+directory = "./images/stereo"
 all_images = glob.glob(os.path.join(directory, "*.jpg"))
 k_cluster = 2
 

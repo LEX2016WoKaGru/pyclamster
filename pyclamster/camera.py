@@ -26,10 +26,10 @@ import datetime
 
 # External modules
 import logging
-from PIL import Image
+import PIL.Image
 
 # Internal modules
-import image
+from . import image
 
 
 __version__ = "0.1"
@@ -152,7 +152,7 @@ class Camera(object):
                         logger.debug("A time was specified for image '{}'".format(basename))
                     elif t is None: # no time was specified
                         logger.debug("no time was specified directly for image '{}'. Searching in EXIF...".format(basename))
-                        img  = Image.open(f) # open image
+                        img  = PIL.Image.open(f) # open image
                         count_images += 1 # count up images found
                         try: # try to read time
                             exif = img._getexif() # get EXIF data
