@@ -59,50 +59,41 @@ labels = None
 targets = []
 mini_images= []
 cluster = sklearn.cluster.MiniBatchKMeans(n_clusters=k_cluster, random_state=0)
+used_labels = 0
 
 all_images = listShuffleSplit(all_images, 10)
 for image_list in all_images:
     for image_path in image_list:
-        img = pycl.Image()
-        img.loadImage(image_path)
+        img = pycl.Image(image_path)
         """
         Here comes some pre-process corrections, like projection correction etc.
         """
-        img.data = localBrightness(img.data)
-        img.data = rbDetection(img.data)
+        img.data=localBrightness(img.data)
         img.crop((480, 480, 1440, 1440))
-        w, h = original_shape = tuple(img.data.shape)
+        img_data = rbDetection(img.data)
+        w, h = original_shape = tuple(img_data.shape)
         if concated_images is None:
-            concated_images = np.reshape(img.data, (w * h, 1))
+            concated_images = np.reshape(img_data, (w * h, 1))
         else:
             concated_images = np.r_[concated_images,
-                                    np.reshape(img.data, (w * h, 1))]
+                                    np.reshape(img_data, (w * h, 1))]
     #print(concated_images.shape)
     start_time = time.time()
     cluster.partial_fit(concated_images)
-    #print(concated_images.shape[0], time.time()-start_time)
-    labels = Labels(cluster.predict(concated_images))
-
+    print(concated_images.shape[0], time.time()-start_time)
+    labels = Labels(cluster.labels_[used_labels:])
+    used_labels = len(cluster.labels_)
     splitted_labels = labels.splitUp(indices_or_sections=len(image_list))
     for key, label in enumerate(splitted_labels):
         label.reshape((w, h), replace=True)
+        start_time = time.time()
         label.filterRelevants(10, True)
-        scipy.misc.imsave("%d.jpg" % key, label.labels)
-#
-# for key, path in enumerate(getImages(directory)):
-#     single_label = Labels(labels=np.reshape(
-#         labels[key * (w * h):(key + 1) * (w * h)], (w, h)))
-#     """
-#     #TODO Post process im_label to get only relevant labels
-#     e.g. single_label.filterRelevants(neighbourhood_size=5)
-#     """
-#     positions, y = single_label.getSamples()
-#     targets.append(y)
-#     img = pycl.Image()
-#     img.loadImage(path)
-#     for coord in positions:
-#         mini_images.append(img.nbCrop(coord, neighbourhood_size=10))
-#
+        positions, y = label.getLabelSamples()
+        targets += y
+        img = pycl.Image(image_list[key])
+        for coord in positions:
+            mini_images.append(img.nbCrop(coord, neighbourhood_size=10))
+
 # training_data = {"X": mini_images, "y": targets}
 # pickle.dump(training_data, open("training.p", "wb"))
 

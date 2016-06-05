@@ -47,6 +47,18 @@ class Labels(object):
             labels (numpy array): The array, with the labels.
         """
         self.labels = labels
+        self.mask = None
+
+    @property
+    def labels(self):
+        if self.mask is None:
+            return self.__labels
+        else:
+            return self.__labels[self.mask]
+
+    @labels.setter
+    def labels(self, labels):
+        self.__labels = labels
 
     def binarize(self, labels_true, replace=False):
         """
@@ -116,14 +128,21 @@ class Labels(object):
             filtered_labels (optional[Labels]): If replace is False,
                 the filtered labels will be returned as new Labels instance.
         """
-        def equal(arr):
-            if np.std(arr) == 0:
-                return True
+        mask = None
+        for val in np.unique(self.labels):
+            temp = deepcopy(self.labels)
+            temp[temp==val] = True
+            temp[temp!=val] = False
+            temp = scipy.ndimage.binary_erosion(
+                temp.astype(int), structure=np.ones((nh_size*2+1, nh_size*2+1)))
+            if mask is None:
+                mask = temp
             else:
-                return False
-        mask = scipy.ndimage.generic_filter(
-            self.labels, equal, size=(nh_size*2, nh_size*2), mode="constant")
-        self.labels = self.labels[mask]
+                mask = mask | temp
+        if replace:
+            self.mask = mask
+        else:
+            self.labels[mask]
 
     def getLabelSamples(self):
         """
@@ -133,4 +152,11 @@ class Labels(object):
             labels (list[int/bool]): The labels as integer or tuple
                 as the original labels.
         """
-        pass
+        labels = self.labels.ravel()
+        if not self.mask is None:
+            positions = np.asarray(np.where(self.mask)).T.tolist()
+        else:
+            positions = np.asarray(np.where(self.labels>-999999)).T.tolist()
+        return positions, labels
+
+
