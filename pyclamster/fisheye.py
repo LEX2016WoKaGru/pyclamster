@@ -25,6 +25,7 @@ import logging
 # External modules
 import numpy as np
 import numpy.ma as ma
+import scipy.interpolate
 
 # Internal modules
 
@@ -291,7 +292,8 @@ class FisheyeProjection(object):
 
         returns:
             array of shape (shape(out_ele/out_azi),2) with interpolated 
-            coordinates in input array
+            coordinates in input array. This array can directly be used as
+            coordinate array for scipy.ndimage.interpolation.map_coordinates()
         """
         if not np.shape(in_ele) == np.shape(in_azi) or \
            not np.shape(out_ele) == np.shape(out_azi):
@@ -337,8 +339,70 @@ class FisheyeProjection(object):
 
         logger.debug("interpolation ended!")
 
-        return distmap # return the distortion map
-        
+        # return the distortion map
+        return DistortionMap(map=distmap, src_shape=in_shape) 
+
+
+# class for distortionmaps
+class DistortionMap(object):
+    """
+    class that holds a distortion map. Practically a subclass to ndarray.
+
+    properties:
+        map (array): the distortion map. If you set this, src_shape will be reset.
+        src_shape (int tuple): shape of the input image used initially for the map
+        out_shape (int tuple): shape of the output image when applying the map
+    """
+    def __init__(self, map, src_shape=None):
+        """
+        constructor
+
+        args:
+            map (array): distortion map, shape (shape(output),dim(input)) 
+            src_shape (optional[int tuple]): shape of input image. If not
+                specified, no tests can be performed if map is applied
+        """
+        self.map = map
+        self.src_shape = src_shape
+
+    ##################
+    ### properties ###
+    ##################
+    # every attribute request (except _mapitself) goes directly to _map
+    # this makes this class practically a subclass to ndarray
+    def __getattr__(self, key):
+        if key == '_map':
+            raise AttributeError(" ".join([
+                "Can't access _map attribute.",
+                ]))
+        return getattr(self._map, key)
+
+    @property
+    def map(self):
+        return self._map
+
+    @map.setter
+    def map(self, newmap):
+        self._map = newmap
+        self.src_shape = None
+        self.out_shape = np.shape(self.map)
+
+    @property
+    def out_shape(self):
+        return self._out_shape
+
+    @out_shape.setter
+    def out_shape(self, newshape):
+        self._out_shape = newshape
+
+    @property
+    def src_shape(self):
+        return self._src_shape
+
+    @src_shape.setter
+    def src_shape(self, newshape):
+        self._src_shape = newshape
+
 
 ###############
 ### Example ###
@@ -354,10 +418,10 @@ if __name__ == '__main__':
 
     # read image
     img = image.Image(os.path.abspath(
-        "../examples/images/stereo/Image_20160527_144000_UTCp1_3.jpg"
+        "../examples/images/stereo/Image_20160527_144000_UTCp1_4.jpg"
         ))
     # convert to grayscale
-    img.image = img.convert("L")
+    #img.image = img.convert("L")
     # resize image
     img.image = img.resize((800,800))
 
@@ -378,12 +442,8 @@ if __name__ == '__main__':
     # create distortion map
     distmap = f.distortionMap(ele, azi, ele_rect, azi_rect, "nearest")
 
-    logger.debug("remap coordinates...")
-    corr = scipy.ndimage.interpolation.map_coordinates(
-        input = img.data,
-        coordinates = distmap.T
-        )
-    logger.debug("remappig ended!")
+    # distort image
+    distimage = img.applyDistortionMap(distmap)
 
     # plot results
     import matplotlib.pyplot as plt
@@ -391,8 +451,8 @@ if __name__ == '__main__':
     plt.title("original image")
     plt.imshow(img, cmap="Greys_r", interpolation="nearest")
     plt.subplot(322)
-    plt.title("distorted image")
-    plt.imshow(corr, cmap="Greys_r", interpolation="nearest")
+    plt.title("rectified image")
+    plt.imshow(distimage, cmap="Greys_r", interpolation="nearest")
     plt.subplot(323)
     plt.title("image elevation")
     plt.imshow(ele,interpolation="nearest")
@@ -402,11 +462,11 @@ if __name__ == '__main__':
     plt.imshow(azi,interpolation="nearest")
     plt.colorbar()
     plt.subplot(324)
-    plt.title("distorted elevation")
+    plt.title("rectified elevation")
     plt.imshow(ele_rect,interpolation="nearest")
     plt.colorbar()
     plt.subplot(326)
-    plt.title("distorted azimuth")
+    plt.title("rectified azimuth")
     plt.imshow(azi_rect,interpolation="nearest")
     plt.colorbar()
     plt.show()
