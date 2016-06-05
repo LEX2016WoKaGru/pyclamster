@@ -398,8 +398,10 @@ class Image(object):
         # the self.image property has to be set...
         self.image = self.image.crop( box )
         # crop metadata
-        self.elevation = self.elevation[box[1]:box[3],box[0]:box[2]] 
-        self.azimuth   = self.azimuth  [box[1]:box[3],box[0]:box[2]]
+        if not self.elevation is None:
+            self.elevation = self.elevation[box[1]:box[3],box[0]:box[2]]
+        if not self.azimuth is None:
+            self.azimuth   = self.azimuth  [box[1]:box[3],box[0]:box[2]]
 
 
     def cut(self, box):
