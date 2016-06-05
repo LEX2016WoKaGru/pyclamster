@@ -106,7 +106,7 @@ class FisheyeProjection(object):
         # maxangle
         if maxangle is None:
             logger.debug("maxangle not defined, assuming 90 degrees.")
-            maxangle = np.pi / 4
+            maxangle = np.pi / 2
 
         # maxangle pixel position
         try:
@@ -292,34 +292,59 @@ if __name__ == '__main__':
 
     # read image
     img = image.Image(os.path.abspath("../examples/images/stereo/Image_20160527_144000_UTCp1_3.jpg"))
+    # convert to grayscale
+    img.image = img.convert("L")
+    # resize image
+    img.image = img.resize((800,800))
+
 
     # image shape
-    shape=np.shape(img.data)[:2];
-    f=FisheyeProjection("equidistant");
+    shape=np.shape(img.data)[:2]
+    f=FisheyeProjection("equidistant")
     # create elevation and azimuth image coordinates
-    ele=f.createFisheyeElevation(shape);
-    azi=f.createAzimuth(shape,maxelepos=(int(shape[0]/2),0));
+    ele=f.createFisheyeElevation(shape)
+    azi=f.createAzimuth(shape,maxelepos=(int(shape[0]/2),0))
     # create distorted rect coordinates
-    x=np.arange(-3,4);
-    y=np.arange(-2,3);z=10;
-    ele_rect=f.createRectElevation(x,y,z);
+    x=np.linspace(-20,20,num=100)
+    y=np.linspace(-20,20,num=100)
+    z=6 
+    ele_rect=f.createRectElevation(x,y,z)
     azi_rect=f.createRectAzimuth(x,y)
+
+    imgvalues = img.data.reshape(np.prod(np.shape(img.data)))
+    points = (ele.reshape(np.prod(np.shape(ele))), azi.reshape(np.prod(np.shape(azi))))
+    xi = (ele_rect.reshape(np.prod(np.shape(ele_rect))), azi_rect.reshape(np.prod(np.shape(azi_rect))))
+
+    logger.debug("interpolation started...")
+    corr = scipy.interpolate.griddata(
+        points = points,
+        values = imgvalues,
+        xi     = xi
+        )
+    corr.shape = (len(y),len(x))
+    logger.debug("interpolation ended!")
 
     # plot results
     import matplotlib.pyplot as plt
-    plt.subplot(221)
+    plt.subplot(321)
+    plt.title("original image")
+    plt.imshow(img, cmap="Greys_r", interpolation="nearest")
+    plt.subplot(322)
+    plt.title("distorted image")
+    plt.imshow(corr, cmap="Greys_r", interpolation="nearest")
+    plt.subplot(323)
     plt.title("image elevation")
     plt.imshow(ele,interpolation="nearest")
     plt.colorbar()
-    plt.subplot(222)
+    plt.subplot(325)
     plt.title("image azimuth")
     plt.imshow(azi,interpolation="nearest")
     plt.colorbar()
-    plt.subplot(223)
+    plt.subplot(324)
     plt.title("distorted elevation")
     plt.imshow(ele_rect,interpolation="nearest")
     plt.colorbar()
-    plt.subplot(224)
+    plt.subplot(326)
     plt.title("distorted azimuth")
     plt.imshow(azi_rect,interpolation="nearest")
     plt.colorbar()
