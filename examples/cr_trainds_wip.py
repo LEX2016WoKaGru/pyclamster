@@ -24,15 +24,19 @@ Created for pyclamster
 import os
 import glob
 import pickle
+import time
 
 # External modules
+import scipy
 import numpy as np
+import sklearn.cluster
 
 # Internal modules
 import pyclamster as pycl
-#from pyclamster.clustering.base import Labels
+from pyclamster.clustering.Labels import Labels
 #from pyclamster.clustering.kmeans import KMeans
-from pyclamster.clustering.preprocess import LocalBrightness, RBDetection
+from pyclamster.clustering.functions import localBrightness, rbDetection,\
+    listShuffleSplit
 
 __version__ = "doesnt working!"
 
@@ -54,25 +58,36 @@ labels = None
 
 targets = []
 mini_images= []
+cluster = sklearn.cluster.MiniBatchKMeans(n_clusters=k_cluster, random_state=0)
 
-for image_path in all_images:
-    img = pycl.Image()
-    img.loadImage(image_path)
-    """
-    Here comes some pre-process corrections, like projection correction etc.
-    """
-    img_mean = LocalBrightness().fit_transform(img)
-    img_rb = RBDetection().fit_transform(img_mean)
-    flatted_img = img_rb.image[:,:,0::2]
-    w, h, d = original_shape = tuple(flatted_img.shape)
-    if concated_images is None:
-        concated_images = np.reshape(flatted_img, (w * h, d))
-    else:
-        concated_images = np.r_[concated_images,
-                                np.reshape(flatted_img, (w * h, d))]
-print(concated_images)
-# kmeans = KMeans(n_clusters=k_cluster, random_state=0).fit(concated_images)
-# labels = kmeans.labels_
+all_images = listShuffleSplit(all_images, 10)
+for image_list in all_images:
+    for image_path in image_list:
+        img = pycl.Image()
+        img.loadImage(image_path)
+        """
+        Here comes some pre-process corrections, like projection correction etc.
+        """
+        img.data = localBrightness(img.data)
+        img.data = rbDetection(img.data)
+        img.crop((480, 480, 1440, 1440))
+        w, h = original_shape = tuple(img.data.shape)
+        if concated_images is None:
+            concated_images = np.reshape(img.data, (w * h, 1))
+        else:
+            concated_images = np.r_[concated_images,
+                                    np.reshape(img.data, (w * h, 1))]
+    #print(concated_images.shape)
+    start_time = time.time()
+    cluster.partial_fit(concated_images)
+    #print(concated_images.shape[0], time.time()-start_time)
+    labels = Labels(cluster.predict(concated_images))
+
+    splitted_labels = labels.splitUp(indices_or_sections=len(image_list))
+    for key, label in enumerate(splitted_labels):
+        label.reshape((w, h), replace=True)
+        label.filterRelevants(10, True)
+        scipy.misc.imsave("%d.jpg" % key, label.labels)
 #
 # for key, path in enumerate(getImages(directory)):
 #     single_label = Labels(labels=np.reshape(
