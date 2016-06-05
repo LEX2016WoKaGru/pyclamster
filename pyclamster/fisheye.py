@@ -277,7 +277,68 @@ class FisheyeProjection(object):
         azi[azi > 2 * np.pi] = azi[azi > 2 * np.pi] - 2 * np.pi
         return azi
 
+    # create a distortion map
+    def distortionMap(self, in_ele, in_azi, out_ele, out_azi, method="nearest"):
+        """
+        create a distortion map for fast distortion.
+        This map can be used to distort efficiently with 
+        scipy.ndimage.interpolation.map_coordinates(...)
 
+        args:
+            in_ele, in_azi (array_like): input image elevation and azimuth arrays
+            out_ele, out_azi (array:like): output image elevation and azimuth arrays
+            method (str): interpolation method, see scipy.interpolate.griddata
+
+        returns:
+            array of shape (shape(out_ele/out_azi),2) with interpolated 
+            coordinates in input array
+        """
+        if not np.shape(in_ele) == np.shape(in_azi) or \
+           not np.shape(out_ele) == np.shape(out_azi):
+           raise ValueError("elevation/azimuth arrays have to have same shape!")
+
+        # input/output shape
+        in_shape = np.shape(in_ele)
+        out_shape = np.shape(out_ele)
+
+        # input image coordinates (row, col)
+        in_row, in_col = np.mgrid[:in_shape[0],:in_shape[1]]
+        in_row = in_row.reshape(np.prod(in_shape)) # one dimension
+        in_col = in_col.reshape(np.prod(in_shape)) # one dimension
+    
+        # input image coordinates (ele, azi)
+        points = (in_ele.reshape(np.prod(in_shape)), 
+                  in_azi.reshape(np.prod(in_shape)))
+        # output image coordinates (ele, azi)
+        xi = (out_ele.reshape(np.prod(out_shape)),
+              out_azi.reshape(np.prod(out_shape)))
+    
+        logger.debug("interpolation started...")
+
+        out_row_from_in = scipy.interpolate.griddata(
+            points = points,
+            values = in_row,
+            xi     = xi,
+            method = method
+            )
+        out_col_from_in = scipy.interpolate.griddata(
+            points = points,
+            values = in_col,
+            xi     = xi,
+            method = method
+            )
+
+        # stack row and col together
+        distmap = np.dstack(
+                # reshape to output shape
+                (out_col_from_in.reshape(out_shape),
+                 out_row_from_in.reshape(out_shape))
+                 )
+
+        logger.debug("interpolation ended!")
+
+        return distmap # return the distortion map
+        
 
 ###############
 ### Example ###
@@ -285,13 +346,16 @@ class FisheyeProjection(object):
 if __name__ == '__main__':
     import numpy as np
     import scipy.interpolate
+    import scipy.ndimage
     import image
     import os
     import logging
     logging.basicConfig(level=logging.DEBUG)
 
     # read image
-    img = image.Image(os.path.abspath("../examples/images/stereo/Image_20160527_144000_UTCp1_3.jpg"))
+    img = image.Image(os.path.abspath(
+        "../examples/images/stereo/Image_20160527_144000_UTCp1_3.jpg"
+        ))
     # convert to grayscale
     img.image = img.convert("L")
     # resize image
@@ -305,24 +369,21 @@ if __name__ == '__main__':
     ele=f.createFisheyeElevation(shape)
     azi=f.createAzimuth(shape,maxelepos=(int(shape[0]/2),0))
     # create distorted rect coordinates
-    x=np.linspace(-20,20,num=100)
-    y=np.linspace(-20,20,num=100)
+    x=np.linspace(-20,20,num=300)
+    y=np.linspace(-20,20,num=300)
     z=6 
     ele_rect=f.createRectElevation(x,y,z)
     azi_rect=f.createRectAzimuth(x,y)
 
-    imgvalues = img.data.reshape(np.prod(np.shape(img.data)))
-    points = (ele.reshape(np.prod(np.shape(ele))), azi.reshape(np.prod(np.shape(azi))))
-    xi = (ele_rect.reshape(np.prod(np.shape(ele_rect))), azi_rect.reshape(np.prod(np.shape(azi_rect))))
+    # create distortion map
+    distmap = f.distortionMap(ele, azi, ele_rect, azi_rect, "nearest")
 
-    logger.debug("interpolation started...")
-    corr = scipy.interpolate.griddata(
-        points = points,
-        values = imgvalues,
-        xi     = xi
+    logger.debug("remap coordinates...")
+    corr = scipy.ndimage.interpolation.map_coordinates(
+        input = img.data,
+        coordinates = distmap.T
         )
-    corr.shape = (len(y),len(x))
-    logger.debug("interpolation ended!")
+    logger.debug("remappig ended!")
 
     # plot results
     import matplotlib.pyplot as plt
