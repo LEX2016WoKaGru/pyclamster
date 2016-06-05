@@ -24,10 +24,11 @@ Created for pyclamster
 
 # Internal modules
 from .image import *
+from .fisheye import *
 from .maskstore import *
 from .camera import *
 
 __version__ = "0.1"
 
-__all__ = ["Image", "Camera", "MaskStore"]
+__all__ = ["Image", "Camera", "FisheyeProjection","MaskStore"]
 
