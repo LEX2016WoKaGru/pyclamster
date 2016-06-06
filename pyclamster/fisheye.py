@@ -25,6 +25,7 @@ import logging
 # External modules
 import numpy as np
 import numpy.ma as ma
+import scipy.interpolate
 
 # Internal modules
 
@@ -277,6 +278,130 @@ class FisheyeProjection(object):
         azi[azi > 2 * np.pi] = azi[azi > 2 * np.pi] - 2 * np.pi
         return azi
 
+    # create a distortion map
+    def distortionMap(self, in_ele, in_azi, out_ele, out_azi, method="nearest"):
+        """
+        create a distortion map for fast distortion.
+        This map can be used to distort efficiently with 
+        scipy.ndimage.interpolation.map_coordinates(...)
+
+        args:
+            in_ele, in_azi (array_like): input image elevation and azimuth arrays
+            out_ele, out_azi (array:like): output image elevation and azimuth arrays
+            method (str): interpolation method, see scipy.interpolate.griddata
+
+        returns:
+            array of shape (shape(out_ele/out_azi),2) with interpolated 
+            coordinates in input array. This array can directly be used as
+            coordinate array for scipy.ndimage.interpolation.map_coordinates()
+        """
+        if not np.shape(in_ele) == np.shape(in_azi) or \
+           not np.shape(out_ele) == np.shape(out_azi):
+           raise ValueError("elevation/azimuth arrays have to have same shape!")
+
+        # input/output shape
+        in_shape = np.shape(in_ele)
+        out_shape = np.shape(out_ele)
+
+        # input image coordinates (row, col)
+        in_row, in_col = np.mgrid[:in_shape[0],:in_shape[1]]
+        in_row = in_row.reshape(np.prod(in_shape)) # one dimension
+        in_col = in_col.reshape(np.prod(in_shape)) # one dimension
+    
+        # input image coordinates (ele, azi)
+        points = (in_ele.reshape(np.prod(in_shape)), 
+                  in_azi.reshape(np.prod(in_shape)))
+        # output image coordinates (ele, azi)
+        xi = (out_ele.reshape(np.prod(out_shape)),
+              out_azi.reshape(np.prod(out_shape)))
+    
+        logger.debug("interpolation started...")
+
+        out_row_from_in = scipy.interpolate.griddata(
+            points = points,
+            values = in_row,
+            xi     = xi,
+            method = method
+            )
+        out_col_from_in = scipy.interpolate.griddata(
+            points = points,
+            values = in_col,
+            xi     = xi,
+            method = method
+            )
+
+        # stack row and col together
+        distmap = np.dstack(
+                # reshape to output shape
+                (out_col_from_in.reshape(out_shape),
+                 out_row_from_in.reshape(out_shape))
+                 )
+
+        logger.debug("interpolation ended!")
+
+        # return the distortion map
+        return DistortionMap(map=distmap, src_shape=in_shape) 
+
+
+# class for distortionmaps
+class DistortionMap(object):
+    """
+    class that holds a distortion map. Practically a subclass to ndarray.
+
+    properties:
+        map (array): the distortion map. If you set this, src_shape will be reset.
+        src_shape (int tuple): shape of the input image used initially for the map
+        out_shape (int tuple): shape of the output image when applying the map
+    """
+    def __init__(self, map, src_shape=None):
+        """
+        constructor
+
+        args:
+            map (array): distortion map, shape (shape(output),dim(input)) 
+            src_shape (optional[int tuple]): shape of input image. If not
+                specified, no tests can be performed if map is applied
+        """
+        self.map = map
+        self.src_shape = src_shape
+
+    ##################
+    ### properties ###
+    ##################
+    # every attribute request (except _mapitself) goes directly to _map
+    # this makes this class practically a subclass to ndarray
+    def __getattr__(self, key):
+        if key == '_map':
+            raise AttributeError(" ".join([
+                "Can't access _map attribute.",
+                ]))
+        return getattr(self._map, key)
+
+    @property
+    def map(self):
+        return self._map
+
+    @map.setter
+    def map(self, newmap):
+        self._map = newmap
+        self.src_shape = None
+        self.out_shape = np.shape(self.map)
+
+    @property
+    def out_shape(self):
+        return self._out_shape
+
+    @out_shape.setter
+    def out_shape(self, newshape):
+        self._out_shape = newshape
+
+    @property
+    def src_shape(self):
+        return self._src_shape
+
+    @src_shape.setter
+    def src_shape(self, newshape):
+        self._src_shape = newshape
 
 
 ###############
@@ -285,15 +410,18 @@ class FisheyeProjection(object):
 if __name__ == '__main__':
     import numpy as np
     import scipy.interpolate
+    import scipy.ndimage
     import image
     import os
     import logging
     logging.basicConfig(level=logging.DEBUG)
 
     # read image
-    img = image.Image(os.path.abspath("../examples/images/stereo/Image_20160527_144000_UTCp1_3.jpg"))
+    img = image.Image(os.path.abspath(
+        "../examples/images/stereo/Image_20160527_144000_UTCp1_4.jpg"
+        ))
     # convert to grayscale
-    img.image = img.convert("L")
+    #img.image = img.convert("L")
     # resize image
     img.image = img.resize((800,800))
 
@@ -305,24 +433,17 @@ if __name__ == '__main__':
     ele=f.createFisheyeElevation(shape)
     azi=f.createAzimuth(shape,maxelepos=(int(shape[0]/2),0))
     # create distorted rect coordinates
-    x=np.linspace(-20,20,num=100)
-    y=np.linspace(-20,20,num=100)
+    x=np.linspace(-20,20,num=300)
+    y=np.linspace(-20,20,num=300)
     z=6 
     ele_rect=f.createRectElevation(x,y,z)
     azi_rect=f.createRectAzimuth(x,y)
 
-    imgvalues = img.data.reshape(np.prod(np.shape(img.data)))
-    points = (ele.reshape(np.prod(np.shape(ele))), azi.reshape(np.prod(np.shape(azi))))
-    xi = (ele_rect.reshape(np.prod(np.shape(ele_rect))), azi_rect.reshape(np.prod(np.shape(azi_rect))))
+    # create distortion map
+    distmap = f.distortionMap(ele, azi, ele_rect, azi_rect, "nearest")
 
-    logger.debug("interpolation started...")
-    corr = scipy.interpolate.griddata(
-        points = points,
-        values = imgvalues,
-        xi     = xi
-        )
-    corr.shape = (len(y),len(x))
-    logger.debug("interpolation ended!")
+    # distort image
+    distimage = img.applyDistortionMap(distmap)
 
     # plot results
     import matplotlib.pyplot as plt
@@ -330,8 +451,8 @@ if __name__ == '__main__':
     plt.title("original image")
     plt.imshow(img, cmap="Greys_r", interpolation="nearest")
     plt.subplot(322)
-    plt.title("distorted image")
-    plt.imshow(corr, cmap="Greys_r", interpolation="nearest")
+    plt.title("rectified image")
+    plt.imshow(distimage, cmap="Greys_r", interpolation="nearest")
     plt.subplot(323)
     plt.title("image elevation")
     plt.imshow(ele,interpolation="nearest")
@@ -341,11 +462,11 @@ if __name__ == '__main__':
     plt.imshow(azi,interpolation="nearest")
     plt.colorbar()
     plt.subplot(324)
-    plt.title("distorted elevation")
+    plt.title("rectified elevation")
     plt.imshow(ele_rect,interpolation="nearest")
     plt.colorbar()
     plt.subplot(326)
-    plt.title("distorted azimuth")
+    plt.title("rectified azimuth")
     plt.imshow(azi_rect,interpolation="nearest")
     plt.colorbar()
     plt.show()

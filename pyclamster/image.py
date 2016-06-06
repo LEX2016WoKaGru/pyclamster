@@ -29,8 +29,10 @@ import copy
 # External modules
 import PIL.Image
 import numpy as np
+import scipy
 
 # Internal modules
+import fisheye
 
 
 __version__ = "0.1"
@@ -288,8 +290,14 @@ class Image(object):
         return ret  # result
 
     # try to load the time from image EXIF data
-    def loadEXIFtime(self):
-        self.time = self.getEXIFtime()
+    def loadEXIFtime(self, filename = None):
+        if filename is None:
+            filename = self.path
+        if filename is None:
+            logger.warning("No filename specified to read EXIF data.")
+        logger.debug(
+            "trying to load time from image '{}'".format(self.path))
+        self.time = self.getEXIFtime( filename )
 
     # load the image
     def loadImage(self, image=None):
@@ -343,6 +351,22 @@ class Image(object):
             # init things
             # self.setDefaultParameters()
             # self.applyCameraCorrections()
+
+
+    # load time from filename
+    def _get_time_from_filename(self, fmt, filename=None):
+        if isinstance(filename, str): f = filename
+        else:                         f = self.path
+
+        if not f is None:
+            f = os.path.basename(f)
+            return datetime.datetime.strptime(f, fmt)
+        else:
+            raise ValueError("Neither filename nor self.path is defined.")
+
+    # try to load the time from filename
+    def loadTimefromfilename(self, fmt, filename=None):
+        self.time = self._get_time_from_filename(fmt, filename)
 
     # set time of image
     def setTime(self, time):
@@ -473,6 +497,55 @@ class Image(object):
             maskedimage (Image): new instance of Image class with applied mask
         """
         pass
+
+    ######################
+    ### Transformation ###
+    ######################
+    def applyDistortionMap(self, map, inplace=False, order=0):
+        # for some reason, isinstance(map, fisheye.DistortionMap)
+        # or isinstance(map, DistortionMap) does not work?!
+        # this solves it...
+        if not map.__class__.__name__ == "DistortionMap":
+            raise TypeError("map has to be a DistortionMap")
+
+        if not np.shape(self.data)[:2] == map.src_shape:
+            logger.warning("Map source shape is not defined or does not match!")
+
+        if inplace: image = self # operate on this image
+        else:       image = Image( self ) # copy over this image
+
+        # apply map
+        logger.debug("applying distortion map...")
+
+        # This is NOT very elegant...
+        # I don't know a better possibility to loop over the last index
+        # than this. The problem is, that a grayscale image has no third index.
+        # ...
+        if len(np.shape(image.data)) == 3:
+            for layer in range(np.shape(image.data)[2]):
+                layerout = scipy.ndimage.interpolation.map_coordinates(
+                    input = self.data[:,:,layer],
+                    coordinates = map.T,
+                    order = order
+                    )
+                try:    out = np.dstack( (out, layerout) ) # add to stack
+                except: out = layerout # first addition
+            image.data = out # set image data
+        else: # only 2 dim...
+            image.data = scipy.ndimage.interpolation.map_coordinates(
+                input = image.data,
+                coordinates = map.T,
+                order = order
+                )
+            
+        logger.debug("done applying distortion map.")
+
+        if not inplace: # return new image if not inplace
+            return image
+
+
+
+
 
 
 if __name__ == '__main__':
