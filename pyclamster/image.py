@@ -77,8 +77,6 @@ class Image(object):
             zenith_pixel(optional[numpy array]): pixel with 0 elevation and center point for azimuth - shape(2)
         """
 
-
-
         # set metadata
         self.time = time
         self.projection = projection
@@ -91,32 +89,31 @@ class Image(object):
         self.loadImage(image)
 
         # create empty elevation and azimuth
-        try: # if image is already defined
-            width, height, *rest  = np.shape(self.image)
-            self.elevation = np.empty( (width, height) )
-            self.azimuth   = np.empty( (width, height) )
-        except: # image not yet defined
+        try:  # if image is already defined
+            width, height, *rest = np.shape(self.image)
+            self.elevation = np.empty((width, height))
+            self.azimuth = np.empty((width, height))
+        except:  # image not yet defined
             # self.data      = np.empty( (0) ) # TODO does not work like this
-            #self.elevation = np.empty( (0) )
-            #self.azimuth   = np.empty( (0) )
+            # self.elevation = np.empty( (0) )
+            # self.azimuth   = np.empty( (0) )
             # don't do anything for now.
             pass
-            
 
-        #        self.azimuth = azimuth
-        #        self.elevation = elevation
-        #        self.zenith_pixel = zenith_pixel #TODO add possibility to adjust zenith_pixel for camera correction
-        #        self.elevation_angle_per_pixel = elevation_angle_per_pixel
-        #        self.azimuth_north_angle = azimuth_north_angle
-        #        self.azimuth_direction = azimuth_direction
-        #        self.timestamp = timestamp
 
-        # load image from path if specified
-        #        if isinstance(path, str) and os.path.isfile(path):
-        #            self.loadImage(path)
-        #        else:
-        #            self.setMissingParameters()
+            #        self.azimuth = azimuth
+            #        self.elevation = elevation
+            #        self.zenith_pixel = zenith_pixel #TODO add possibility to adjust zenith_pixel for camera correction
+            #        self.elevation_angle_per_pixel = elevation_angle_per_pixel
+            #        self.azimuth_north_angle = azimuth_north_angle
+            #        self.azimuth_direction = azimuth_direction
+            #        self.timestamp = timestamp
 
+            # load image from path if specified
+            #        if isinstance(path, str) and os.path.isfile(path):
+            #            self.loadImage(path)
+            #        else:
+            #            self.setMissingParameters()
 
     #############################################
     ### attributes/properties getters/setters ###
@@ -124,13 +121,13 @@ class Image(object):
     # every attribute request (except _image itself) goes directly to _image
     # this makes this class practically a subclass to PIL.Image.Image
     def __getattr__(self, key):
-        #logger.debug("requested attribute '{}'".format(key))
+        # logger.debug("requested attribute '{}'".format(key))
         if key == '_image':
             raise AttributeError(" ".join([
                 "Can't access _image attribute.",
                 "Did you try to access properties before",
                 "loading an image?"
-                ]))
+            ]))
         return getattr(self._image, key)
 
     @property
@@ -139,10 +136,10 @@ class Image(object):
 
     @projection.setter
     def projection(self, newprojection):
-        #if newprojection in (None,"equidistant","stereographic","orthogonal","equiangle"):
+        # if newprojection in (None,"equidistant","stereographic","orthogonal","equiangle"):
         self._projection = newprojection
-        #else:
-            #raise ValueError("unimplemented projection '{}'".format(newprojection))
+        # else:
+        # raise ValueError("unimplemented projection '{}'".format(newprojection))
 
     @property
     def time(self):
@@ -150,7 +147,7 @@ class Image(object):
 
     @time.setter
     def time(self, newtime):
-        if isinstance(newtime,datetime.datetime) or newtime is None:
+        if isinstance(newtime, datetime.datetime) or newtime is None:
             self._time = newtime
         else:
             raise ValueError("time has to be a datetime.datetime object.")
@@ -182,9 +179,10 @@ class Image(object):
 
         # set values
         self._image = image
-        self._data  = np.array( self._image ) 
+        self._data = np.array(self._image)
 
-    # the data property is a wrapper around _data
+        # the data property is a wrapper around _data
+
     @property
     def data(self):
         return self._data
@@ -199,18 +197,17 @@ class Image(object):
         args:
             newdata(numpy.ndarray): the new image data, shape(width, height, {1,3})
         """
-        try: # check if image is set
+        try:  # check if image is set
             mode = self._image.mode
-        except: # no image set
+        except:  # no image set
             raise AttributeError(" ".join([
                 "No image was specified until now.",
                 "Can't determine image mode to set new data."
-                ]))
+            ]))
 
         # set new data
         self._data = newdata
-        self._image = PIL.Image.fromarray( self._data , mode)
-
+        self._image = PIL.Image.fromarray(self._data, mode)
 
     @property
     def elevation(self):
@@ -220,17 +217,19 @@ class Image(object):
     def elevation(self, newelevation):
         if not newelevation is None:
             try:
-                widthnew, heightnew  = np.shape(newelevation)
-                #logger.debug("widthnew: {}, heightnew: {}".format(widthnew,heightnew))
+                widthnew, heightnew = np.shape(newelevation)
+                # logger.debug("widthnew: {}, heightnew: {}".format(widthnew,heightnew))
                 width, height, *rest = np.shape(self.image)
-                #logger.debug("width: {}, height: {}".format(width,height))
-                if (width,height) == (widthnew,heightnew):
+                # logger.debug("width: {}, height: {}".format(width,height))
+                if (width, height) == (widthnew, heightnew):
                     self._elevation = newelevation
                 else:
-                    raise ValueError("shape of new elevation does not match image shape.")
+                    raise ValueError(
+                        "shape of new elevation does not match image shape.")
             except:
-                raise ValueError("elevation must be a numpy.ndarray with shape according to image.")
-            
+                raise ValueError(
+                    "elevation must be a numpy.ndarray with shape according to image.")
+
     @property
     def azimuth(self):
         return self._azimuth
@@ -239,16 +238,18 @@ class Image(object):
     def azimuth(self, newazimuth):
         if not newazimuth is None:
             try:
-                widthnew, heightnew  = np.shape(newazimuth)
-                #logger.debug("widthnew: {}, heightnew: {}".format(widthnew,heightnew))
+                widthnew, heightnew = np.shape(newazimuth)
+                # logger.debug("widthnew: {}, heightnew: {}".format(widthnew,heightnew))
                 width, height, *rest = np.shape(self.image)
-                #logger.debug("width: {}, height: {}".format(width,height))
-                if (width,height) == (widthnew,heightnew):
+                # logger.debug("width: {}, height: {}".format(width,height))
+                if (width, height) == (widthnew, heightnew):
                     self._azimuth = newazimuth
                 else:
-                    raise ValueError("shape of new azimuth does not match image shape.")
+                    raise ValueError(
+                        "shape of new azimuth does not match image shape.")
             except:
-                raise ValueError("azimuth must be a numpy.ndarray with shape according to image.")
+                raise ValueError(
+                    "azimuth must be a numpy.ndarray with shape according to image.")
 
     ###############
     ### methods ###
@@ -265,32 +266,30 @@ class Image(object):
             datetime.datetime object or None
         """
         ret = None
-        try: # try to read time
-            try: # try to read Image from path
+        try:  # try to read time
+            try:  # try to read Image from path
                 image = PIL.Image.open(path)
-            except: # otherwise take current image
+            except:  # otherwise take current image
                 image = self
-            exif = image._getexif() # read EXIF data
-            t = exif[0x9003] # get exif ctime value
+            exif = image._getexif()  # read EXIF data
+            t = exif[0x9003]  # get exif ctime value
             logger.info("EXIF ctime of image is '{}'".format(t))
-            try: # try to convert to datetime object
+            try:  # try to convert to datetime object
                 t = datetime.datetime.strptime(str(t), "%Y:%m:%d %H:%M:%S")
                 logger.debug(
-                   "converted EXIF ctime to datetime object.")
+                    "converted EXIF ctime to datetime object.")
                 ret = t
             except:
                 logger.warning(
                     "cannot convert EXIF ctime to datetime object.".format(t))
-        except (AttributeError, ValueError, TypeError): # reading didn't work
+        except (AttributeError, ValueError, TypeError):  # reading didn't work
             logger.warning("cannot read EXIF time from image")
 
-        return ret # result
-        
+        return ret  # result
 
     # try to load the time from image EXIF data
     def loadEXIFtime(self):
         self.time = self.getEXIFtime()
-
 
     # load the image
     def loadImage(self, image=None):
@@ -311,8 +310,8 @@ class Image(object):
             # copy over attributes
             self.__dict__.update(image.__dict__)
 
-                
-                
+
+
         # argument looks like path
         elif isinstance(image, str):
             logger.debug("image argument is a string")
@@ -320,30 +319,30 @@ class Image(object):
                 logger.debug("image argument is a valid path")
                 logger.info("reading image from path")
                 self.image = PIL.Image.open(image)
-                self.path = image # set path
+                self.path = image  # set path
             else:
                 logger.warning(
                     "image argument is not a valid path! Can't read image.")
-                #self.image = PIL.Image.new(mode="RGB", size=(1, 1))
+                # self.image = PIL.Image.new(mode="RGB", size=(1, 1))
         # looks like numpy array
         elif isinstance(image, np.ndarray):
             logger.debug("argument is a numpy array")
             logger.debug("creating image from numpy array")
-            self.path = None # reset path because data comes from array
+            self.path = None  # reset path because data comes from array
             raise Exception(" ".join([
-                    "Creating Image from ndarray is not implemented yet.",
-                    "use PIL.Image.fromarray and pass that to loadImage() instead."
-                    ]))
+                "Creating Image from ndarray is not implemented yet.",
+                "use PIL.Image.fromarray and pass that to loadImage() instead."
+            ]))
             self.data = image
             # TODO: does not work like this, mode has to be specified somehow
         # nothing correct specified
         else:
             logger.info("nothing specified to read image. Nothing loaded.")
-            #self.image = PIL.Image.new(mode="RGB", size=(1, 1)) # hard coded
+            # self.image = PIL.Image.new(mode="RGB", size=(1, 1)) # hard coded
 
-        # init things
-        #self.setDefaultParameters()
-        #self.applyCameraCorrections()
+            # init things
+            # self.setDefaultParameters()
+            # self.applyCameraCorrections()
 
     # set time of image
     def setTime(self, time):
@@ -356,12 +355,13 @@ class Image(object):
         if isinstance(time, datetime.datetime):
             self.time = time
         else:
-            logger.warning("time is not a datetime object. Ignoring time setting.")
+            logger.warning(
+                "time is not a datetime object. Ignoring time setting.")
 
     def setMissingParameters(self):
         ### set zenith pixel ###
         if not isinstance(self.zenith_pixel, np.ndarray) \
-           and isinstance(self.data, np.ndarray):
+                and isinstance(self.data, np.ndarray):
             self.zenith_pixel = self._calcCenter()
 
         ### set elevation-angle per pixel ###
@@ -369,7 +369,6 @@ class Image(object):
                         isinstance(self.elevation_angle_per_pixel, int)) and \
                 isinstance(self.data, np.ndarray):
             self.elevation_angle_per_pixel = np.pi / self.data.shape[0]
-
 
     def _calcCenter(self):
         """
@@ -380,7 +379,6 @@ class Image(object):
         """
         center = np.round(np.array(self.data.shape) * 0.5)
         return center
-
 
     ##########################
     ### Image manipulation ###
@@ -396,13 +394,12 @@ class Image(object):
         # crop image
         # somehow, self.image.crop( box ) alone does not work,
         # the self.image property has to be set...
-        self.image = self.image.crop( box )
+        self.image = self.image.crop(box)
         # crop metadata
         if not self.elevation is None:
-            self.elevation = self.elevation[box[1]:box[3],box[0]:box[2]]
+            self.elevation = self.elevation[box[1]:box[3], box[0]:box[2]]
         if not self.azimuth is None:
-            self.azimuth   = self.azimuth  [box[1]:box[3],box[0]:box[2]]
-
+            self.azimuth = self.azimuth[box[1]:box[3], box[0]:box[2]]
 
     def cut(self, box):
         """
@@ -418,14 +415,32 @@ class Image(object):
         # copy image
         # deepcopy does not work somehow, so create a new image exactly like
         # this one
-        cutimage = Image( self )
+        cutimage = Image(self)
 
         # crop image
-        cutimage.crop( box )
+        cutimage.crop(box)
 
         return cutimage
 
+    def cutNeighbour(self, center, nh_size=10, offset=(0, 0)):
+        """
+        Cut out a mini image around a center with given neighbourhood size.
+        Args:
+            center (tuple[int]): The position of the center (x, y).
+            nh_size (int): The neighbourhood size.
+            offset (optional[tuple[int]]): The possible offset of the center,
+                due to cropped image (x,y).
 
+        Returns:
+            mini_image (numpy.ndarray): The cutted mini image data.
+        """
+        box = [
+            center[0] - nh_size + offset[0],
+            center[1] - nh_size + offset[1],
+            center[0] + nh_size + offset[0],
+            center[1] + nh_size + offset[1]
+            ]
+        return self.cut(box).data
 
     def cropDegree(self, deg=45. * np.pi / 180.):
         """
@@ -449,7 +464,6 @@ class Image(object):
         # TODO add Image init variables
         cropped_image = Image()
         return cropped_image
-
 
     def applyMask(self, mask):
         """

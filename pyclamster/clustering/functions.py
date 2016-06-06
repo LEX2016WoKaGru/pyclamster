@@ -51,11 +51,8 @@ def localBrightness(data, nh_size=10):
     Returns:
         transformed_data (numpy array): The transformed data array.
     """
-    len_dim2 = 1
-    if len(data.shape) == 2:
-        len_dim2 = data.shape[2]
     mean = scipy.ndimage.filters.uniform_filter(
-        data, size=(nh_size, nh_size, len_dim2), mode="constant")
+        data, size=(nh_size*2, nh_size*2, data.shape[2]), mode="constant")
     return data - mean
 
 
@@ -70,8 +67,8 @@ def rbDetection(data):
     Returns:
         transformed_data (numpy array): The transformed data array.
     """
-    blue = data[:, :, 0]
-    red = data[:, :, -1]
+    blue = data[:, :, -1]
+    red = data[:, :, 0]
     transformed_data = (blue - red) / (blue + red)
     transformed_data[blue + red == 0] = 1
     return transformed_data
@@ -92,6 +89,6 @@ def listShuffleSplit(lst, split_size=10):
     random.shuffle(lst)
     print(lst)
     splitted_lists = [
-        lst[i:i + split_size] if (i + split_size) < len(lst) else lst[i:-1] for
+        lst[i:i + split_size] if (i + split_size) < len(lst) else lst[i:] for
         i in range(0, len(lst), split_size)]
     return splitted_lists

@@ -25,6 +25,7 @@ import os
 import glob
 import pickle
 import time
+from copy import deepcopy
 
 # External modules
 import scipy
@@ -49,9 +50,10 @@ algorithm with an unsupervised approach.
 Possible new version of k-means necessary.
 """
 
-directory = "./images/stereo"
+directory = "./images"
 all_images = glob.glob(os.path.join(directory, "*.jpg"))
 k_cluster = 2
+
 
 concated_images = None
 labels = None
@@ -63,37 +65,47 @@ used_labels = 0
 
 all_images = listShuffleSplit(all_images, 10)
 for image_list in all_images:
+    concated_images = None
     for image_path in image_list:
         img = pycl.Image(image_path)
         """
         Here comes some pre-process corrections, like projection correction etc.
         """
-        img.data=localBrightness(img.data)
+        img.data = localBrightness(img.data, nh_size=10)
+        #img_data = img_data[480:1440, 480:1440]
         img.crop((480, 480, 1440, 1440))
         img_data = rbDetection(img.data)
         w, h = original_shape = tuple(img_data.shape)
         if concated_images is None:
-            concated_images = np.reshape(img_data, (w * h, 1))
+            concated_images = np.reshape(img_data, (w * h, -1))
         else:
             concated_images = np.r_[concated_images,
-                                    np.reshape(img_data, (w * h, 1))]
-    #print(concated_images.shape)
-    start_time = time.time()
-    cluster.partial_fit(concated_images)
-    print(concated_images.shape[0], time.time()-start_time)
-    labels = Labels(cluster.labels_[used_labels:])
-    used_labels = len(cluster.labels_)
-    splitted_labels = labels.splitUp(indices_or_sections=len(image_list))
-    for key, label in enumerate(splitted_labels):
-        label.reshape((w, h), replace=True)
-        start_time = time.time()
-        label.filterRelevants(10, True)
-        positions, y = label.getLabelSamples()
-        targets += y
-        img = pycl.Image(image_list[key])
-        for coord in positions:
-            mini_images.append(img.nbCrop(coord, neighbourhood_size=10))
+                                    np.reshape(img_data, (w * h, -1))]
 
-# training_data = {"X": mini_images, "y": targets}
-# pickle.dump(training_data, open("training.p", "wb"))
+    start_time = time.time()
+    try:
+        cluster.labels_
+        cluster.partial_fit(concated_images)
+    except:
+        cluster.fit(concated_images)
+    print(concated_images.shape[0], time.time()-start_time)
+    labels = Labels(cluster.labels_)
+    splitted_labels = labels.splitUp(indices_or_sections=len(image_list))
+    for key, splitted_label in enumerate(splitted_labels):
+        splitted_label.reshape((w, h), replace=True)
+        scipy.misc.imsave("%d.png"%key, splitted_label.labels)
+        start_time = time.time()
+        splitted_label.filterRelevants(10, True)
+        positions, y = splitted_label.getLabelSamples()
+        targets += y
+        start_time = time.time()
+        # img = pycl.Image(image_list[key])
+        # for coord in positions:
+        #     mini_images.append(
+        #         img.cutNeighbour(coord, nh_size=10, offset=(480, 480)))
+        print(image_list[key], len(positions), time.time()-start_time)
+
+print([True for t in targets if t==0])
+training_data = {"X": mini_images, "y": targets}
+pickle.dump(training_data, open("training.p", "wb"))
 

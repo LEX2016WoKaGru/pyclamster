@@ -135,6 +135,7 @@ class Labels(object):
             temp[temp!=val] = False
             temp = scipy.ndimage.binary_erosion(
                 temp.astype(int), structure=np.ones((nh_size*2+1, nh_size*2+1)))
+            temp = temp.astype(bool)
             if mask is None:
                 mask = temp
             else:
@@ -142,7 +143,7 @@ class Labels(object):
         if replace:
             self.mask = mask
         else:
-            self.labels[mask]
+            return self.labels[mask]
 
     def getLabelSamples(self):
         """
@@ -152,7 +153,7 @@ class Labels(object):
             labels (list[int/bool]): The labels as integer or tuple
                 as the original labels.
         """
-        labels = self.labels.ravel()
+        labels = self.labels.ravel().tolist()
         if not self.mask is None:
             positions = np.asarray(np.where(self.mask)).T.tolist()
         else:

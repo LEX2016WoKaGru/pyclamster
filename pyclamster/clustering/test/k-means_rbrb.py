@@ -32,6 +32,8 @@ import scipy.ndimage
 from sklearn.cluster import MiniBatchKMeans
 from sklearn.preprocessing import StandardScaler
 
+from pyclamster.clustering.functions import localBrightness, rbDetection
+
 # from pyextremelm.builder import ExtremeLearningMachine
 # from pyextremelm.metrics import NoMetric
 # from pyextremelm.builder.layers.unsupervised import ELMAE
@@ -70,11 +72,8 @@ for i in range(1, 5):
         image[center - good_angle_dpi:center + good_angle_dpi,
               center - good_angle_dpi:center + good_angle_dpi, :])
 
-    image_mean = scipy.ndimage.filters.uniform_filter(
-        image, size=(neighbour_size, neighbour_size, 3), mode="constant")
-    image = image-image_mean
-    anomaly_image = (image[:,:,2]-image[:,:,0])/(image[:,:,2]+image[:,:,0])
-    anomaly_image[(image[:,:,2]+image[:,:,0])==0] = 0
+    image = localBrightness(image)
+    anomaly_image = rbDetection(image)
 
     anomaly_image = anomaly_image[center - good_angle_dpi:center + good_angle_dpi,
                                   center - good_angle_dpi:center + good_angle_dpi]
