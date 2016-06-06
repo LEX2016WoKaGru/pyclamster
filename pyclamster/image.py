@@ -290,8 +290,14 @@ class Image(object):
         
 
     # try to load the time from image EXIF data
-    def loadEXIFtime(self):
-        self.time = self.getEXIFtime()
+    def loadEXIFtime(self, filename = None):
+        if filename is None:
+            filename = self.path
+        if filename is None:
+            logger.warning("No filename specified to read EXIF data.")
+        logger.debug(
+            "trying to load time from image '{}'".format(self.path))
+        self.time = self.getEXIFtime( filename )
 
 
     # load the image
@@ -346,6 +352,22 @@ class Image(object):
         # init things
         #self.setDefaultParameters()
         #self.applyCameraCorrections()
+
+
+    # load time from filename
+    def _get_time_from_filename(self, fmt, filename=None):
+        if isinstance(filename, str): f = filename
+        else:                         f = self.path
+
+        if not f is None:
+            f = os.path.basename(f)
+            return datetime.datetime.strptime(f, fmt)
+        else:
+            raise ValueError("Neither filename nor self.path is defined.")
+
+    # try to load the time from filename
+    def loadTimefromfilename(self, fmt, filename=None):
+        self.time = self._get_time_from_filename(fmt, filename)
 
     # set time of image
     def setTime(self, time):
