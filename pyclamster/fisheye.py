@@ -431,6 +431,116 @@ class FisheyeProjection(object):
         return DistortionMap(map=distmap, src_shape=in_shape) 
 
 
+###############################
+### classes for coordinates ###
+###############################
+class Coordinates3d(object):
+    def __init__(self, dimnames):
+        # initialize base variables
+        self._dim_names = dimnames
+
+    # set the coordinate to a new value
+    def _set_coordinate(self, coord, value):
+        """
+        Set the coordinate 'coord' to value 'value'.
+        If the other coordinates are undefined, set them to empty masked arrays
+        of appropriate shape.
+
+        args:
+            value (array_like): new coordinate array. Must have 
+                the same shape as other two coordinate dimensions (if defined).
+        """
+        # find out names of remaining two dimensions
+        i = self._dim_names.index(coord)
+        otherdims = self._dim_names[:i] + self._dim_names[(i+1):]
+
+        try: # test if value is some kind of array
+            value.shape
+        except: # if not...
+            if not value is None: # if value is not None
+                try:    value = np.asarray(value) # try to convert to array
+                except: pass
+
+        # check if shape matches
+        if not value is None: # only if something was specified
+            try:
+                for dim in otherdims:
+                    if not getattr(self,dim) is None:
+                        if not value.shape == getattr(self,dim).shape:
+                            raise ValueError(
+                              "shape of new {} does not match {} shape".format(
+                                  coord,dim))
+            except:
+                raise ValueError("new {} coordinate is not array-like!".format(
+                    coord))
+
+            # set the underlying attribute
+            setattr(self,"_{}".format(coord), value)
+
+            # set other dims to completely masked array if necessary
+            for dim in otherdims:
+                if getattr(self, dim) is None:
+                    setattr(self, dim, ma.masked_array(
+                        data = np.empty(value.shape),
+                        mask = np.ones( value.shape)))
+
+
+# class for carthesian 3d coordinates
+class CarthesianCoordinates3d(Coordinates3d):
+    def __init__(self, x=None, y=None, z=None):
+        # parent constructor
+        super().__init__(dimnames = ["x","y","z"])
+
+        # initially set underlying attributes to None
+        self._x, self._y, self._z = (None, None, None)
+        # copy over the arguments
+        self.x = x
+        self.y = y
+        self.z = z
+
+    @property
+    def x(self): return self._x
+    @property
+    def y(self): return self._y
+    @property
+    def z(self): return self._z
+
+    @x.setter
+    def x(self, value): self._set_coordinate("x", value)
+    @y.setter
+    def y(self, value): self._set_coordinate("y", value)
+    @z.setter
+    def z(self, value): self._set_coordinate("z", value)
+
+
+# class for spherical 3d coordinates
+class SphericalCoordinates3d(Coordinates3d):
+    def __init__(self, azimuth=None, elevation=None, radius=None):
+        # parent constructor
+        super().__init__(dimnames = ["azimuth","elevation","radius"])
+
+        # initially set underlying attributes to None
+        self._azimuth, self._elevation, self._radius = (None, None, None)
+        # copy over the arguments
+        self.azimuth   = azimuth
+        self.elevation = elevation
+        self.radius    = radius
+
+    @property
+    def azimuth(self):   return self._azimuth
+    @property
+    def elevation(self): return self._elevation
+    @property
+    def radius(self):    return self._radius
+
+    @azimuth.setter
+    def azimuth(self, value):   self._set_coordinate("azimuth", value)
+    @elevation.setter
+    def elevation(self, value): self._set_coordinate("elevation", value)
+    @radius.setter
+    def radius(self, value):    self._set_coordinate("radius", value)
+
+
 # class for distortionmaps
 class DistortionMap(object):
     """
