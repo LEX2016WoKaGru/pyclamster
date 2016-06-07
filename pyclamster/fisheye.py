@@ -72,7 +72,7 @@ class FisheyeProjection(object):
     def createFisheyeElevation(self, 
                                shape,
                                center=None,
-                               maxangle=None,
+                               maxele=None,
                                maxelepos=None,
                                projection=None
                                ):
@@ -84,9 +84,9 @@ class FisheyeProjection(object):
             shape(2-tuple of int): shape of image (height, width)
             center(optional[2-tuple of int]): center/optical axis position on image (row,col).
                 if not specified, the center of the image is assumed.
-            maxelepos(optional[2-tuple of int]): position of pixel with maxangle visible (row,col).
+            maxelepos(optional[2-tuple of int]): position of pixel with maxele visible (row,col).
                 if not specified, the left center of the image is assumed.
-            maxangle(optional[float]): the maximum angle (rad) from optical axis/center visible on the image
+            maxele(optional[float]): the maximum angle (rad) from optical axis/center visible on the image
 
         returns:
             np.maskedarray of shape (width, height) with elevation values
@@ -104,17 +104,17 @@ class FisheyeProjection(object):
             logger.debug("center not specified as 2-tuple, assuming image center")
             center_row, center_col = int(height/2),int(width/2) # image center
 
-        # maxangle
-        if maxangle is None:
-            logger.debug("maxangle not defined, assuming 90 degrees.")
-            maxangle = np.pi / 2
+        # maxele
+        if maxele is None:
+            logger.debug("maxele not defined, assuming 90 degrees.")
+            maxele = np.pi / 2
 
-        # maxangle pixel position
+        # maxele pixel position
         try:
-            maxangle_row, maxangle_col = maxelepos
+            maxele_row, maxele_col = maxelepos
         except:
-            logger.debug("maxangle position not specified as 2-tuple, assuming left image center")
-            maxangle_row, maxangle_col = int(height/2),int(0) # left center
+            logger.debug("maxele position not specified as 2-tuple, assuming left image center")
+            maxele_row, maxele_col = int(height/2),int(0) # left center
 
 
         # projection
@@ -126,7 +126,7 @@ class FisheyeProjection(object):
             
         # width, height:          width and height of resulting array
         # center_row, center_col: center position / optical axis
-        # maxangle:               maximum angle visible on resulting array
+        # maxele:               maximum angle visible on resulting array
         # projection:             fisheye projection type
 
         # now create arrays based on projection
@@ -140,11 +140,11 @@ class FisheyeProjection(object):
             # calculate radius from center
             r = np.sqrt(col ** 2 + row ** 2)
             # maximum radius from center / norming value
-            norm = np.sqrt( (center_row - maxangle_row) ** 2 + \
-                            (center_col - maxangle_col) ** 2 )
+            norm = np.sqrt( (center_row - maxele_row) ** 2 + \
+                            (center_col - maxele_col) ** 2 )
 
             # norm the radius to the maximum angle
-            elevation = r / norm * maxangle 
+            elevation = r / norm * maxele 
 
             
         else:
@@ -155,7 +155,7 @@ class FisheyeProjection(object):
 
         # mask everything outside the sensible region
         elevation = ma.masked_where(                                   \
-            # condition: everything outside the maxangle region
+            # condition: everything outside the maxele region
             r > norm,        \
             # array
             elevation                                                  \
@@ -169,7 +169,7 @@ class FisheyeProjection(object):
                       shape,
                       center=None, 
                       maxelepos=None, 
-                      clockwise=True,
+                      clockwise=False,
                       north_angle=0,
                       ):
         """
@@ -212,21 +212,26 @@ class FisheyeProjection(object):
         # center_row, center_col: center position / optical axis
         # maxele:               maximum angle visible on resulting array
 
-        # Azimuth equal for all radial projections
+        # Azimuth is equal for all radial projections
 
         # create grid with only rows and cols
-        row, col = np.mgrid[:height, :width]
+        rows = list(reversed(range(height)))
+        cols = range(width)
+        row, col = np.meshgrid(rows, cols, indexing='ij')
+        #row, col = np.mgrid[:height,:width]
         # center rows and cols
         col = col - center_col
         row = row - center_row
-        # if clockwise azimuth, invert x
-        if clockwise: col = -col
         # calculate radius from center
         r = np.sqrt(col ** 2 + row ** 2)
 
         # calculate azimuth
-        azimuth = np.arctan2(col, -row) + np.pi + north_angle
-        azimuth[azimuth > 2 * np.pi] = azimuth[azimuth > 2 * np.pi] - 2 * np.pi
+        azimuth = self.carthesian2azimuth( 
+                        col,                 # x: column
+                        row,                 # y: reversed row (upwards)
+                        north_angle,         # north angle
+                        clockwise            # clockwise or anticlockwise
+                        )
 
         # mark outside regions when specified
         if not (maxele_row,maxele_col) == (None,None):
@@ -262,17 +267,44 @@ class FisheyeProjection(object):
         return ele
 
     # create an azimuth matrix on a rectangular grid of x,y coordinates
-    def carthesian2azimuth(self,x,y,z=None,north_angle=0):
+    def carthesian2azimuth(self,x,y,north_angle=0,clockwise=False):
         """
         create an azimuth matrix on a rectangular grid of x,y coordinates
         args:
-            x,y (array_like): x and y coordinates of rectangular grid (use e.g. np.meshgrid(xseq,yseq))
-            north_angle (float): north angle 
+            x,y (array_like): x and y coordinates of rectangular grid 
+                (use e.g. np.meshgrid(xseq,yseq))
+            north_angle (optional[float]): north angle - 0 azimuth angle offset from 
+                positive x-axis. If clockwise is True, the angle is counted
+                negative. Defaults to 0 (right side of image)
+            clockwise (optional[bool]): clockwise angle rotation? Defaults to
+                False, mathematical definition of angle.
         returns:
             an array of shape(len(y),len(x)) with azimuth values    
         """
-        azi= np.arctan2(-x, -y) + np.pi + north_angle
-        azi[azi > 2 * np.pi] = azi[azi > 2 * np.pi] - 2 * np.pi
+        north = - (north_angle % (2*np.pi) )
+        if clockwise:
+            north = - north
+
+        # note np.arctan2's way of handling x and y arguments:
+        # np.arctan2( y, x ), NOT np.arctan( x, y ) !
+        #
+        # np.arctan2( y, x ) returns the SIGNED (!)
+        # angle between positive x-axis and the vector (x,y)
+        # in radians
+
+        # the azimuth angle is...
+        # ...the SIGNED angle between positive x-axis and the vector...
+        # ...plus some full circle to only have positive values...
+        # ...minux angle defined as "NORTH" (modulo 2*pi to be precise)
+        # -->  azi is not angle to x-axis but to NORTH
+        azi = np.arctan2(y, x) + 6 * np.pi + north
+
+        # take azimuth modulo a full circle to have sensible values
+        azi = azi % (2*np.pi)
+
+        if clockwise: # turn around if clockwise
+            azi = 2 * np.pi - azi
+
         return azi
 
     # convert carthesian grid to polar r
@@ -280,29 +312,31 @@ class FisheyeProjection(object):
         return np.sqrt( x ** 2 + y ** 2 + z ** 2 )
 
     # convert polar grid to carthesian x coordinate
-    def polar2x(self, azi, ele, r):
+    def polar2x(self, azi, ele, r, north_angle):
         """
         convert polar grid to carthesian x coordinate
         args:
             azi,ele,r (array_like): azimuth, elevation and radius
+            north_angle(optional[float]): north angle on the image (rad). Defaults to 0.
         returns:
             an array with shape of azi, ele and r with x values    
         """
-        return r * np.sin( ele ) * np.cos( azi )
+        return r * np.sin( ele ) * np.cos( azi + north_angle )
 
     # convert polar grid to carthesian y coordinate
-    def polar2y(self, azi, ele, r):
+    def polar2y(self, azi, ele, r, north_angle):
         """
         convert polar grid to carthesian y coordinate
         args:
             azi,ele,r (array_like): azimuth, elevation and radius
+            north_angle(optional[float]): north angle on the image (rad). Defaults to 0.
         returns:
             an array with shape of azi, ele and r with z values    
         """
-        return r * np.sin( ele ) * np.sin( azi )
+        return r * np.sin( ele ) * np.sin( azi + north_angle )
 
     # convert polar grid to carthesian y coordinate
-    def polar2z(self, azi, ele, r):
+    def polar2z(self, ele, r):
         """
         convert polar grid to carthesian z coordinate
         args:
@@ -316,17 +350,17 @@ class FisheyeProjection(object):
         return z / np.cos( ele )
 
     # convert polar grid to carthesian grid
-    def polar2carthesian(self, azi, ele, r):
+    def polar2carthesian(self, azi, ele, r, north_angle):
         return (
-                self.polar2x(azi, ele, r), 
-                self.polar2y(azi, ele, r),
-                self.polar2z(azi, ele, r)
+                self.polar2x(azi, ele, r, north_angle), 
+                self.polar2y(azi, ele, r, north_angle),
+                self.polar2z(ele, r)
                 )
 
     # convert carthesian grid to polar grid
-    def carthesian2polar(self, x, y, z, north_angle=0):
+    def carthesian2polar(self, x, y, z, north_angle=0, clockwise=False):
         return (
-                self.carthesian2azimuth(x,y,z, north_angle), 
+                self.carthesian2azimuth(x,y,north_angle,clockwise), 
                 self.carthesian2elevation(x,y,z),
                 self.carthesian2r(x,y,z)
                 )
@@ -353,8 +387,8 @@ class FisheyeProjection(object):
            raise ValueError("elevation/azimuth arrays have to have same shape!")
 
         # input/output shape
-        in_shape = np.shape(in_coord_2)
-        out_shape = np.shape(out_coord_2)
+        in_shape = np.shape(in_coord_1)
+        out_shape = np.shape(out_coord_1)
 
         # input image coordinates (row, col)
         in_row, in_col = np.mgrid[:in_shape[0],:in_shape[1]]
@@ -362,11 +396,11 @@ class FisheyeProjection(object):
         in_col = in_col.reshape(np.prod(in_shape)) # one dimension
     
         # input image coordinates (ele, azi)
-        points = (in_coord_2.reshape(np.prod(in_shape)), 
-                  in_coord_1.reshape(np.prod(in_shape)))
+        points = (in_coord_1.reshape(np.prod(in_shape)), 
+                  in_coord_2.reshape(np.prod(in_shape)))
         # output image coordinates (ele, azi)
-        xi = (out_coord_2.reshape(np.prod(out_shape)),
-              out_coord_1.reshape(np.prod(out_shape)))
+        xi = (out_coord_1.reshape(np.prod(out_shape)),
+              out_coord_2.reshape(np.prod(out_shape)))
     
         logger.debug("interpolation started...")
 
@@ -386,8 +420,9 @@ class FisheyeProjection(object):
         # stack row and col together
         distmap = np.dstack(
                 # reshape to output shape
-                (out_col_from_in.reshape(out_shape),
-                 out_row_from_in.reshape(out_shape))
+                # not exactly sure why this has to be transponated...
+                (out_row_from_in.reshape(out_shape).T,
+                 out_col_from_in.reshape(out_shape).T)
                  )
 
         logger.debug("interpolation ended!")
@@ -469,93 +504,114 @@ if __name__ == '__main__':
     import logging
     logging.basicConfig(level=logging.DEBUG)
 
-    # read image
+    # read an image
     img = image.Image(os.path.abspath(
-        #"../examples/images/stereo/Image_20160527_144000_UTCp1_4.jpg"
-        "/home/yann/Bilder/test.jpg"
+        "../examples/images/stereo/Image_20160527_144000_UTCp1_4.jpg"
         ))
     # convert to grayscale
     #img.image = img.convert("L")
     # resize image
     #img.image = img.resize((800,800))
-    #img.image = img.resize((5,10))
 
-
-    # image shape
-    shape=np.shape(img.data)[:2]
-    outshape=(10,10)
+    ### create a fisheye projection object ###
     f=FisheyeProjection("equidistant")
 
-    # create distorted rect coordinates
-    x,y=np.meshgrid(
-        np.linspace(-20,20,num=outshape[1]),
-        np.linspace(-20,20,num=outshape[0])
+    ### create rectified coordinates ###
+    outshape=(500,500) # size of output image
+    rect_north_angle = np.pi / 2 # north angle of rectified image
+    rect_x,rect_y=np.meshgrid(
+        np.linspace(-20,20,num=outshape[1]),# image x coordinate goes right
+        np.linspace(20,-20,num=outshape[0]) # image y coordinate goes up
         )
-    #z=np.empty(outshape)
-    #z[:,:] = 10
-    z = 10
-    azi_rect, ele_rect, r_rect = f.carthesian2polar(x,y,z)
+    rect_z = 5 # rectify for height rect_z
+    rect_azi, rect_ele, rect_r = f.carthesian2polar(
+        rect_x, rect_y, rect_z,
+        north_angle = rect_north_angle,
+        clockwise=False
+        )
 
-    # create elevation and azimuth image coordinates
-    #center = (0,0)
-    center = None
-    maxelepos = (0,int(shape[1]/2))
-    ele=f.createFisheyeElevation(
+    ### create spherical coordinates of original image ###
+    shape=np.shape(img.data)[:2] # shape of image
+    orig_north_angle = 7 * np.pi / 4 # north angle of original image
+    center = None # center of elevation/azimuth in the image
+    maxelepos = (0,int(shape[1]/2)) # (one) position of maxium elevation
+    maxele = np.pi / 2.3 # maximum elevation on the image border, < 90° here
+
+    orig_ele=f.createFisheyeElevation(
         shape,
         maxelepos=maxelepos,
+        maxele=maxele,
         center=center
         )
-    azi=f.createAzimuth(
+    orig_azi=f.createAzimuth(
         shape,
         maxelepos=maxelepos,
-        center=center
+        center=center,
+        north_angle = orig_north_angle,
+        clockwise=False
         )
+    orig_r = f.polarwithheight2r(ele=orig_ele, z=rect_z)
 
-    r = f.polarwithheight2r(ele=ele, z=z)
+    ### create rectified coordinates of original image azimuth/elevation ###
+    orig_x, orig_y, orig_z  = f.polar2carthesian(orig_azi,orig_ele,orig_r,rect_north_angle)
 
-    orig_x, orig_y, orig_z  = f.polar2carthesian(azi,ele,r)
 
-    # create distortion map
-    #distmap = f.distortionMap(orig_x, orig_y, x, y, "nearest")
-    distmap = f.distortionMap(azi, ele, azi_rect, ele_rect, "nearest")
+    ### create rectification map ###
+    # based on regular grid
+    logger.debug("calculating rectification map")
+    distmap = f.distortionMap(orig_x, orig_y, rect_x, rect_y, "nearest")
+    # based directly on azimuth and elevation
+    #distmap = f.distortionMap(orig_azi, orig_ele, rect_azi, rect_ele, "nearest")
 
-    # distort image
-    distimage = img.applyDistortionMap(distmap)
+    ### rectify image ##
+    rectimage = img.applyDistortionMap(distmap)
 
-    # plot results
+    ### plot results ###
     import matplotlib.pyplot as plt
-    plt.subplot(331)
-    plt.title("original image")
+    plt.subplot(3,4,1)
+    plt.title("original image (fix)")
     plt.imshow(img.data, interpolation="nearest")
-    plt.subplot(332)
-    plt.title("image radius")
-    plt.imshow(r, interpolation="nearest")
+    plt.subplot(3,4,2)
+    plt.title("image radius (calculated)")
+    plt.imshow(orig_r, interpolation="nearest")
     plt.colorbar()
-    plt.subplot(333)
-    plt.title("rectified image")
-    plt.imshow(distimage.data, interpolation="nearest")
-    plt.subplot(334)
-    plt.title("image elevation")
-    plt.imshow(ele,interpolation="nearest")
+    plt.subplot(3,4,3)
+    plt.title("rectified r (calculated)")
+    plt.imshow(rect_r,interpolation="nearest")
     plt.colorbar()
-    plt.subplot(335)
-    plt.title("image x")
+    plt.subplot(3,4,4)
+    plt.title("rectified image (calculated)")
+    plt.imshow(rectimage.data, interpolation="nearest")
+    plt.subplot(3,4,5)
+    plt.title("image elevation (fix)")
+    plt.imshow(orig_ele,interpolation="nearest")
+    plt.colorbar()
+    plt.subplot(3,4,9)
+    plt.title("image azimuth (fix)")
+    plt.imshow(orig_azi,interpolation="nearest")
+    plt.colorbar()
+    plt.subplot(3,4,6)
+    plt.title("image x (calculated)")
     plt.imshow(orig_x,interpolation="nearest")
     plt.colorbar()
-    plt.subplot(338)
-    plt.title("image y")
+    plt.subplot(3,4,10)
+    plt.title("image y (calculated)")
     plt.imshow(orig_y,interpolation="nearest")
     plt.colorbar()
-    plt.subplot(337)
-    plt.title("image azimuth")
-    plt.imshow(azi,interpolation="nearest")
+    plt.subplot(3,4,7)
+    plt.title("rectified x (fix)")
+    plt.imshow(rect_x,interpolation="nearest")
     plt.colorbar()
-    plt.subplot(336)
-    plt.title("rectified elevation")
-    plt.imshow(ele_rect,interpolation="nearest")
+    plt.subplot(3,4,11)
+    plt.title("rectified y (fix)")
+    plt.imshow(rect_y,interpolation="nearest")
     plt.colorbar()
-    plt.subplot(339)
-    plt.title("rectified azimuth")
-    plt.imshow(azi_rect,interpolation="nearest")
+    plt.subplot(3,4,8)
+    plt.title("rectified elevation (calculated)")
+    plt.imshow(rect_ele,interpolation="nearest")
+    plt.colorbar()
+    plt.subplot(3,4,12)
+    plt.title("rectified azimuth (calculated)")
+    plt.imshow(rect_azi,interpolation="nearest")
     plt.colorbar()
     plt.show()
