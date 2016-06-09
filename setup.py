@@ -24,6 +24,7 @@ Based on: https://github.com/pypa/sampleproject
 from distutils.core import setup
 from codecs import open
 from os import path
+import setuptools
 
 # External modules
 
