@@ -154,3 +154,4 @@ $RECYCLE.BIN/
 # python stuff
 *.pyc
 __pycache__
+*.hdf5

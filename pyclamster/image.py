@@ -32,7 +32,7 @@ import numpy as np
 import scipy
 
 # Internal modules
-import fisheye
+from . import fisheye
 
 
 __version__ = "0.1"
@@ -446,25 +446,28 @@ class Image(object):
 
         return cutimage
 
-    def cutNeighbour(self, center, nh_size=10, offset=(0, 0)):
-        """
-        Cut out a mini image around a center with given neighbourhood size.
-        Args:
-            center (tuple[int]): The position of the center (x, y).
-            nh_size (int): The neighbourhood size.
-            offset (optional[tuple[int]]): The possible offset of the center,
-                due to cropped image (x,y).
-
-        Returns:
-            mini_image (numpy.ndarray): The cutted mini image data.
-        """
-        box = [
-            center[0] - nh_size + offset[0],
-            center[1] - nh_size + offset[1],
-            center[0] + nh_size + offset[0],
-            center[1] + nh_size + offset[1]
-            ]
-        return self.cut(box).data
+    # ###################
+    # Not needed anymore!
+    # ###################
+    # def cutNeighbour(self, center, nh_size=10, offset=(0, 0)):
+    #     """
+    #     Cut out a mini image around a center with given neighbourhood size.
+    #     Args:
+    #         center (tuple[int]): The position of the center (x, y).
+    #         nh_size (int): The neighbourhood size.
+    #         offset (optional[tuple[int]]): The possible offset of the center,
+    #             due to cropped image (x,y).
+    #
+    #     Returns:
+    #         mini_image (numpy.ndarray): The cutted mini image data.
+    #     """
+    #     box = [
+    #         center[0] - nh_size + offset[0],
+    #         center[1] - nh_size + offset[1],
+    #         center[0] + nh_size + offset[0],
+    #         center[1] + nh_size + offset[1]
+    #         ]
+    #     return self.cut(box).data
 
     def cropDegree(self, deg=45. * np.pi / 180.):
         """

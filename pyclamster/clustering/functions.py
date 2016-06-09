@@ -92,3 +92,32 @@ def listShuffleSplit(lst, split_size=10):
         lst[i:i + split_size] if (i + split_size) < len(lst) else lst[i:] for
         i in range(0, len(lst), split_size)]
     return splitted_lists
+
+
+def cloudPatchChecker(img, crit=0.75):
+    """
+    Function to check if patches fulfill the requirements.
+    Args:
+        img (numpy.ndarray): The mini image, which should be checked.
+            Image size (W*H*(Colour layers+1 label layer))
+        crit (optional[float]): The critical level of cloud/sky. Default 0.75.
+
+    Returns:
+        patch (numpy.ndarray / None): The patches with only the
+            colour layers. If fulfill is False, then None
+        label (int / None): The label of the image center.
+            If fulfill is False, then None
+    """
+    center = ((img.shape[0]-1)/2+1, (img.shape[1]-1)/2+1)
+    label = img[center[0], center[1], -1]
+    unique, counts = np.unique(img[:,:,-1], return_counts=True)
+    counts = dict(zip(unique, counts))
+    if isinstance(crit, float):
+        limit = crit*img.shape[0]*img.shape[1]
+    else:
+        limit = crit
+    fulfill = counts[label] >= limit
+    if fulfill:
+        return img[:,:,:-1], label
+    else:
+        return None, None

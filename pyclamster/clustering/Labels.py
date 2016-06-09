@@ -26,7 +26,10 @@ from copy import deepcopy
 
 # External modules
 import numpy as np
+import scipy
 import scipy.ndimage
+import scipy.misc
+from sklearn.feature_extraction.image import extract_patches_2d
 
 # Internal modules
 
@@ -47,14 +50,10 @@ class Labels(object):
             labels (numpy array): The array, with the labels.
         """
         self.labels = labels
-        self.mask = None
 
     @property
     def labels(self):
-        if self.mask is None:
-            return self.__labels
-        else:
-            return self.__labels[self.mask]
+        return self.__labels
 
     @labels.setter
     def labels(self, labels):
@@ -115,49 +114,66 @@ class Labels(object):
         else:
             return Labels(reshaped_labels)
 
-    def filterRelevants(self, nh_size=5, replace=False):
-        """
-        Method to constrain the labels only to labels,
-        where in a given neighbourhood the labels are the  same.
-        Args:
-            nh_size (Optional[int]): The size of the neighbourhood.
-                Default is 5.
-            replace (bool): If the original labels should be replaced.
+    # def getRelevantSamples(self, nh_size=12, crit=0.75):
+    #     xy_size = nh_size*2+1
+    #     patches = extract_patches_2d(self.labels,(xy_size, xy_size))
+    #     y_samples = []
+    #     x_samples = []
+    #     for i in range(patches.shape[0]):
+    #         val = patches[i, nh_size+1, nh_size+1]
+    #         unique, counts = np.unique(patches[i,:,:], return_counts=True)
+    #         counts = dict(zip(unique, counts))
+    #         if counts[val]>crit*xy_size*xy_size:
+    #             y_samples.append(val)
+    #             x_samples.append(i)
+    #     return x_samples, y_samples
 
-        Returns:
-            filtered_labels (optional[Labels]): If replace is False,
-                the filtered labels will be returned as new Labels instance.
-        """
-        mask = None
-        for val in np.unique(self.labels):
-            temp = deepcopy(self.labels)
-            temp[temp==val] = True
-            temp[temp!=val] = False
-            temp = scipy.ndimage.binary_erosion(
-                temp.astype(int), structure=np.ones((nh_size*2+1, nh_size*2+1)))
-            temp = temp.astype(bool)
-            if mask is None:
-                mask = temp
-            else:
-                mask = mask | temp
-        if replace:
-            self.mask = mask
-        else:
-            return self.labels[mask]
 
-    def getLabelSamples(self):
-        """
-        Method to get the positions and labels out of a Labels instance.
-        Returns:
-            positions (list[tuple[int]]): The label positions.
-            labels (list[int/bool]): The labels as integer or tuple
-                as the original labels.
-        """
-        labels = self.labels.ravel().tolist()
-        if not self.mask is None:
-            positions = np.asarray(np.where(self.mask)).T.tolist()
-        else:
-            positions = np.asarray(np.where(self.labels>-999999)).T.tolist()
-        return positions, labels
+    # def filterRelevants(self, nh_size=5, replace=False):
+    #     """
+    #     Method to constrain the labels only to labels,
+    #     where in a given neighbourhood the labels are the  same.
+    #     Args:
+    #         nh_size (Optional[int]): The size of the neighbourhood.
+    #             Default is 5.
+    #         replace (bool): If the original labels should be replaced.
+    #
+    #     Returns:
+    #         filtered_labels (optional[Labels]): If replace is False,
+    #             the filtered labels will be returned as new Labels instance.
+    #     """
+    #     mask = None
+    #     for val in [0, 1]:
+    #         print(val)
+    #         temp = deepcopy(self.labels)
+    #         temp[temp==val] = True
+    #         temp[temp!=val] = False
+    #         temp = temp.astype(int)
+    #         temp = scipy.ndimage.binary_erosion(temp, structure=np.ones((nh_size, nh_size)))
+    #         temp = temp.astype(bool)
+    #         print(self.labels[temp])
+    #         if mask is None:
+    #             mask = temp
+    #         else:
+    #             mask = mask | temp
+    #     if replace:
+    #         self.mask = mask
+    #     else:
+    #         return self.labels[mask]
+    #
+    # def getLabelSamples(self):
+    #     """
+    #     Method to get the positions and labels out of a Labels instance.
+    #     Returns:
+    #         positions (list[tuple[int]]): The label positions.
+    #         labels (list[int/bool]): The labels as integer or tuple
+    #             as the original labels.
+    #     """
+    #     labels = self.labels.ravel().tolist()
+    #     if not self.mask is None:
+    #         positions = np.asarray(np.where(self.mask)).T.tolist()
+    #     else:
+    #         positions = np.asarray(np.where(self.labels>-999999)).T.tolist()
+    #     return positions, labels
 
 
