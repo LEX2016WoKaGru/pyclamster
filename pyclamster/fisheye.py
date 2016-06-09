@@ -72,8 +72,8 @@ class FisheyeProjection(object):
     def createFisheyeElevation(self, 
                                shape,
                                center=None,
-                               maxangle=None,
-                               maxanglepos=None,
+                               maxele=None,
+                               maxelepos=None,
                                projection=None
                                ):
         """
@@ -81,19 +81,19 @@ class FisheyeProjection(object):
         according to fisheye projection type
 
         args:
-            shape(2-tuple of int): shape of image (width, height)
+            shape(2-tuple of int): shape of image (height, width)
             center(optional[2-tuple of int]): center/optical axis position on image (row,col).
                 if not specified, the center of the image is assumed.
-            maxanglepos(optional[2-tuple of int]): position of pixel with maxangle visible (row,col).
+            maxelepos(optional[2-tuple of int]): position of pixel with maxele visible (row,col).
                 if not specified, the left center of the image is assumed.
-            maxangle(optional[float]): the maximum angle (rad) from optical axis/center visible on the image
+            maxele(optional[float]): the maximum angle (rad) from optical axis/center visible on the image
 
         returns:
             np.maskedarray of shape (width, height) with elevation values
         """
         # shape
         try:
-            width, height = shape
+            height, width = shape
         except:
             raise ValueError("shape argument not defined as 2-tuple.")
 
@@ -104,17 +104,17 @@ class FisheyeProjection(object):
             logger.debug("center not specified as 2-tuple, assuming image center")
             center_row, center_col = int(height/2),int(width/2) # image center
 
-        # maxangle
-        if maxangle is None:
-            logger.debug("maxangle not defined, assuming 90 degrees.")
-            maxangle = np.pi / 2
+        # maxele
+        if maxele is None:
+            logger.debug("maxele not defined, assuming 90 degrees.")
+            maxele = np.pi / 2
 
-        # maxangle pixel position
+        # maxele pixel position
         try:
-            maxangle_row, maxangle_col = maxanglepos
+            maxele_row, maxele_col = maxelepos
         except:
-            logger.debug("maxangle position not specified as 2-tuple, assuming left image center")
-            maxangle_row, maxangle_col = int(height/2),int(0) # left center
+            logger.debug("maxele position not specified as 2-tuple, assuming left image center")
+            maxele_row, maxele_col = int(height/2),int(0) # left center
 
 
         # projection
@@ -126,7 +126,7 @@ class FisheyeProjection(object):
             
         # width, height:          width and height of resulting array
         # center_row, center_col: center position / optical axis
-        # maxangle:               maximum angle visible on resulting array
+        # maxele:               maximum angle visible on resulting array
         # projection:             fisheye projection type
 
         # now create arrays based on projection
@@ -140,11 +140,11 @@ class FisheyeProjection(object):
             # calculate radius from center
             r = np.sqrt(col ** 2 + row ** 2)
             # maximum radius from center / norming value
-            norm = np.sqrt( (center_row - maxangle_row) ** 2 + \
-                            (center_col - maxangle_col) ** 2 )
+            norm = np.sqrt( (center_row - maxele_row) ** 2 + \
+                            (center_col - maxele_col) ** 2 )
 
             # norm the radius to the maximum angle
-            elevation = r / norm * maxangle 
+            elevation = r / norm * maxele 
 
             
         else:
@@ -155,7 +155,7 @@ class FisheyeProjection(object):
 
         # mask everything outside the sensible region
         elevation = ma.masked_where(                                   \
-            # condition: everything outside the maxangle region
+            # condition: everything outside the maxele region
             r > norm,        \
             # array
             elevation                                                  \
@@ -169,27 +169,33 @@ class FisheyeProjection(object):
                       shape,
                       center=None, 
                       maxelepos=None, 
-                      clockwise=True,
-                      north_angle=0,
+                      clockwise=False,
+                      north_angle=np.pi/2,
                       ):
         """
         create a np.ndarray that holds an azimuth for each pixel of an image
 
         args:
-            shape(2-tuple of int): shape of image (width, height)
+            shape(2-tuple of int): shape of image (height, width)
             center(optional[2-tuple of int]): center/optical axis position on image (row,col).
                 if not specified, the center of the image is assumed.
             maxelepos(optional[2-tuple of int]): position of pixel with max elevation angle visible (row,col).
                 if not specified, the left center of the image is assumed.
-            clockwise(optional[boolean]): does the azimuth go clockwise? Defaults to True.
-            north_angle(optional[float]): north angle on the image (rad). Defaults to 0.
+            clockwise(optional[boolean]): does the azimuth go clockwise? 
+                Defaults to False (mathematical direction)
+            north_angle(optional[float]): north angle on the image (rad). 
+                Imagine a standard carthesian coordinate system lying on the 
+                image. The north_angle is the angle between the positive x-axis
+                and the 0-azimuth line depending on clockwise argument. 
+                Defaults to 90°, pi/2, which is the top of the image at 
+                counter-clockwise direction.
 
         returns:
             np.maskedarray of shape (width, height) with azimuth values
         """
         # shape
         try:
-            width, height = shape
+            height, width = shape
         except:
             raise ValueError("shape argument not defined as 2-tuple.")
 
@@ -212,21 +218,27 @@ class FisheyeProjection(object):
         # center_row, center_col: center position / optical axis
         # maxele:               maximum angle visible on resulting array
 
-        # Azimuth equal for all radial projections
+        # Azimuth is equal for all radial projections
 
         # create grid with only rows and cols
-        row, col = np.mgrid[:height, :width]
+        rows = list(reversed(range(height)))
+        cols = range(width)
+        row, col = np.meshgrid(rows, cols, indexing='ij')
+        #row, col = np.mgrid[:height,:width]
         # center rows and cols
         col = col - center_col
         row = row - center_row
-        # if clockwise azimuth, invert x
-        if clockwise: col = -col
         # calculate radius from center
         r = np.sqrt(col ** 2 + row ** 2)
 
         # calculate azimuth
-        azimuth = np.arctan2(col, -row) + np.pi + north_angle
-        azimuth[azimuth > 2 * np.pi] = azimuth[azimuth > 2 * np.pi] - 2 * np.pi
+        coords = CarthesianCoordinates3d(x=col, # x: column
+                                         y=row, # y: reversed row (upwards)
+                                         azimuth_offset = north_angle, # north angle
+                                         clockwise = clockwise # orientation
+                                         )
+
+        azimuth = coords.azimuth
 
         # mark outside regions when specified
         if not (maxele_row,maxele_col) == (None,None):
@@ -244,64 +256,27 @@ class FisheyeProjection(object):
         # return
         return azimuth
 
-    # create an elevation matrix on a rectangular grid of x,y,z coordinates
-    def createRectElevation(self,x,y,z):
-        """
-        create an elevation matrix on a rectangular grid of x,y,z coordinates
-
-        args:
-            x,y (array_like): coordinate sequences of rectangular x,y grid
-            z (float): height
-
-        returns:
-            an array of shape(len(y),len(x)) with elevation values    
-        """
-        xi, yi = np.meshgrid(x,y)
-        r = np.sqrt( xi ** 2 + yi ** 2 )
-        ele = np.arctan( r / z )
-        return ele
-
-    # create an azimuth matrix on a rectangular grid of x,y coordinates
-    def createRectAzimuth(self,x,y,north_angle=0):
-        """
-        create an azimuth matrix on a rectangular grid of x,y coordinates
-
-        args:
-            x,y (array_like): coordinate sequences of rectangular x,y grid
-            north_angle (float): north angle 
-
-        returns:
-            an array of shape(len(y),len(x)) with azimuth values    
-        """
-        xi, yi = np.meshgrid(x,y)
-        azi= np.arctan2(-xi, -yi) + np.pi + north_angle
-        azi[azi > 2 * np.pi] = azi[azi > 2 * np.pi] - 2 * np.pi
-        return azi
 
     # create a distortion map
-    def distortionMap(self, in_ele, in_azi, out_ele, out_azi, method="nearest"):
+    def distortionMap(self, in_coord, out_coord, method="nearest"):
         """
-        create a distortion map for fast distortion.
+        create a distortion map for fast distortion of images in 2d plane.
         This map can be used to distort efficiently with 
         scipy.ndimage.interpolation.map_coordinates(...)
 
         args:
-            in_ele, in_azi (array_like): input image elevation and azimuth arrays
-            out_ele, out_azi (array:like): output image elevation and azimuth arrays
+            in_coord (Coordinates3d child): input image coordinates
+            out_coord (Coordinates3d child): output image coordinates
             method (str): interpolation method, see scipy.interpolate.griddata
 
         returns:
-            array of shape (shape(out_ele/out_azi),2) with interpolated 
+            array of shape (shape(out_coord_2/out_coord_1),2) with interpolated 
             coordinates in input array. This array can directly be used as
             coordinate array for scipy.ndimage.interpolation.map_coordinates()
         """
-        if not np.shape(in_ele) == np.shape(in_azi) or \
-           not np.shape(out_ele) == np.shape(out_azi):
-           raise ValueError("elevation/azimuth arrays have to have same shape!")
-
         # input/output shape
-        in_shape = np.shape(in_ele)
-        out_shape = np.shape(out_ele)
+        in_shape = np.shape(in_coord.x)
+        out_shape = np.shape(out_coord.x)
 
         # input image coordinates (row, col)
         in_row, in_col = np.mgrid[:in_shape[0],:in_shape[1]]
@@ -309,11 +284,11 @@ class FisheyeProjection(object):
         in_col = in_col.reshape(np.prod(in_shape)) # one dimension
     
         # input image coordinates (ele, azi)
-        points = (in_ele.reshape(np.prod(in_shape)), 
-                  in_azi.reshape(np.prod(in_shape)))
+        points = (in_coord.x.reshape(np.prod(in_shape)), 
+                  in_coord.y.reshape(np.prod(in_shape)))
         # output image coordinates (ele, azi)
-        xi = (out_ele.reshape(np.prod(out_shape)),
-              out_azi.reshape(np.prod(out_shape)))
+        xi = (out_coord.x.reshape(np.prod(out_shape)),
+              out_coord.y.reshape(np.prod(out_shape)))
     
         logger.debug("interpolation started...")
 
@@ -333,14 +308,343 @@ class FisheyeProjection(object):
         # stack row and col together
         distmap = np.dstack(
                 # reshape to output shape
-                (out_col_from_in.reshape(out_shape),
-                 out_row_from_in.reshape(out_shape))
+                # not exactly sure why this has to be transponated...
+                (out_row_from_in.reshape(out_shape).T,
+                 out_col_from_in.reshape(out_shape).T)
                  )
 
         logger.debug("interpolation ended!")
 
         # return the distortion map
         return DistortionMap(map=distmap, src_shape=in_shape) 
+
+
+###############################
+### classes for coordinates ###
+###############################
+class Coordinates3d(object):
+    def __init__(self, dimnames):
+        # initialize base variables
+        self._dim_names = dimnames
+
+    # set the coordinate to a new value
+    def _set_coordinate(self, coord, value):
+        """
+        Set the coordinate 'coord' to value 'value'.
+        If the other coordinates are undefined, set them to empty masked arrays
+        of appropriate shape.
+
+        args:
+            coord (str): name of the coord attribute
+            value (array_like): new coordinate array. Must have 
+                the same shape as other two coordinate dimensions (if defined).
+        """
+        # find out names of remaining two dimensions
+        i = self._dim_names.index(coord)
+        otherdims = self._dim_names[:i] + self._dim_names[(i+1):]
+
+        try: # test if value is some kind of array
+            value.shape
+        except: # if not...
+            if not value is None: # if value is not None
+                try:    value = np.asarray(value) # try to convert to array
+                except: pass
+
+        # check if shape matches
+        if not value is None: # only if something was specified
+            try:
+                for dim in otherdims:
+                    dimval = getattr(self, dim)
+                    if not dimval is None:
+                        if np.prod(value.shape) == 1: # only one value
+                            value = np.full(
+                                dimval.shape,
+                                value
+                                ) # empty 
+                        elif value.shape != dimval.shape:
+                            raise ValueError(
+                              "shape {} of new {} does not match {} shape {}".format(
+                                  value.shape,coord,dim,dimval.shape))
+            except AttributeError:
+                raise ValueError("new {} coordinate is not array-like!".format(
+                    coord))
+
+            # set the underlying attribute
+            setattr(self,"_{}".format(coord), value)
+
+            # set other dims to completely masked array if necessary
+            for dim in otherdims:
+                if getattr(self, dim) is None:
+                    setattr(self, dim, ma.masked_array(
+                        data = np.empty(value.shape),
+                        mask = np.ones( value.shape)))
+
+
+# class for carthesian 3d coordinates
+class CarthesianCoordinates3d(Coordinates3d):
+    def __init__(self, 
+                 x=None, y=None, z=None,
+                 clockwise=False,
+                 azimuth_offset=np.pi/2
+                 ):
+        """
+        create a set of carthesian coordinates lying on a 2-dimensional grid.
+
+        args:
+            x,y,z (optional[array_like]): coordinates x, y and z
+            clockwise(optional[boolean]): does the azimuth go clockwise? 
+                Defaults to False (mathematical direction)
+            azimuth_offset(optional[float]): azimuth angle offset (in radians). 
+                The azimuth_offset is the angle between the positive x-axis
+                and the 0-azimuth line depending on clockwise argument. 
+                Defaults to 90°, pi/2, which is the top of the image at 
+                counter-clockwise direction.
+
+        returns:
+            np.maskedarray of shape (width, height) with azimuth values
+        """
+        # parent constructor
+        super().__init__(dimnames = ["x","y","z"])
+
+        # initially set underlying attributes to None
+        self._x, self._y, self._z = (None, None, None)
+        # copy over the arguments
+        self.x = x
+        self.y = y
+        self.z = z
+        self.clockwise = clockwise
+        self.azimuth_offset = azimuth_offset
+
+    @property
+    def x(self): return self._x
+    @property
+    def y(self): return self._y
+    @property
+    def z(self): return self._z
+
+    @x.setter
+    def x(self, value): self._set_coordinate("x", value)
+    @y.setter
+    def y(self, value): self._set_coordinate("y", value)
+    @z.setter
+    def z(self, value): self._set_coordinate("z", value)
+
+    # convert these carthesian coordinates to horizontal radius
+    @property
+    def radius_horz(self):
+        """
+        convert these carthesian coordinates to horizontal radius
+        returns:
+            an array with horizontal radius values
+        """
+        radius = np.sqrt( self.x ** 2 + self.y ** 2 )
+        return radius
+
+    # convert these carthesian coordinates to spherical elevation
+    @property
+    def elevation(self):
+        """
+        convert these carthesian coordinates to spherical elevation
+        returns:
+            an array with elevation values
+        """
+        return np.arctan( self.radius_horz / self.z )
+
+    # convert these carthesian coordinates to spherical azimuth
+    @property
+    def azimuth(self):
+        """
+        convert these carthesian coordinates to spherical elevation
+        returns:
+            an array with azimuth values
+        """
+        north = self.azimuth_offset
+        clockwise = self.clockwise
+
+        north = - (north % (2*np.pi) )
+        if clockwise:
+            north = - north
+
+        # note np.arctan2's way of handling x and y arguments:
+        # np.arctan2( y, x ), NOT np.arctan( x, y ) !
+        #
+        # np.arctan2( y, x ) returns the SIGNED (!)
+        # angle between positive x-axis and the vector (x,y)
+        # in radians
+
+        # the azimuth angle is...
+        # ...the SIGNED angle between positive x-axis and the vector...
+        # ...plus some full circle to only have positive values...
+        # ...minux angle defined as "NORTH" (modulo 2*pi to be precise)
+        # -->  azi is not angle to x-axis but to NORTH
+        azimuth = np.arctan2(self.y, self.x) + 6 * np.pi + north
+
+        # take azimuth modulo a full circle to have sensible values
+        azimuth = azimuth % (2*np.pi)
+
+        if clockwise: # turn around if clockwise
+            azimuth = 2 * np.pi - azimuth
+
+        return azimuth
+
+    # convert these carthesian coordinates to spherical radius
+    @property
+    def radius(self):
+        """
+        convert these carthesian coordinates to spherical radius
+        returns:
+            an array with radius values
+        """
+        return np.sqrt( self.x ** 2 + self.y ** 2 + self.z ** 2 )
+
+    # convert carthesian grid to polar grid
+    def spherical(self, target=None, clockwise=None, azimuth_offset=np.pi/2):
+        """
+        convert these carthesian coordinates to spherical coordinates
+        returns:
+            an instance of class SphericalCoordinates3d
+        """
+        if not target is None:
+            clockwise = target.clockwise
+            azimuth_offset = target.azimuth_offset
+        else:
+            if clockwise is None:
+                clockwise = self.clockwise
+            if azimuth_offset is None:
+                azimuth_offset = self.azimuth_offset
+
+        # return coordinates
+        return SphericalCoordinates3d(
+            azimuth     = self.azimuth, 
+            elevation   = self.elevation,
+            radius      = self.radius,
+            clockwise   = clockwise,
+            azimuth_offset = azimuth_offset
+            )
+                
+
+
+# class for spherical 3d coordinates
+class SphericalCoordinates3d(Coordinates3d):
+    def __init__(self,
+                 azimuth=None,
+                 elevation=None,
+                 radius=None,
+                 clockwise=False,
+                 azimuth_offset=np.pi/2
+                 ):
+        """
+        create a set of spherical coordinates lying on a 2-dimensional grid.
+
+        args:
+            azimuth, elevation, radius (optional[array_like]): coordinates
+            clockwise(optional[boolean]): does the azimuth go clockwise? 
+                Defaults to False (mathematical direction)
+            azimuth_offset(optional[float]): azimuth angle offset (in radians). 
+                The azimuth_offset is the angle between the positive x-axis
+                and the 0-azimuth line depending on clockwise argument. 
+                Defaults to 90°, pi/2, which is the top of the image at 
+                counter-clockwise direction.
+
+        returns:
+            np.maskedarray of shape (width, height) with azimuth values
+        """
+        # parent constructor
+        super().__init__(dimnames = ["azimuth","elevation","radius"])
+
+        # initially set underlying attributes to None
+        self._azimuth, self._elevation, self._radius = (None, None, None)
+        # copy over the arguments
+        self.azimuth     = azimuth
+        self.elevation   = elevation
+        self.radius      = radius
+        self.azimuth_offset = azimuth_offset
+        self.clockwise = clockwise
+
+    @property
+    def azimuth(self):   return self._azimuth
+    @property
+    def elevation(self): return self._elevation
+    @property
+    def radius(self):    return self._radius
+
+    @azimuth.setter
+    def azimuth(self, value):   self._set_coordinate("azimuth", value)
+    @elevation.setter
+    def elevation(self, value): self._set_coordinate("elevation", value)
+    @radius.setter
+    def radius(self, value):    self._set_coordinate("radius", value)
+
+    # convert spherical to carthesian x coordinate
+    @property
+    def x(self):
+        """
+        convert these spherical coordinates to carthesian x coordinate
+        returns:
+            an array of x values
+        """
+        return self.radius                          \
+            * np.sin( self.elevation )              \
+            * np.cos( self.azimuth + self.azimuth_offset )
+
+    # convert spherical to carthesian y coordinate
+    @property
+    def y(self):
+        """
+        convert these spherical coordinates to carthesian y coordinate
+        returns:
+            an array of y values
+        """
+        return self.radius                              \
+            * np.sin( self.elevation )                  \
+            * np.sin( self.azimuth + self.azimuth_offset )
+
+    # convert spherical to carthesian z coordinate
+    @property
+    def z(self):
+        """
+        convert these spherical coordinates to carthesian z coordinate
+        returns:
+            an array of z values
+        """
+        return self.radius * np.cos( self.elevation )
+
+    # convert these spherical coordinates (elevation) to spherical radius
+    # with given height z
+    def radius_with_height(self, z):
+        """
+        convert these spherical coordinates (only elevation actually) 
+        to the spherical radius given a height z
+        returns:
+            an array of radius values
+        """
+        return z / np.cos( self.elevation )
+
+    # convert these spherical coordinates to carthesian coordinates
+    def carthesian(self, target=None, clockwise=None, azimuth_offset=np.pi / 2):
+        """
+        convert these spherical coordinates to carthesian coordinates
+        returns:
+            an instance of class CarthesianCoordinates3d
+        """
+        if not target is None:
+            clockwise = target.clockwise
+            azimuth_offset = target.azimuth_offset
+        else:
+            if clockwise is None:
+                clockwise = self.clockwise
+            if azimuth_offset is None:
+                azimuth_offset = self.azimuth_offset
+
+        # return coordinates
+        return CarthesianCoordinates3d(
+            x = self.x, 
+            y = self.y,
+            z = self.z,
+            clockwise = clockwise,
+            azimuth_offset = azimuth_offset
+            )
+                
 
 
 # class for distortionmaps
@@ -416,57 +720,118 @@ if __name__ == '__main__':
     import logging
     logging.basicConfig(level=logging.DEBUG)
 
-    # read image
+    # read an image
     img = image.Image(os.path.abspath(
-        "../examples/images/stereo/Image_20160527_144000_UTCp1_4.jpg"
+        "../examples/images/Image_Wkm_Aktuell_2.jpg"
         ))
     # convert to grayscale
     #img.image = img.convert("L")
     # resize image
-    img.image = img.resize((800,800))
+    #img.image = img.resize((800,800))
 
-
-    # image shape
-    shape=np.shape(img.data)[:2]
+    ### create a fisheye projection object ###
     f=FisheyeProjection("equidistant")
-    # create elevation and azimuth image coordinates
-    ele=f.createFisheyeElevation(shape)
-    azi=f.createAzimuth(shape,maxelepos=(int(shape[0]/2),0))
-    # create distorted rect coordinates
-    x=np.linspace(-20,20,num=300)
-    y=np.linspace(-20,20,num=300)
-    z=6 
-    ele_rect=f.createRectElevation(x,y,z)
-    azi_rect=f.createRectAzimuth(x,y)
 
-    # create distortion map
-    distmap = f.distortionMap(ele, azi, ele_rect, azi_rect, "nearest")
+    ### create rectified coordinates ###
+    outshape=(500,500) # size of output image
+    rect_azimuth_offset = np.pi / 2 # north angle of rectified image
+    rect_clockwise = False
+    rect_x,rect_y=np.meshgrid(
+        np.linspace(-20,20,num=outshape[1]),# image x coordinate goes right
+        np.linspace(20,-20,num=outshape[0]) # image y coordinate goes up
+        )
+    rect_z = 5 # rectify for height rect_z
 
-    # distort image
-    distimage = img.applyDistortionMap(distmap)
+    rect_coord = CarthesianCoordinates3d(
+        x = rect_x,
+        y = rect_y,
+        z = rect_z,
+        azimuth_offset = rect_azimuth_offset,
+        clockwise = rect_clockwise
+        )
 
-    # plot results
+    ### create spherical coordinates of original image ###
+    shape=np.shape(img.data)[:2] # shape of image
+    image_north_angle = 3 * np.pi / 5 # north angle ON the original image
+    orig_azimuth_offset = np.pi / 2 # "north angle" on image coordinates
+    center = None # center of elevation/azimuth in the image
+    maxelepos = (0,int(shape[1]/2)) # (one) position of maxium elevation
+    maxele = np.pi / 2.2 # maximum elevation on the image border, < 90° here
+
+    orig_coord = SphericalCoordinates3d(
+        azimuth_offset=orig_azimuth_offset,
+        clockwise=False
+        )
+
+    orig_coord.elevation=f.createFisheyeElevation(
+        shape,
+        maxelepos=maxelepos,
+        maxele=maxele,
+        center=center
+        )
+    orig_coord.azimuth=f.createAzimuth(
+        shape,
+        maxelepos=maxelepos,
+        center=center,
+        north_angle = image_north_angle,
+        clockwise=False
+        )
+    orig_coord.radius = orig_coord.radius_with_height(z=rect_z)
+    
+    ### create rectification map ###
+    # based on regular grid
+    logger.debug("calculating rectification map")
+    distmap = f.distortionMap(in_coord=orig_coord, out_coord=rect_coord, method="nearest")
+
+    ### rectify image ##
+    rectimage = img.applyDistortionMap(distmap)
+
+    ### plot results ###
     import matplotlib.pyplot as plt
-    plt.subplot(321)
-    plt.title("original image")
-    plt.imshow(img, cmap="Greys_r", interpolation="nearest")
-    plt.subplot(322)
-    plt.title("rectified image")
-    plt.imshow(distimage, cmap="Greys_r", interpolation="nearest")
-    plt.subplot(323)
-    plt.title("image elevation")
-    plt.imshow(ele,interpolation="nearest")
+    plt.subplot(3,4,1)
+    plt.title("original image (fix)")
+    plt.imshow(img.data, interpolation="nearest")
+    plt.subplot(3,4,2)
+    plt.title("image radius (calculated)")
+    plt.imshow(orig_coord.radius, interpolation="nearest")
     plt.colorbar()
-    plt.subplot(325)
-    plt.title("image azimuth")
-    plt.imshow(azi,interpolation="nearest")
+    plt.subplot(3,4,3)
+    plt.title("rectified r (calculated)")
+    plt.imshow(rect_coord.radius,interpolation="nearest")
     plt.colorbar()
-    plt.subplot(324)
-    plt.title("rectified elevation")
-    plt.imshow(ele_rect,interpolation="nearest")
+    plt.subplot(3,4,4)
+    plt.title("rectified image (calculated)")
+    plt.imshow(rectimage.data, interpolation="nearest")
+    plt.subplot(3,4,5)
+    plt.title("image elevation (fix)")
+    plt.imshow(orig_coord.elevation,interpolation="nearest")
     plt.colorbar()
-    plt.subplot(326)
-    plt.title("rectified azimuth")
-    plt.imshow(azi_rect,interpolation="nearest")
+    plt.subplot(3,4,9)
+    plt.title("image azimuth (fix)")
+    plt.imshow(orig_coord.azimuth,interpolation="nearest")
+    plt.colorbar()
+    plt.subplot(3,4,6)
+    plt.title("image x (calculated)")
+    plt.imshow(orig_coord.x,interpolation="nearest")
+    plt.colorbar()
+    plt.subplot(3,4,10)
+    plt.title("image y (calculated)")
+    plt.imshow(orig_coord.y,interpolation="nearest")
+    plt.colorbar()
+    plt.subplot(3,4,7)
+    plt.title("rectified x (fix)")
+    plt.imshow(rect_coord.x,interpolation="nearest")
+    plt.colorbar()
+    plt.subplot(3,4,11)
+    plt.title("rectified y (fix)")
+    plt.imshow(rect_coord.y,interpolation="nearest")
+    plt.colorbar()
+    plt.subplot(3,4,8)
+    plt.title("rectified elevation (calculated)")
+    plt.imshow(rect_coord.elevation,interpolation="nearest")
+    plt.colorbar()
+    plt.subplot(3,4,12)
+    plt.title("rectified azimuth (calculated)")
+    plt.imshow(rect_coord.azimuth,interpolation="nearest")
     plt.colorbar()
     plt.show()
