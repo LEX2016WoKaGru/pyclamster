@@ -64,7 +64,7 @@ class Labels(object):
         Method to convert the labels into boolean values.
         Args:
             labels_true (int/list[int]): The label/labels which should be
-                converted in True. The other labels aare set as False.
+                converted in True. The other labels are set as False.
             replace (bool): If the original labels should be replaced.
 
         Returns:
@@ -111,8 +111,18 @@ class Labels(object):
         reshaped_labels = np.reshape(self.labels, newshape=new_shape)
         if replace:
             self.labels = reshaped_labels
+            return self
         else:
             return Labels(reshaped_labels)
+
+    def getMaskStore(self):
+        """
+        Method to convert the labels into a mask store.
+        Returns:
+            converted_store (MaskStore): The converted MaskStore with the
+                unique labels as masks.
+        """
+        pass
 
     # def getRelevantSamples(self, nh_size=12, crit=0.75):
     #     xy_size = nh_size*2+1
