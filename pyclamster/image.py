@@ -32,7 +32,7 @@ import numpy as np
 import scipy
 
 # Internal modules
-import fisheye
+import coordinates
 
 
 __version__ = "0.1"
@@ -82,8 +82,9 @@ class Image(object):
         # set metadata
         self.time = time
         self.projection = projection
-        self.azimuth = azimuth
-        self.elevation = elevation
+        self.coordinates = coordinates.SphericalCoordinates3d(
+            azimuth = azimuth, elevation = elevation
+            )
         self.zenith_pixel = zenith_pixel
         self.path = None
 
@@ -308,17 +309,18 @@ class Image(object):
             image (str/path or PIL.Image or numpy.ndarray): image to load
         """
         ### create self._image according to specified argument ###
+        success = False
         # looks like PIL image
         if isinstance(image, PIL.Image.Image):
             logger.info("reading image directly from PIL.Image.Image object")
             self.image = image
+            success = True
         # argument is an image aleady
         elif isinstance(image, Image):
             logger.info("copying image directly from Image")
             # copy over attributes
             self.__dict__.update(image.__dict__)
-
-
+            success = True
 
         # argument looks like path
         elif isinstance(image, str):
@@ -328,6 +330,7 @@ class Image(object):
                 logger.info("reading image from path")
                 self.image = PIL.Image.open(image)
                 self.path = image  # set path
+                success = True
             else:
                 logger.warning(
                     "image argument is not a valid path! Can't read image.")
@@ -342,15 +345,18 @@ class Image(object):
                 "use PIL.Image.fromarray and pass that to loadImage() instead."
             ]))
             self.data = image
+            success = True
             # TODO: does not work like this, mode has to be specified somehow
         # nothing correct specified
         else:
             logger.info("nothing specified to read image. Nothing loaded.")
             # self.image = PIL.Image.new(mode="RGB", size=(1, 1)) # hard coded
 
-            # init things
-            # self.setDefaultParameters()
-            # self.applyCameraCorrections()
+        if success:
+            # set new coordinate shape
+            self.coordinates.shape = self.data.shape[:2]
+
+
 
 
     # load time from filename
@@ -528,7 +534,7 @@ class Image(object):
             for layer in range(np.shape(image.data)[2]):
                 layerout = scipy.ndimage.interpolation.map_coordinates(
                     input = self.data[:,:,layer],
-                    coordinates = map.T,
+                    coordinates = map.T, # map has to be transposed somehow
                     order = order
                     )
                 try:    out = np.dstack( (out, layerout) ) # add to stack
@@ -537,7 +543,7 @@ class Image(object):
         else: # only 2 dim...
             image.data = scipy.ndimage.interpolation.map_coordinates(
                 input = image.data,
-                coordinates = map.T,
+                coordinates = map.T, # map has to be transposed somehow
                 order = order
                 )
             
