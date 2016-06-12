@@ -722,7 +722,7 @@ if __name__ == '__main__':
 
     # read an image
     img = image.Image(os.path.abspath(
-        "../examples/images/Image_Wkm_Aktuell_2.jpg"
+        "../examples/images/wettermast/Image_Wkm_Aktuell_2.jpg"
         ))
     # convert to grayscale
     #img.image = img.convert("L")
