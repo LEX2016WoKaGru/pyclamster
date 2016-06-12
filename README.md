@@ -2,7 +2,7 @@
 The **PY**thon **CL**oud c**AM**era **STER**eo analysis system is a Python
 module to post-process cloud camera images. The post-processing includes image
 manipulation, processing and matching.
-</br>This repository is in the alpha state and will be expanded in time.
+</br>This repository is in the alpha state and will be expanded with time.
 
 **Structure**
 <li>doc: Folder for the documentation.
