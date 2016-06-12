@@ -155,3 +155,6 @@ $RECYCLE.BIN/
 *.pyc
 __pycache__
 *.hdf5
+/examples/original.jpg
+/examples/detection.png
+/examples/detection.jpg

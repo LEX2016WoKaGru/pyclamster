@@ -23,6 +23,7 @@ Created for pyclamster
 """
 # System modules
 import pickle
+import warnings
 
 # External modules
 import numpy as np
@@ -32,14 +33,15 @@ import scipy.ndimage
 from sklearn.cluster import MiniBatchKMeans
 from sklearn.preprocessing import StandardScaler
 
-from pyclamster.clustering.functions import localBrightness, rbDetection
-
-# from pyextremelm.builder import ExtremeLearningMachine
-# from pyextremelm.metrics import NoMetric
-# from pyextremelm.builder.layers.unsupervised import ELMAE
 
 # Internal modules
+from pyclamster import Image
+from pyclamster.clustering.preprocess import LCN, ZCA
+from pyclamster.clustering.kmeans import KMeans
+from pyclamster.clustering.functions import localBrightness, rbDetection
 
+warnings.catch_warnings()
+warnings.filterwarnings('ignore')
 
 """
 0 = Sky
@@ -65,18 +67,14 @@ denoising_ratio = 10
 anomaly_images = None
 
 for i in range(1, 5):
-    image = scipy.ndimage.imread(u'Image_Wkm_Aktuell_{0:d}.jpg'.format(i),
-                                 mode="RGB")
-    scipy.misc.imsave(
-        u'test_original_{0:d}.jpg'.format(i),
-        image[center - good_angle_dpi:center + good_angle_dpi,
-              center - good_angle_dpi:center + good_angle_dpi, :])
+    image = Image(u'Image_Wkm_Aktuell_{0:d}.jpg'.format(i))
 
-    image = localBrightness(image)
-    anomaly_image = rbDetection(image)
+    image.data = LCN(size=(50,50,3), scale=False).fit_transform(image.data)
+    #image.data = LCN(size=(30,30,1), scale=True).fit_transform(image.data)
+    image.data = image.data[center - good_angle_dpi:center + good_angle_dpi,
+                            center - good_angle_dpi:center + good_angle_dpi]
 
-    anomaly_image = anomaly_image[center - good_angle_dpi:center + good_angle_dpi,
-                                  center - good_angle_dpi:center + good_angle_dpi]
+    anomaly_image = rbDetection(image.data)
     scipy.misc.imsave(u'test_anomaly_{0:d}.jpg'.format(i), anomaly_image)
 
     w, h = original_shape = tuple(anomaly_image.shape)
@@ -86,12 +84,11 @@ for i in range(1, 5):
     else:
         anomaly_images = np.r_[anomaly_images, anomaly_image]
 
-print(anomaly_images.shape)
-kmeans = MiniBatchKMeans(n_clusters=k_cluster, random_state=0).fit(anomaly_images)
-anomaly_labels = np.abs((-1)*kmeans.labels_)
+kmeans = KMeans(2).fit(anomaly_images)
+anomaly_labels = kmeans.labels
+anomaly_labels = anomaly_labels.splitUp(indices_or_sections=4)
 
-for i in range(0, 4):
-    anomaly_single_label = anomaly_labels[i * (w * h):(i + 1) * (w * h)]
-    anomaly_single_label = np.reshape(anomaly_single_label, (w, h))
-    scipy.misc.imsave(u'anomaly_labels_{0:d}.jpg'.format(i + 1),
-                      anomaly_single_label)
+for label in anomaly_labels:
+    label.reshape((w, h), replace=True)
+    scipy.misc.imsave(u'anomaly_labels_{0:d}.png'.format(i + 1),
+                      label.labels)

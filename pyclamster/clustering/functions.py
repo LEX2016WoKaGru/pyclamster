@@ -39,20 +39,22 @@ algorithms.
 """
 
 
-def localBrightness(data, nh_size=10):
+def localBrightness(data, nh_shape=None):
     """
     A function to standardize the data with the local brightness.
     Args:
         data (numpy array):
             The data field that should be transformed.
-        nh_size (int): The neighbourhood size, in which the local brightness
+        nh_shape (optional[int]): The neighbourhood size, in which the local brightness
             should be calculated.
 
     Returns:
         transformed_data (numpy array): The transformed data array.
     """
+    if nh_shape is None:
+        nh_shape = (21, 21, data.shape[2])
     mean = scipy.ndimage.filters.uniform_filter(
-        data, size=(nh_size*2, nh_size*2, data.shape[2]), mode="constant")
+        data, size=nh_shape, mode="constant")
     return data - mean
 
 
@@ -69,8 +71,9 @@ def rbDetection(data):
     """
     blue = data[:, :, -1]
     red = data[:, :, 0]
-    transformed_data = (blue - red) / (blue + red)
-    transformed_data[blue + red == 0] = 1
+    red[red==0] = 1
+    lam = blue/red
+    transformed_data = (lam-1)/(lam+1)
     return transformed_data
 
 

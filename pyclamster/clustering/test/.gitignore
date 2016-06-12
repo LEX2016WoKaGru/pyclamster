@@ -10,3 +10,10 @@ gen
 *.jpg
 anomaly_*.jpg
 test*.jpg
+/anomaly_labels_5.png
+/anomaly_labels_1_1.png
+/anomaly_labels_1.png
+/anomaly_labels_2_1.png
+/anomaly_labels_3.png
+/anomaly_labels_4.png
+/anomaly_labels_2.png

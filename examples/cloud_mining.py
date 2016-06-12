@@ -38,7 +38,7 @@ import tables  # For HDF5
 
 # Internal modules
 import pyclamster as pycl
-from pyclamster.clustering.Labels import Labels
+from pyclamster.clustering.labels import Labels
 # from pyclamster.clustering.kmeans import KMeans
 from pyclamster.clustering.functions import localBrightness, rbDetection, \
     listShuffleSplit, cloudPatchChecker
@@ -56,8 +56,9 @@ Possible new version of k-means necessary.
 
 directory = "./images"
 k_cluster = 2
-
+patches_per_image = 1000
 hdf5_save_path = "./training.hdf5"
+patch_size = (21, 21)
 
 concated_images = None
 labels = None
@@ -89,7 +90,7 @@ for image_list in all_images:
         Here comes some pre-process corrections, like projection correction etc.
         """
         # Normalize the image
-        img.data = localBrightness(img.data, nh_size=10)
+        img.data = localBrightness(img.data, (20, 20, 3))
         img.crop((460, 460, 1460, 1460))
         # Blue and red cloud detection algorithm
         img_data = rbDetection(img.data)
@@ -118,6 +119,7 @@ for image_list in all_images:
     for key, splitted_label in enumerate(splitted_labels):
         targets = None
         mini_images = None
+        infos = None
 
         # Reshape the labels into the width and height of the image
         label = splitted_label.reshape((w, h), replace=False)
@@ -133,12 +135,11 @@ for image_list in all_images:
 
         # Extract the image patches
         img_patches = extract_patches_2d(
-            labeled_image, (31, 31), 100, random_state=42)
-        for patch in img_patches:
+            labeled_image, patch_size, patches_per_image, random_state=42)
 
+        for patch in img_patches:
             # Check if patches fulfill the requirements
             mini_image, value = cloudPatchChecker(patch, crit=0.95)
-
             # If fulfill, then expand the arrays
             if not mini_image is None:
                 mini_image_size = tuple([1] + list(mini_image.shape))
@@ -159,20 +160,6 @@ for image_list in all_images:
         try:
             a = patches_storage[0]
         except:
-            image_storage = hdf5_file.createEArray(
-                "/{0:s}".format(base_dir), 'image',
-                tables.Atom.from_dtype(cutted_img.data.dtype),
-                shape=(0, cutted_img.data.shape[0], cutted_img.data.shape[1],
-                       cutted_img.data.shape[2]),
-                filters=compression_filter, createparents=True)
-            labeled_storage = hdf5_file.createEArray(
-                "/{0:s}".format(base_dir), 'labeled_image',
-                tables.Atom.from_dtype(label.labels.dtype),
-                shape=(0, label.labels.shape[0], label.labels.shape[1]),
-                filters=compression_filter, createparents=True)
-            time_storage = hdf5_file.createEArray(
-                "/{0:s}".format(base_dir), 'time_container',
-                tables.Int64Atom(), shape=(0, 2), filters=compression_filter)
             labels_storage = hdf5_file.createEArray(
                 "/{0:s}".format(base_dir), 'labels',
                 tables.Atom.from_dtype(targets.dtype),
@@ -180,19 +167,12 @@ for image_list in all_images:
             patches_storage = hdf5_file.createEArray(
                 "/{0:s}".format(base_dir), 'patches',
                 tables.Atom.from_dtype(mini_images.dtype),
-                shape=(0, mini_image.shape[1], mini_image.shape[2], mini_image.shape[3]),
+                shape=(0, mini_images.shape[1], mini_images.shape[2], mini_images.shape[3]),
                 createparents=True)
 
         # Write arrays to hdf5
-        image_storage.append(cutted_img.data.reshape(
-            (1, cutted_img.data.shape[0], cutted_img.data.shape[1], cutted_img.data.shape[2])))
-        labeled_storage.append(label.labels.reshape(
-            (1, label.labels.shape[0], label.labels.shape[1])))
         labels_storage.append(targets.reshape((targets.shape[0], 1)))
         patches_storage.append(mini_images)
-        time_length = np.array([time_storage[-1, 1], time_storage[-1, 1] + len(targets)])
-        print(time_length.reshape((-1,2)).shape)
-        time_storage.append(time_length.reshape((-1,2)))
 
         print(image_list[key], len(targets), time.time() - start_time)
 
