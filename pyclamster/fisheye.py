@@ -280,15 +280,15 @@ class FisheyeProjection(object):
 
         # input image coordinates (row, col)
         in_row, in_col = np.mgrid[:in_shape[0],:in_shape[1]]
-        in_row = in_row.reshape(np.prod(in_shape)) # one dimension
-        in_col = in_col.reshape(np.prod(in_shape)) # one dimension
+        in_row = in_row.flatten() # one dimension
+        in_col = in_col.flatten() # one dimension
     
         # input image coordinates (ele, azi)
-        points = (in_coord.x.reshape(np.prod(in_shape)), 
-                  in_coord.y.reshape(np.prod(in_shape)))
+        points = (in_coord.x.flatten(), 
+                  in_coord.y.flatten())
         # output image coordinates (ele, azi)
-        xi = (out_coord.x.reshape(np.prod(out_shape)),
-              out_coord.y.reshape(np.prod(out_shape)))
+        xi = (out_coord.x.flatten(),
+              out_coord.y.flatten())
     
         logger.debug("interpolation started...")
 
