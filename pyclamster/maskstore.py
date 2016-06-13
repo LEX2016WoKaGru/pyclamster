@@ -25,6 +25,7 @@ import functools
 
 # External modules
 import numpy as np
+import scipy.ndimage
 
 # Internal modules
 from .image import Image as pyClImage
@@ -107,6 +108,26 @@ class MaskStore(object):
         merged_masks = functools.reduce(operator.mul, masks, 1).astype(bool)
         return merged_masks
 
+    def denoise(self, labels=None, denoising_ratio=5):
+        """
+        Denoise selected masks.
+        Args:
+            label (optional[list of int or str]): list of mask labels to be
+                denoised. Defaults to all masks.
+            denoising_ratio (int): The ratio within which pixels the
+                denoising step will be executed.
+
+        Returns:
+            self:
+        """
+        if labels is None :
+            keys = self.masks.keys()
+        else:
+            keys = [key for key in labels]
+        for key in keys:
+            self.masks[key] = denoiseMask(self.masks[key], denoising_ratio)
+        return self
+
     def applyMasks(self, image, labels=None, replace=True):
         """
         Mask an pyClImage instance with selected masks.
@@ -126,3 +147,21 @@ class MaskStore(object):
         image.data = np.ma.masked_array(image, mask=mask)
         return image
 
+
+def denoiseMask(mask, denoising_ratio=5):
+    """
+    Function to denoise a mask represented by a numpy array. The denoising is
+    done with binary erosion and propagation.
+    Args:
+        mask (numpy array): The mask which should be denoised represented by a
+            boolean numpy array.
+        denoising_ratio (int): The ratio within which pixels the denoising step
+            will be executed.
+    Returns:
+        denoised_mask (numpy array): The denoised mask represented by a boolean
+            numpy array.
+    """
+    eroded_mask = scipy.ndimage.binary_erosion(
+        mask, structure=np.ones((denoising_ratio, denoising_ratio)))
+    denoised_mask = scipy.ndimage.binary_propagation(eroded_mask, mask=mask)
+    return denoised_mask

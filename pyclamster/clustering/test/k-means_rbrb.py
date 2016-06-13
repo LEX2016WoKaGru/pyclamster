@@ -88,7 +88,10 @@ kmeans = KMeans(2).fit(anomaly_images)
 anomaly_labels = kmeans.labels
 anomaly_labels = anomaly_labels.splitUp(indices_or_sections=4)
 
-for label in anomaly_labels:
+for key, label in enumerate(anomaly_labels):
     label.reshape((w, h), replace=True)
-    scipy.misc.imsave(u'anomaly_labels_{0:d}.png'.format(i + 1),
-                      label.labels)
+    masks = label.getMaskStore()
+    mask = masks.getMask([1,])
+    scipy.misc.imsave(u'anomaly_labels_{0:d}.png'.format(key+1),
+                      mask)
+
