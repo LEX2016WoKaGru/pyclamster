@@ -28,7 +28,7 @@ import numpy.ma as ma
 import scipy.interpolate
 
 # Internal modules
-import coordinates
+from . import coordinates
 
 
 __version__ = "0.1"
