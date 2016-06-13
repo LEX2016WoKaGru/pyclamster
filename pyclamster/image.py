@@ -32,7 +32,7 @@ import numpy as np
 import scipy
 
 # Internal modules
-import fisheye
+import coordinates
 
 
 __version__ = "0.1"
@@ -82,40 +82,15 @@ class Image(object):
         # set metadata
         self.time = time
         self.projection = projection
-        self.azimuth = azimuth
-        self.elevation = elevation
+        self.coordinates = coordinates.SphericalCoordinates3d(
+            azimuth = azimuth, elevation = elevation
+            )
         self.zenith_pixel = zenith_pixel
         self.path = None
 
         # load the image
         self.loadImage(image)
 
-        # create empty elevation and azimuth
-        try:  # if image is already defined
-            width, height, *rest = np.shape(self.image)
-            self.elevation = np.empty((width, height))
-            self.azimuth = np.empty((width, height))
-        except:  # image not yet defined
-            # self.data      = np.empty( (0) ) # TODO does not work like this
-            # self.elevation = np.empty( (0) )
-            # self.azimuth   = np.empty( (0) )
-            # don't do anything for now.
-            pass
-
-
-            #        self.azimuth = azimuth
-            #        self.elevation = elevation
-            #        self.zenith_pixel = zenith_pixel #TODO add possibility to adjust zenith_pixel for camera correction
-            #        self.elevation_angle_per_pixel = elevation_angle_per_pixel
-            #        self.azimuth_north_angle = azimuth_north_angle
-            #        self.azimuth_direction = azimuth_direction
-            #        self.timestamp = timestamp
-
-            # load image from path if specified
-            #        if isinstance(path, str) and os.path.isfile(path):
-            #            self.loadImage(path)
-            #        else:
-            #            self.setMissingParameters()
 
     #############################################
     ### attributes/properties getters/setters ###
@@ -138,10 +113,7 @@ class Image(object):
 
     @projection.setter
     def projection(self, newprojection):
-        # if newprojection in (None,"equidistant","stereographic","orthogonal","equiangle"):
         self._projection = newprojection
-        # else:
-        # raise ValueError("unimplemented projection '{}'".format(newprojection))
 
     @property
     def time(self):
@@ -182,8 +154,9 @@ class Image(object):
         # set values
         self._image = image
         self._data = np.array(self._image)
+        # set coordinate shape
+        self.coordinates.shape = self.data.shape[:2]
 
-        # the data property is a wrapper around _data
 
     @property
     def data(self):
@@ -210,48 +183,9 @@ class Image(object):
         # set new data
         self._data = newdata
         self._image = PIL.Image.fromarray(self._data, mode)
+        # set coordinate shape
+        self.coordinates.shape = self.data.shape[:2]
 
-    @property
-    def elevation(self):
-        return self._elevation
-
-    @elevation.setter
-    def elevation(self, newelevation):
-        if not newelevation is None:
-            try:
-                widthnew, heightnew = np.shape(newelevation)
-                # logger.debug("widthnew: {}, heightnew: {}".format(widthnew,heightnew))
-                width, height, *rest = np.shape(self.image)
-                # logger.debug("width: {}, height: {}".format(width,height))
-                if (width, height) == (widthnew, heightnew):
-                    self._elevation = newelevation
-                else:
-                    raise ValueError(
-                        "shape of new elevation does not match image shape.")
-            except:
-                raise ValueError(
-                    "elevation must be a numpy.ndarray with shape according to image.")
-
-    @property
-    def azimuth(self):
-        return self._azimuth
-
-    @azimuth.setter
-    def azimuth(self, newazimuth):
-        if not newazimuth is None:
-            try:
-                widthnew, heightnew = np.shape(newazimuth)
-                # logger.debug("widthnew: {}, heightnew: {}".format(widthnew,heightnew))
-                width, height, *rest = np.shape(self.image)
-                # logger.debug("width: {}, height: {}".format(width,height))
-                if (width, height) == (widthnew, heightnew):
-                    self._azimuth = newazimuth
-                else:
-                    raise ValueError(
-                        "shape of new azimuth does not match image shape.")
-            except:
-                raise ValueError(
-                    "azimuth must be a numpy.ndarray with shape according to image.")
 
     ###############
     ### methods ###
@@ -308,17 +242,26 @@ class Image(object):
             image (str/path or PIL.Image or numpy.ndarray): image to load
         """
         ### create self._image according to specified argument ###
+        success = False
         # looks like PIL image
         if isinstance(image, PIL.Image.Image):
             logger.info("reading image directly from PIL.Image.Image object")
             self.image = image
+            success = True
         # argument is an image aleady
         elif isinstance(image, Image):
             logger.info("copying image directly from Image")
             # copy over attributes
             self.__dict__.update(image.__dict__)
+            ### copy everything by hand ###
+            self.time = copy.deepcopy(image.time)
+            self.projection = copy.deepcopy(image.projection)
+            self.coordinates = copy.deepcopy(image.coordinates)
+            self.zenith_pixel = copy.deepcopy(image.zenith_pixel)
+            self.path = copy.deepcopy(image.path)
+            self.image = copy.deepcopy(image.image)
 
-
+            success = True
 
         # argument looks like path
         elif isinstance(image, str):
@@ -328,6 +271,7 @@ class Image(object):
                 logger.info("reading image from path")
                 self.image = PIL.Image.open(image)
                 self.path = image  # set path
+                success = True
             else:
                 logger.warning(
                     "image argument is not a valid path! Can't read image.")
@@ -342,15 +286,12 @@ class Image(object):
                 "use PIL.Image.fromarray and pass that to loadImage() instead."
             ]))
             self.data = image
+            success = True
             # TODO: does not work like this, mode has to be specified somehow
         # nothing correct specified
         else:
             logger.info("nothing specified to read image. Nothing loaded.")
             # self.image = PIL.Image.new(mode="RGB", size=(1, 1)) # hard coded
-
-            # init things
-            # self.setDefaultParameters()
-            # self.applyCameraCorrections()
 
 
     # load time from filename
@@ -415,15 +356,16 @@ class Image(object):
             box (4-tuple of int): (left, top, right, bottom) (see PIL documentation)
         """
 
+        # crop metadata
+        # do this BEFORE re-setting the image
+        # otherwise, the shapes wouldn't match and the coordinate class
+        # would re-init the coordinates with empty masked arrays
+        self.coordinates.crop(box)
+        
         # crop image
         # somehow, self.image.crop( box ) alone does not work,
         # the self.image property has to be set...
         self.image = self.image.crop(box)
-        # crop metadata
-        if not self.elevation is None:
-            self.elevation = self.elevation[box[1]:box[3], box[0]:box[2]]
-        if not self.azimuth is None:
-            self.azimuth = self.azimuth[box[1]:box[3], box[0]:box[2]]
 
     def cut(self, box):
         """
@@ -528,7 +470,7 @@ class Image(object):
             for layer in range(np.shape(image.data)[2]):
                 layerout = scipy.ndimage.interpolation.map_coordinates(
                     input = self.data[:,:,layer],
-                    coordinates = map.T,
+                    coordinates = map.T, # map has to be transposed somehow
                     order = order
                     )
                 try:    out = np.dstack( (out, layerout) ) # add to stack
@@ -537,7 +479,7 @@ class Image(object):
         else: # only 2 dim...
             image.data = scipy.ndimage.interpolation.map_coordinates(
                 input = image.data,
-                coordinates = map.T,
+                coordinates = map.T, # map has to be transposed somehow
                 order = order
                 )
             
