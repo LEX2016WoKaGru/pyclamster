@@ -233,7 +233,7 @@ class FisheyeProjection(object):
         r = np.sqrt(col ** 2 + row ** 2)
 
         # calculate azimuth
-        coords = CarthesianCoordinates3d(x=col, # x: column
+        coords = coordinates.CarthesianCoordinates3d(x=col, # x: column
                                          y=row, # y: reversed row (upwards)
                                          azimuth_offset = north_angle, # north angle
                                          clockwise = clockwise # orientation
@@ -402,22 +402,22 @@ if __name__ == '__main__':
     # convert to grayscale
     #img.image = img.convert("L")
     # resize image
-    #img.image = img.resize((800,800))
+    img.image = img.resize((80,80))
 
     ### create a fisheye projection object ###
     f=FisheyeProjection("equidistant")
 
     ### create rectified coordinates ###
-    outshape=(500,500) # size of output image
+    outshape=(50,50) # size of output image
     rect_azimuth_offset = np.pi / 2 # north angle of rectified image
     rect_clockwise = False
     rect_x,rect_y=np.meshgrid(
         np.linspace(-20,20,num=outshape[1]),# image x coordinate goes right
         np.linspace(20,-20,num=outshape[0]) # image y coordinate goes up
         )
-    rect_z = 5 # rectify for height rect_z
+    rect_z = 10 # rectify for height rect_z
 
-    rect_coord = CarthesianCoordinates3d(
+    rect_coord = coordinates.CarthesianCoordinates3d(
         x = rect_x,
         y = rect_y,
         z = rect_z,
@@ -427,36 +427,41 @@ if __name__ == '__main__':
 
     ### create spherical coordinates of original image ###
     shape=np.shape(img.data)[:2] # shape of image
-    image_north_angle = 3 * np.pi / 5 # north angle ON the original image
+    image_north_angle = 6 * np.pi / 5 # north angle ON the original image
     orig_azimuth_offset = np.pi / 2 # "north angle" on image coordinates
     center = None # center of elevation/azimuth in the image
     maxelepos = (0,int(shape[1]/2)) # (one) position of maxium elevation
     maxele = np.pi / 2.2 # maximum elevation on the image border, < 90° here
 
-    orig_coord = SphericalCoordinates3d(
-        azimuth_offset=orig_azimuth_offset,
-        clockwise=False
-        )
+    img.coordinates.azimuth_offset = orig_azimuth_offset
+    img.coordinates.clockwise = False
 
-    orig_coord.elevation=f.createFisheyeElevation(
+    logger.debug("setting image elevation")
+    img.coordinates.elevation = f.createFisheyeElevation(
         shape,
         maxelepos=maxelepos,
         maxele=maxele,
         center=center
         )
-    orig_coord.azimuth=f.createAzimuth(
+    logger.debug("mean image elevation is {}".format(img.coordinates.elevation.mean()))
+
+    logger.debug("setting image azimuth")
+    img.coordinates.azimuth = f.createAzimuth(
         shape,
         maxelepos=maxelepos,
         center=center,
         north_angle = image_north_angle,
         clockwise=False
         )
-    orig_coord.radius = orig_coord.radius_with_height(z=rect_z)
+
+    logger.debug("setting image radius")
+    img.coordinates.radius = img.coordinates.radius_with_height(z=rect_z)
     
     ### create rectification map ###
     # based on regular grid
     logger.debug("calculating rectification map")
-    distmap = f.distortionMap(in_coord=orig_coord, out_coord=rect_coord, method="nearest")
+    distmap = f.distortionMap(in_coord=img.coordinates, 
+        out_coord=rect_coord, method="nearest")
 
     ### rectify image ##
     rectimage = img.applyDistortionMap(distmap)
@@ -468,7 +473,7 @@ if __name__ == '__main__':
     plt.imshow(img.data, interpolation="nearest")
     plt.subplot(3,4,2)
     plt.title("image radius (calculated)")
-    plt.imshow(orig_coord.radius, interpolation="nearest")
+    plt.imshow(img.coordinates.radius, interpolation="nearest")
     plt.colorbar()
     plt.subplot(3,4,3)
     plt.title("rectified r (calculated)")
@@ -479,19 +484,19 @@ if __name__ == '__main__':
     plt.imshow(rectimage.data, interpolation="nearest")
     plt.subplot(3,4,5)
     plt.title("image elevation (fix)")
-    plt.imshow(orig_coord.elevation,interpolation="nearest")
+    plt.imshow(img.coordinates.elevation,interpolation="nearest")
     plt.colorbar()
     plt.subplot(3,4,9)
     plt.title("image azimuth (fix)")
-    plt.imshow(orig_coord.azimuth,interpolation="nearest")
+    plt.imshow(img.coordinates.azimuth,interpolation="nearest")
     plt.colorbar()
     plt.subplot(3,4,6)
     plt.title("image x (calculated)")
-    plt.imshow(orig_coord.x,interpolation="nearest")
+    plt.imshow(img.coordinates.x,interpolation="nearest")
     plt.colorbar()
     plt.subplot(3,4,10)
     plt.title("image y (calculated)")
-    plt.imshow(orig_coord.y,interpolation="nearest")
+    plt.imshow(img.coordinates.y,interpolation="nearest")
     plt.colorbar()
     plt.subplot(3,4,7)
     plt.title("rectified x (fix)")

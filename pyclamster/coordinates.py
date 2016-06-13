@@ -76,7 +76,7 @@ class Coordinates3d(object):
             else: # newshape is not None
                 ### new shape is not None --> further investigation ###
                 if np.prod(newshape) == np.prod(self.shape) and \
-                    not shape is None:
+                    not shape is None and not newshape == self.shape:
                     ### reshape is possible --> reshape!  ###
                     # try to reshape current content
                     try:    
@@ -174,7 +174,8 @@ class Coordinates3d(object):
 
         try: # try this because resval can be None...
             if self.shape != resval.shape:
-                logger.debug("Adjusting shape from {} to {}".format(self.shape,resval.shape))
+                logger.debug("Adjusting shape from {} to {}".format(self.shape,
+                    resval.shape))
                 self.shape = resval.shape
         except: pass
 
@@ -187,10 +188,7 @@ class Coordinates3d(object):
         """
 
         for dim in self._dim_names: # loop over all dimensions
-            try: # try to crop to box
-                new = getattr(self, dim)[box[1]:box[3], box[0]:box[2]]
-            except: # didn' work
-                raise IndexError("invalid cropping box")
+            new = getattr(self, dim)[box[1]:box[3], box[0]:box[2]]
             # set underlying coordinate directly
             setattr(self, "_{}".format(dim) , new)
 
