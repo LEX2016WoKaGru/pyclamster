@@ -253,6 +253,14 @@ class Image(object):
             logger.info("copying image directly from Image")
             # copy over attributes
             self.__dict__.update(image.__dict__)
+            ### copy everything by hand ###
+            self.time = copy.deepcopy(image.time)
+            self.projection = copy.deepcopy(image.projection)
+            self.coordinates = copy.deepcopy(image.coordinates)
+            self.zenith_pixel = copy.deepcopy(image.zenith_pixel)
+            self.path = copy.deepcopy(image.path)
+            self.image = copy.deepcopy(image.image)
+
             success = True
 
         # argument looks like path
