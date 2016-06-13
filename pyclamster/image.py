@@ -91,32 +91,6 @@ class Image(object):
         # load the image
         self.loadImage(image)
 
-        # create empty elevation and azimuth
-        try:  # if image is already defined
-            width, height, *rest = np.shape(self.image)
-            self.elevation = np.empty((width, height))
-            self.azimuth = np.empty((width, height))
-        except:  # image not yet defined
-            # self.data      = np.empty( (0) ) # TODO does not work like this
-            # self.elevation = np.empty( (0) )
-            # self.azimuth   = np.empty( (0) )
-            # don't do anything for now.
-            pass
-
-
-            #        self.azimuth = azimuth
-            #        self.elevation = elevation
-            #        self.zenith_pixel = zenith_pixel #TODO add possibility to adjust zenith_pixel for camera correction
-            #        self.elevation_angle_per_pixel = elevation_angle_per_pixel
-            #        self.azimuth_north_angle = azimuth_north_angle
-            #        self.azimuth_direction = azimuth_direction
-            #        self.timestamp = timestamp
-
-            # load image from path if specified
-            #        if isinstance(path, str) and os.path.isfile(path):
-            #            self.loadImage(path)
-            #        else:
-            #            self.setMissingParameters()
 
     #############################################
     ### attributes/properties getters/setters ###
@@ -139,10 +113,7 @@ class Image(object):
 
     @projection.setter
     def projection(self, newprojection):
-        # if newprojection in (None,"equidistant","stereographic","orthogonal","equiangle"):
         self._projection = newprojection
-        # else:
-        # raise ValueError("unimplemented projection '{}'".format(newprojection))
 
     @property
     def time(self):
@@ -183,8 +154,9 @@ class Image(object):
         # set values
         self._image = image
         self._data = np.array(self._image)
+        # set coordinate shape
+        self.coordinates.shape = self.data.shape[:2]
 
-        # the data property is a wrapper around _data
 
     @property
     def data(self):
@@ -211,48 +183,9 @@ class Image(object):
         # set new data
         self._data = newdata
         self._image = PIL.Image.fromarray(self._data, mode)
+        # set coordinate shape
+        self.coordinates.shape = self.data.shape[:2]
 
-    @property
-    def elevation(self):
-        return self._elevation
-
-    @elevation.setter
-    def elevation(self, newelevation):
-        if not newelevation is None:
-            try:
-                widthnew, heightnew = np.shape(newelevation)
-                # logger.debug("widthnew: {}, heightnew: {}".format(widthnew,heightnew))
-                width, height, *rest = np.shape(self.image)
-                # logger.debug("width: {}, height: {}".format(width,height))
-                if (width, height) == (widthnew, heightnew):
-                    self._elevation = newelevation
-                else:
-                    raise ValueError(
-                        "shape of new elevation does not match image shape.")
-            except:
-                raise ValueError(
-                    "elevation must be a numpy.ndarray with shape according to image.")
-
-    @property
-    def azimuth(self):
-        return self._azimuth
-
-    @azimuth.setter
-    def azimuth(self, newazimuth):
-        if not newazimuth is None:
-            try:
-                widthnew, heightnew = np.shape(newazimuth)
-                # logger.debug("widthnew: {}, heightnew: {}".format(widthnew,heightnew))
-                width, height, *rest = np.shape(self.image)
-                # logger.debug("width: {}, height: {}".format(width,height))
-                if (width, height) == (widthnew, heightnew):
-                    self._azimuth = newazimuth
-                else:
-                    raise ValueError(
-                        "shape of new azimuth does not match image shape.")
-            except:
-                raise ValueError(
-                    "azimuth must be a numpy.ndarray with shape according to image.")
 
     ###############
     ### methods ###
@@ -351,12 +284,6 @@ class Image(object):
         else:
             logger.info("nothing specified to read image. Nothing loaded.")
             # self.image = PIL.Image.new(mode="RGB", size=(1, 1)) # hard coded
-
-        if success:
-            # set new coordinate shape
-            self.coordinates.shape = self.data.shape[:2]
-
-
 
 
     # load time from filename

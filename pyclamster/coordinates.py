@@ -74,16 +74,28 @@ class Coordinates3d(object):
                 logger.debug("newshape is None, setting {} to None".format(dim))
             else: # newshape is not None
                 ### new shape is not None --> further investigation ###
-                if np.prod(newshape) == np.prod(self.shape): # reshape
+                if np.prod(newshape) == np.prod(self.shape) and \
+                    not shape is None:
                     ### reshape is possible --> reshape!  ###
                     # try to reshape current content
-                    try:    new = getattr(self, dim).reshape(newshape) # try
-                    except: new = None # if not yet defined, use None
+                    try:    
+                        new = getattr(self, dim).reshape(newshape) # try
+                        logger.debug( " ".join([
+                        "reshaping {dim} from shape {shape}",
+                        "to shape {newshape}",
+                        ]).format(dim=dim,newshape=newshape,shape=shape))
+                    except: # dimension was not yet defined --> use empty
+                        logger.debug(" ".join([
+                            "can't reshape {dim} from shape {shape}",
+                            "to shape {newshape}.",
+                            "setting {dim} to empty array of shape {newshape}."
+                            ]).format(dim=dim,newshape=newshape,shape=shape))
+                        new = ma.masked_array(
+                            data = np.empty(newshape),
+                            mask = np.ones( newshape))
+                        
                     # reshape variable
                     setattr(self, "_{}".format(dim), new)
-                    logger.debug( " ".join([
-                    "reshaping {dim} from shape {shape} to shape {newshape}",
-                    ]).format(dim=dim,newshape=newshape,shape=shape))
                 else: # reshape not possible
                     ### reshape NOT possible 
                     ### --> reinit with empty arrays if oldshape does not match
@@ -93,8 +105,9 @@ class Coordinates3d(object):
                             data = np.empty(newshape),
                             mask = np.ones( newshape)))
                         logger.debug( " ".join([
-                        "setting {dim} to completely masked array of shape {newshape}",
-                        "because shape {dimshape} didn't match newshape {newshape}."
+                        "setting {dim} to completely masked array of shape",
+                        "{newshape} because shape {dimshape} didn't match",
+                        "newshape {newshape}."
                         ]).format(dim=dim,newshape=newshape,dimshape=shape))
         
 
