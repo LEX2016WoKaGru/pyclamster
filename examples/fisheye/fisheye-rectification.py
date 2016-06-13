@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
+import time
 import pyclamster
 import logging
 import numpy as np
 
 logging.basicConfig(level=logging.DEBUG)
 
+start_time = time.time()
 # read an image
 img = pyclamster.image.Image("../images/wettermast/Image_Wkm_Aktuell_2.jpg")
 # convert to grayscale
@@ -122,4 +124,5 @@ plt.subplot(3,4,12)
 plt.title("rectified azimuth (calculated)")
 plt.imshow(rect_coord.azimuth,interpolation="nearest")
 plt.colorbar()
+logging.debug("Time elapsed: {0:.3f} s".format(time.time()-start_time))
 plt.show()
