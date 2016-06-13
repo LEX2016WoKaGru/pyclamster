@@ -32,7 +32,8 @@ import numpy as np
 import scipy
 
 # Internal modules
-import coordinates
+from . import coordinates
+from . import fisheye
 
 
 __version__ = "0.1"

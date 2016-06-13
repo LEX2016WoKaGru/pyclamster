@@ -29,7 +29,7 @@ from sklearn.metrics import silhouette_score
 # Internal modules
 from .labels import Labels
 
-__version__ = ""
+__version__ = "0.1"
 
 
 class KMeans(BaseEstimator, ClusterMixin, TransformerMixin):
