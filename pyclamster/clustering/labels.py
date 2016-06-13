@@ -124,7 +124,7 @@ class Labels(object):
         """
         converted_store = {}
         for val in np.unique(self.labels):
-            converted_store[val] = (self.labels==val)
+            converted_store[val] = (self.labels!=val)
         return MaskStore(converted_store)
 
     # def getRelevantSamples(self, nh_size=12, crit=0.75):

@@ -105,7 +105,10 @@ class MaskStore(object):
             masks = self.masks.values()
         else:
             masks = [self.masks[key] for key in labels]
-        merged_masks = functools.reduce(operator.mul, masks, 1).astype(bool)
+        if len(labels)>1:
+            merged_masks = functools.reduce(np.ma.mask_or, masks, 1).astype(bool)
+        else:
+            merged_masks = masks[0]
         return merged_masks
 
     def denoise(self, labels=None, denoising_ratio=5):
@@ -144,6 +147,10 @@ class MaskStore(object):
         mask = self.getMask(labels)
         if replace:
             image = pyClImage(image)
+        if image.data.shape[2]>1:
+            w, h = mask.shape
+            mask = np.reshape(mask, (w, h, 1))
+            mask = np.dstack((mask,mask,mask))
         image.data = np.ma.masked_array(image, mask=mask)
         return image
 
@@ -161,7 +168,15 @@ def denoiseMask(mask, denoising_ratio=5):
         denoised_mask (numpy array): The denoised mask represented by a boolean
             numpy array.
     """
+    mask = ~mask
     eroded_mask = scipy.ndimage.binary_erosion(
         mask, structure=np.ones((denoising_ratio, denoising_ratio)))
-    denoised_mask = scipy.ndimage.binary_propagation(eroded_mask, mask=mask)
+    denoised_mask = scipy.ndimage.binary_propagation(
+        eroded_mask, structure=np.ones((denoising_ratio, denoising_ratio)),
+        mask=mask)
+    # opened_mask = scipy.ndimage.binary_opening(
+    #     mask, structure=np.ones((denoising_ratio, denoising_ratio)))
+    # denoised_mask = scipy.ndimage.binary_opening(
+    #     opened_mask, structure=np.ones((denoising_ratio, denoising_ratio)))
+    denoised_mask = ~denoised_mask
     return denoised_mask
