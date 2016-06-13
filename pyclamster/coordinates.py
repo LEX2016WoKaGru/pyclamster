@@ -43,6 +43,7 @@ class Coordinates3d(object):
     def __init__(self, dimnames, shape=None):
         # initialize base variables
         self._dim_names = dimnames
+        # initialize shape
         self.shape = shape
 
     @property
@@ -51,37 +52,65 @@ class Coordinates3d(object):
 
     @shape.setter
     def shape(self, newshape): # if the shape of the coordinates is set
-        self._shape = newshape
-        if not newshape is None: # when the new shape is not None
-            for dim in self._dim_names: # loop over all dimension
-                try:    shape = getattr(self, dim).shape # try to read shape
-                except: shape = None # if not yet defined, use None
-                if shape != newshape: # only if new shape does not match
-                    # set to an empty array
-                    setattr(self, "_{}".format(dim), ma.masked_array(
-                        data = np.empty(newshape),
-                        mask = np.ones( newshape)))
-                    logger.debug( " ".join([
-                    "setting {dim} to completely masked array of shape {newshape}",
-                    "because shape {dimshape} didn't match newshape {newshape}."
-                    ]).format(dim=dim,newshape=newshape,dimshape=shape))
-        else: # if new shape is None, set all dimensions to None
-            for dim in self._dim_names: # loop over all dimension
+        """
+        set shape of coordinates
+        args:
+            newshape (tuple of int): new shape of coordinates. If newshape is
+                None, all dimensions are set to None. If a reshape of the
+                dimensions is possible, a reshape is performed on all
+                dimensions. I a reshape is not possible, all dimensions
+                are initialized with completely masked empty arrays of the
+                new shape. If newshape is equal the old shape, do nothing.
+        """
+        self._shape = newshape # set new shape
+        ### loop over all dimensions ###
+        for dim in self._dim_names: # loop over all dimensions
+            try:    shape = getattr(self, dim).shape # try to read shape
+            except: shape = None # if not yet defined, use None
+
+            if newshape is None: # newshape is None
+                ### new shape is None --> set everything to None ###
                 setattr(self, "_{}".format(dim), None)
                 logger.debug("newshape is None, setting {} to None".format(dim))
-            
+            else: # newshape is not None
+                ### new shape is not None --> further investigation ###
+                if np.prod(newshape) == np.prod(self.shape): # reshape
+                    ### reshape is possible --> reshape!  ###
+                    # try to reshape current content
+                    try:    new = getattr(self, dim).reshape(newshape) # try
+                    except: new = None # if not yet defined, use None
+                    # reshape variable
+                    setattr(self, "_{}".format(dim), new)
+                    logger.debug( " ".join([
+                    "reshaping {dim} from shape {shape} to shape {newshape}",
+                    ]).format(dim=dim,newshape=newshape,shape=shape))
+                else: # reshape not possible
+                    ### reshape NOT possible 
+                    ### --> reinit with empty arrays if oldshape does not match
+                    if shape != newshape: # only if new shape does not match
+                        # set to an empty array
+                        setattr(self, "_{}".format(dim), ma.masked_array(
+                            data = np.empty(newshape),
+                            mask = np.ones( newshape)))
+                        logger.debug( " ".join([
+                        "setting {dim} to completely masked array of shape {newshape}",
+                        "because shape {dimshape} didn't match newshape {newshape}."
+                        ]).format(dim=dim,newshape=newshape,dimshape=shape))
+        
 
     # set the coordinate to a new value
     def _set_coordinate(self, coord, value):
         """
-        Set the coordinate 'coord' to value 'value'.
+        Set the coordinate 'coord' to value 'value'. The value is converted
+        to an array or expanded to an array of appropriate shape if value
+        only has length 1.
         If the other coordinates are undefined, set them to empty masked arrays
         of appropriate shape.
 
         args:
             coord (str): name of the coord attribute
-            value (array_like): new coordinate array. Must have 
-                the same shape as other two coordinate dimensions (if defined).
+            value (array_like or single numeric): new coordinate array. 
+                Must be of shape self.shape. 
         """
         logger.debug("attempt to set coordinate {} to {}.".format(coord,value))
 
@@ -96,7 +125,8 @@ class Coordinates3d(object):
             # check shape
             if not self.shape is None: # if shape is defined
                 if np.prod(value.shape) == 1: # only one value was given
-                    value = np.full( self.shape, value) # filled constant array
+                    # filled constant array
+                    value = np.full( self.shape, value, np.array(value).dtype)
                 elif value.shape != self.shape: # value shape does not match
                     raise ValueError(
                     "invalid shape {} (not {}) of new coordinate {}".format(
@@ -160,7 +190,10 @@ class CarthesianCoordinates3d(Coordinates3d):
             np.maskedarray of shape (width, height) with azimuth values
         """
         # parent constructor
-        super().__init__(dimnames = ["x","y","z"])
+        super().__init__(
+            shape = shape,
+            dimnames = ["x","y","z"]
+            )
 
         # initially set underlying attributes to None
         self._x, self._y, self._z = (None, None, None)
@@ -314,7 +347,6 @@ class SphericalCoordinates3d(Coordinates3d):
             )
 
         # copy over the arguments
-        self.shape       = shape
         self.azimuth     = azimuth
         self.elevation   = elevation
         self.radius      = radius
