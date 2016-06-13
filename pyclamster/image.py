@@ -32,7 +32,7 @@ import numpy as np
 import scipy
 
 # Internal modules
-import fisheye
+from . import fisheye
 
 
 __version__ = "0.1"
