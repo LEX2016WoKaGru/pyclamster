@@ -348,15 +348,16 @@ class Image(object):
             box (4-tuple of int): (left, top, right, bottom) (see PIL documentation)
         """
 
+        # crop metadata
+        # do this BEFORE re-setting the image
+        # otherwise, the shapes wouldn't match and the coordinate class
+        # would re-init the coordinates with empty masked arrays
+        self.coordinates.crop(box)
+        
         # crop image
         # somehow, self.image.crop( box ) alone does not work,
         # the self.image property has to be set...
         self.image = self.image.crop(box)
-        # crop metadata
-        if not self.elevation is None:
-            self.elevation = self.elevation[box[1]:box[3], box[0]:box[2]]
-        if not self.azimuth is None:
-            self.azimuth = self.azimuth[box[1]:box[3], box[0]:box[2]]
 
     def cut(self, box):
         """

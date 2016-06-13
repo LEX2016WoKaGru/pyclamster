@@ -126,7 +126,7 @@ class Coordinates3d(object):
             value (array_like or single numeric): new coordinate array. 
                 Must be of shape self.shape. 
         """
-        logger.debug("attempt to set coordinate {} to {}.".format(coord,value))
+        #logger.debug("attempt to set coordinate {} to {}.".format(coord,value))
 
         # find out names of remaining two dimensions
         i = self._dim_names.index(coord)
