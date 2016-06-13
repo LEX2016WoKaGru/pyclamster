@@ -21,6 +21,7 @@ Created for pyclamster
 """
 # System modules
 import logging
+import copy
 
 # External modules
 import numpy as np
@@ -168,7 +169,7 @@ class Coordinates3d(object):
                         ",".join(self._dim_names),self.shape))
 
         # set resulting value
-        logger.debug("setting {} to {}".format(coord,resval))
+        #logger.debug("setting {} to {}".format(coord,resval))
         setattr(self, "_{}".format(coord), resval)
 
         try: # try this because resval can be None...
@@ -176,6 +177,36 @@ class Coordinates3d(object):
                 logger.debug("Adjusting shape from {} to {}".format(self.shape,resval.shape))
                 self.shape = resval.shape
         except: pass
+
+    # crop coordinates to a box
+    def crop(self, box):
+        """
+        crop the coordinates in-place to a box
+        args:
+            box (4-tuple of int): (left, top, right, bottom)
+        """
+
+        for dim in self._dim_names: # loop over all dimensions
+            try: # try to crop to box
+                new = getattr(self, dim)[box[1]:box[3], box[0]:box[2]]
+            except: # didn' work
+                raise IndexError("invalid cropping box")
+            # set underlying coordinate directly
+            setattr(self, "_{}".format(dim) , new)
+
+    # cut out a box
+    def cut(self, box):
+        """
+        cut the coordinates to a box and return it
+        args:
+            box (4-tuple of int): (left, top, right, bottom)
+        return:
+            coordinates = copied and copped instance
+        """
+        new = copy.deepcopy(self) # copy
+        new.crop(box) # crop
+        return new # return
+        
             
 
 # class for carthesian 3d coordinates
