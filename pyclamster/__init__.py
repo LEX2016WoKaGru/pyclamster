@@ -27,6 +27,7 @@ from .image import *
 from .fisheye import *
 from .maskstore import *
 from .coordinates import *
+from .calibration import *
 from .camera import *
 
 __version__ = "0.1"
