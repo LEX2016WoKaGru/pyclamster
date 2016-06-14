@@ -32,7 +32,7 @@ import scipy.misc
 from sklearn.feature_extraction.image import extract_patches_2d
 
 # Internal modules
-from ..maskstore import MaskStore
+from ..maskstore import MaskStore as pyClMaskstore
 
 __version__ = "0.1"
 
@@ -125,7 +125,7 @@ class Labels(object):
         converted_store = {}
         for val in np.unique(self.labels):
             converted_store[val] = (self.labels!=val)
-        return MaskStore(converted_store)
+        return pyClMaskstore(converted_store)
 
     # def getRelevantSamples(self, nh_size=12, crit=0.75):
     #     xy_size = nh_size*2+1

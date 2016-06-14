@@ -27,7 +27,7 @@ from sklearn.base import BaseEstimator, TransformerMixin, ClusterMixin
 from sklearn.metrics import silhouette_score
 
 # Internal modules
-from .labels import Labels
+from .old_labels import Labels
 
 __version__ = "0.1"
 
@@ -75,13 +75,44 @@ class KMeans(BaseEstimator, ClusterMixin, TransformerMixin):
             X (numpy array):
 
         Returns:
-            n_cluster, scores
+            n_cluster, scores, intertia
         """
-        scores = {}
+        silhouette = {1: -1}
+        inertia = {}
         for k in range(range_k[0], range_k[1]+1):
             clusterer = self.base_algorithm(k).fit(X)
             labels = clusterer.labels_
-            scores[k] = silhouette_score(X, labels, sample_size=1000,
-                                         random_state=42)
-        n_cluster = max(scores, key=scores.get)
-        return n_cluster, scores
+            silhouette[k] = silhouette_score(X, labels, sample_size=1000,
+                                          random_state=42)
+            inertia[k] = clusterer.inertia_
+            if silhouette[k-1]>silhouette[k]:
+                n_cluster = k-1
+                break
+        else:
+            n_cluster = max(silhouette, key=silhouette.get)
+        return n_cluster, silhouette, inertia
+
+    def gap(self, X, range_k=(2, 20)):
+        """
+        Based on the silhouette score at the moment.
+        Args:
+            X (numpy array):
+
+        Returns:
+            n_cluster, scores, intertia
+        """
+        mins, maxes = np.min(X, axis=0), np.max(X, axis=0)
+        silhouette = {1: -1}
+        inertia = {}
+        for k in range(range_k[0], range_k[1]+1):
+            clusterer = self.base_algorithm(k).fit(X)
+            labels = clusterer.labels_
+            silhouette[k] = silhouette_score(X, labels, sample_size=1000,
+                                          random_state=42)
+            inertia[k] = clusterer.inertia_
+            if silhouette[k-1]>silhouette[k]:
+                n_cluster = k-1
+                break
+        else:
+            n_cluster = max(silhouette, key=silhouette.get)
+        return n_cluster, silhouette, inertia

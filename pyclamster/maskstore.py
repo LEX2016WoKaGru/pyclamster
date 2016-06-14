@@ -27,6 +27,8 @@ import functools
 import numpy as np
 import scipy.ndimage
 
+from skimage.morphology import remove_small_objects
+
 # Internal modules
 from .image import Image as pyClImage
 
@@ -131,7 +133,22 @@ class MaskStore(object):
             self.masks[key] = denoiseMask(self.masks[key], denoising_ratio)
         return self
 
-    def applyMasks(self, image, labels=None, replace=True):
+    def labelMask(self, labels=None):
+        """
+        Label a given mask.
+        Args:
+            labels (optional[list of int or str]): list of mask labels to be
+                labeled. Defaults to all masks.
+
+        Returns:
+            labels (Labels): Labels instance with the labels as data.
+            n_labels (int): Number of labels.
+        """
+        mask = self.getMask(labels)
+        labels, nb_labels = scipy.ndimage.label(~mask)
+        return Labels(labels), nb_labels
+
+    def applyMask(self, image, labels=None, fill_value=None, replace=True):
         """
         Mask an pyClImage instance with selected masks.
         Args:
@@ -152,10 +169,103 @@ class MaskStore(object):
             mask = np.reshape(mask, (w, h, 1))
             mask = np.dstack((mask,mask,mask))
         image.data = np.ma.masked_array(image, mask=mask)
+        if not fill_value is None:
+            image.data.set_fill_value(fill_value)
         return image
 
 
-def denoiseMask(mask, denoising_ratio=5):
+class Labels(object):
+    """
+    This class contains the labels of the K-Means algorithm.
+    The labels could be splitted up, reshaped, filtered.
+    """
+
+    def __init__(self, labels):
+        """
+        The initialization of the labels class.
+        Args:
+            labels (numpy array): The array, with the labels.
+        """
+        self.labels = labels
+
+    @property
+    def labels(self):
+        return self.__labels
+
+    @labels.setter
+    def labels(self, labels):
+        self.__labels = labels
+
+    def binarize(self, labels_true, replace=False):
+        """
+        Method to convert the labels into boolean values.
+        Args:
+            labels_true (int/list[int]): The label/labels which should be
+                converted in True. The other labels are set as False.
+            replace (bool): If the original labels should be replaced.
+
+        Returns:
+            bin_labels (optional[Labels]): If replace is False,
+                the binarized labels will be returned as new Labels instance.
+        """
+        if not replace:
+            bin_labels = deepcopy(self.labels)
+        else:
+            bin_labels = self.labels
+        bin_labels[bin_labels in labels_true] = True
+        bin_labels[not bin_labels in labels_true] = False
+        if not replace:
+            return Labels(bin_labels)
+
+    def splitUp(self, **kwargs):
+        """
+        Method to split the labels up. This a wrapper for the numpy.split
+        function. For more informations and arguments please refer to the
+        documentation of numpy.split (the array has not to be specified
+        in the arguments).
+        Returns:
+            splitted_labels (list[Labels]):
+                The splitted up labels as list with new Labels instances.
+        """
+        splitted_labels = np.split(self.labels, **kwargs)
+        splitted_labels = [Labels(l) for l in splitted_labels]
+        return splitted_labels
+
+    def reshape(self, new_shape, replace=False, **kwargs):
+        """
+        Method to reshape a labels class with given size. This is a wrapper for
+        the numpy.reshape function. For more informations please
+        refer to the documentation of numpy.reshape.
+        Args:
+            new_shape (int/tuple[int]): The new shape should have the same
+                elements sum as the old shape.
+            replace (bool): If the original labels should be replaced.
+
+        Returns:
+            reshaped_labels (optional[Labels]): If replace is False,
+                the reshaped labels will be returned as new Labels instance.
+        """
+        reshaped_labels = np.reshape(self.labels, newshape=new_shape)
+        if replace:
+            self.labels = reshaped_labels
+            return self
+        else:
+            return Labels(reshaped_labels)
+
+    def getMaskStore(self):
+        """
+        Method to convert the labels into a mask store.
+        Returns:
+            converted_store (MaskStore): The converted MaskStore with the
+                unique labels as masks.
+        """
+        converted_store = {}
+        for val in np.unique(self.labels):
+            converted_store[val] = (self.labels!=val)
+        return MaskStore(converted_store)
+
+
+def denoiseMask(mask, denoising_ratio=15):
     """
     Function to denoise a mask represented by a numpy array. The denoising is
     done with binary erosion and propagation.
@@ -169,14 +279,15 @@ def denoiseMask(mask, denoising_ratio=5):
             numpy array.
     """
     mask = ~mask
-    eroded_mask = scipy.ndimage.binary_erosion(
-        mask, structure=np.ones((denoising_ratio, denoising_ratio)))
-    denoised_mask = scipy.ndimage.binary_propagation(
-        eroded_mask, structure=np.ones((denoising_ratio, denoising_ratio)),
-        mask=mask)
+    # eroded_mask = scipy.ndimage.binary_erosion(
+    #     mask, structure=np.ones((denoising_ratio, denoising_ratio)))
+    # denoised_mask = scipy.ndimage.binary_propagation(
+    #     eroded_mask, structure=np.ones((denoising_ratio, denoising_ratio)),
+    #     mask=mask)
     # opened_mask = scipy.ndimage.binary_opening(
     #     mask, structure=np.ones((denoising_ratio, denoising_ratio)))
     # denoised_mask = scipy.ndimage.binary_opening(
     #     opened_mask, structure=np.ones((denoising_ratio, denoising_ratio)))
+    denoised_mask = remove_small_objects(mask, denoising_ratio)
     denoised_mask = ~denoised_mask
     return denoised_mask

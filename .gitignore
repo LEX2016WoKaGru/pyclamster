@@ -158,3 +158,5 @@ __pycache__
 /examples/original.jpg
 /examples/detection.png
 /examples/detection.jpg
+!/scripts
+/trained_models
