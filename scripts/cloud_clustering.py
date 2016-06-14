@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Created on 27.05.16
+Created on 13.06.16
 
 Created for pyclamster
 
@@ -24,6 +24,8 @@ Created for pyclamster
 # System modules
 import pickle
 import warnings
+import glob
+import os
 
 # External modules
 import numpy as np
@@ -32,6 +34,12 @@ import scipy.ndimage
 
 from sklearn.cluster import MiniBatchKMeans
 from sklearn.preprocessing import StandardScaler
+
+from skimage.segmentation import random_walker
+from skimage.morphology import watershed
+from skimage.feature import peak_local_max
+from skimage import morphology
+
 
 
 # Internal modules
@@ -43,55 +51,43 @@ from pyclamster.clustering.functions import localBrightness, rbDetection
 warnings.catch_warnings()
 warnings.filterwarnings('ignore')
 
-"""
-0 = Sky
-1 = Clouds
-2 = Trash
-3 = Trash
-4 = Sky
-5 = Trash
-6 = Clouds
 
-"""
+__version__ = ""
 
-__version__ = "0.1"
+base_folder = "/home/tfinn/Projects/pyclamster/"
+image_directory = os.path.join(base_folder, "examples", "images", "wettermast")
+trained_models = os.path.join(base_folder, "trained_models")
 
-k_cluster = 2
 good_angle = 45
 center = int(1920/2)
 good_angle_dpi = int(np.round(1920 / 180 * good_angle))
-neighbour_size = 10
-
 denoising_ratio = 10
+all_images = glob.glob(os.path.join(image_directory, "*.jpg"))
+all_images = [os.path.join(image_directory, "Image_Wkm_Aktuell_2.jpg"),]
 
-anomaly_images = None
 
-for i in range(1, 5):
-    image = Image(u'Image_Wkm_Aktuell_{0:d}.jpg'.format(i))
 
+kmeans = pickle.load(open(os.path.join(trained_models, "kmeans.pk"), "rb"))
+
+for image_path in all_images:
+    image = Image(image_path)
     image.data = LCN(size=(50,50,3), scale=False).fit_transform(image.data)
-    #image.data = LCN(size=(30,30,1), scale=True).fit_transform(image.data)
     image.data = image.data[center - good_angle_dpi:center + good_angle_dpi,
-                            center - good_angle_dpi:center + good_angle_dpi]
-
-    anomaly_image = rbDetection(image.data)
-    scipy.misc.imsave(u'test_anomaly_{0:d}.jpg'.format(i), anomaly_image)
-
-    w, h = original_shape = tuple(anomaly_image.shape)
-    anomaly_image = np.reshape(anomaly_image, (w * h, -1))
-    if anomaly_images is None:
-        anomaly_images = anomaly_image
-    else:
-        anomaly_images = np.r_[anomaly_images, anomaly_image]
-
-kmeans = KMeans(2).fit(anomaly_images)
-anomaly_labels = kmeans.labels
-anomaly_labels = anomaly_labels.splitUp(indices_or_sections=4)
-
-for key, label in enumerate(anomaly_labels):
+                 center - good_angle_dpi:center + good_angle_dpi]
+    w, h, _ = original_shape = image.data.shape
+    raw_image = rbDetection(image.data).reshape((w*h, -1))
+    label = kmeans.predict(raw_image)
     label.reshape((w, h), replace=True)
     masks = label.getMaskStore()
-    mask = masks.getMask([1,])
-    scipy.misc.imsave(u'anomaly_labels_{0:d}.png'.format(key+1),
-                      mask)
-
+    masks.denoise([0], 1000)
+    #scipy.misc.imshow(masks.getMask([0,]))
+    image = masks.applyMask(image, [0,])
+    labels, _ = masks.labelMask([0,])
+    scipy.misc.imshow(labels.labels)
+    # w, h, n = original_shape = tuple(image.data.shape)
+    # anomaly_image = np.reshape(image.data, (w * h, n))
+    # fill_value = anomaly_image.get_fill_value()
+    # print("before ", anomaly_image.shape)
+    # anomaly_image = anomaly_image[anomaly_image.mask.any(axis=1)]
+    # print("after ", anomaly_image.shape)
+    # #print(KMeans().bestK(anomaly_image))
