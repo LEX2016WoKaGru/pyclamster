@@ -3,9 +3,7 @@
 Created on 10.05.16
 Created for pyClamster
 
-@author: Tobias Sebastian Finn, tobias.sebastian.finn@studium.uni-hamburg.de
-
-    Copyright (C) {2016}  {Tobias Sebastian Finn}
+    Copyright (C) {2016}
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -25,6 +23,13 @@ Created for pyClamster
 # External modules
 
 # Internal modules
+from .cloud import *
+from .functions import *
+from .kmeans import *
+from .preprocess import *
 
 
-__version__ = ""
+__version__ = "0.1"
+
+
+__all__ = ["Cloud", "KMeans", "LCN", "ZCA"]
