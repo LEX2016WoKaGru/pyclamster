@@ -92,40 +92,63 @@ class CameraCalibrationFunction(object):
                          self.elevation(parameters)])
 
 class CameraCalibrationLossFunction(object):
-    def __init__(self, known_row, known_col, known_azimuth, known_elevation,
-                 radial):
+    def __init__(self, pixel_coords, sun_coords, radial):
+        """
+        class constructor.
+        args:
+            pixel_coords (CarthesianCoordinates3d): carthesian coordinates
+                (y=row,x=col) of sun pixel positions on image.
+            sun_coords (SphericalCoordinates3D): spherical coordinates
+                (azimuth, elevation) of sun positions.
+            radial (callable): radial distortion funciton. Given the elevation 
+                as parameter, return the (unified) image radius in pixel units.
+                This does not need to be the exact radius, it may be
+                (in all directions equally) scaled by an arbitrary factor.
+        returns:
+            calibration(CameraCalibrationLossFunction)
+        """
         # copy over attributes
-        self.row    = known_row
-        self.col    = known_col
-        self.azi    = known_azimuth
-        self.ele    = known_elevation
-        self.radial = radial
+        self.pixel_coords = pixel_coords
+        self.sun_coords   = sun_coords
+        self.radial       = radial
 
     def __call__(self, estimate):
         try:    estimate = estimate.parameters
         except: pass
         est_row_c, est_col_c, est_north, est_f, est_alpha = estimate
+        row, col = self.pixel_coords.y, self.pixel_coords.x
+        azi, ele = self.sun_coords.azimuth, self.sun_coords.elevation
+        logger.debug("row: {row}, col: {col}, azi: {azi}, ele: {ele}".format(
+            row=row,col=col,azi=azi,ele=ele))
+        logger.debug("row_c: {row_c}, col_c: {col_c}, f: {f}, alpha: {a}".format(
+            row_c=est_row_c,col_c=est_col_c,f=est_f,a=est_alpha))
     
+        # set estimate of azimuth offset
+        self.pixel_coords.azimuth_offset = est_north
+
         ### calculate elevation residual ###
+        # estimated radius according to radial projection
+        est_radius_fisheye = est_f * self.radial(ele) ** est_alpha
+        logger.debug("estimated fisheye image radius: {}".format(est_radius_fisheye))
         # radius from estimated center for each measured input dataset
-        r_est = np.sqrt((self.row-est_row_c)**2+(self.col-est_col_c)**2) / est_f
-        # "real" radius when taking elevation directly
-        r_real = self.radial(self.ele) ** est_alpha
+        est_radius_image = np.sqrt((row-est_row_c)**2+(col-est_col_c)**2)
+        logger.debug("estimated image radius: {}".format(est_radius_image))
         # elevation residual
-        res_ele = r_est - r_real
+        res_ele = est_radius_fisheye - est_radius_image
 
         ### calculate azimuth residual ###
-        # TODO: calculate azimuth residual
+        res_azi = azi - self.pixel_coords.azimuth
         
         # return resulting error
-        return(res_ele.mean())
+        return(np.abs(res_ele.mean()+res_azi.mean()))
 
 
 
 # calibrator class
 class CameraCalibrator(object):
-    def __init__(self, image):
-        self.image = image
+    def __init__(self, image, method=None):
+        self.image  = image
+        self.method = method
 
     def estimate(self, lossfunc, first_guess):
         # empty parameterrs
@@ -134,14 +157,16 @@ class CameraCalibrator(object):
         estimate = optimize.minimize(
             lossfunc,
             first_guess.parameters,
+            method=self.method,
             bounds=[(0,self.image.data.shape[0]), # row bound
                     (0,self.image.data.shape[1]), # col bound
                     (-4*np.pi,4*np.pi),           # north_angle bound
                     (0,np.Inf),                   # f bound
-                    (0,1)]                   # alpha bound
+                    (0,1)]                        # alpha bound
             )
          
         opt_estimate.parameters = estimate.x
+        logger.debug(estimate)
         return(opt_estimate)
 
 
