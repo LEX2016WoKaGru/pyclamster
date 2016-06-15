@@ -43,4 +43,5 @@ calibrator = pyclamster.calibration.CameraCalibrator(img,method="L-BFGS-B")
 calibration = calibrator.estimate(lossfunction, params_firstguess)
 
 # print the results
-print(calibration)
+print(calibration.fit)
+print(calibration.parameters)

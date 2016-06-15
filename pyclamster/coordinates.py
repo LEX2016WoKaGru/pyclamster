@@ -72,7 +72,7 @@ class Coordinates3d(object):
             if newshape is None: # newshape is None
                 ### new shape is None --> set everything to None ###
                 setattr(self, "_{}".format(dim), None)
-                logger.debug("newshape is None, setting {} to None".format(dim))
+                #logger.debug("newshape is None, setting {} to None".format(dim))
             else: # newshape is not None
                 ### new shape is not None --> further investigation ###
                 if np.prod(newshape) == np.prod(self.shape) and \
@@ -81,16 +81,16 @@ class Coordinates3d(object):
                     # try to reshape current content
                     try:    
                         new = getattr(self, dim).reshape(newshape) # try
-                        logger.debug( " ".join([
-                        "reshaping {dim} from shape {shape}",
-                        "to shape {newshape}",
-                        ]).format(dim=dim,newshape=newshape,shape=shape))
+                        #logger.debug( " ".join([
+                        #"reshaping {dim} from shape {shape}",
+                        #"to shape {newshape}",
+                        #]).format(dim=dim,newshape=newshape,shape=shape))
                     except: # dimension was not yet defined --> use empty
-                        logger.debug(" ".join([
-                            "can't reshape {dim} from shape {shape}",
-                            "to shape {newshape}.",
-                            "setting {dim} to empty array of shape {newshape}."
-                            ]).format(dim=dim,newshape=newshape,shape=shape))
+                        #logger.debug(" ".join([
+                            #"can't reshape {dim} from shape {shape}",
+                            #"to shape {newshape}.",
+                            #"setting {dim} to empty array of shape {newshape}."
+                            #]).format(dim=dim,newshape=newshape,shape=shape))
                         new = ma.masked_array(
                             data = np.empty(newshape),
                             mask = np.ones( newshape))
@@ -105,11 +105,11 @@ class Coordinates3d(object):
                         setattr(self, "_{}".format(dim), ma.masked_array(
                             data = np.empty(newshape),
                             mask = np.ones( newshape)))
-                        logger.debug( " ".join([
-                        "setting {dim} to completely masked array of shape",
-                        "{newshape} because shape {dimshape} didn't match",
-                        "newshape {newshape}."
-                        ]).format(dim=dim,newshape=newshape,dimshape=shape))
+                        #logger.debug( " ".join([
+                        #"setting {dim} to completely masked array of shape",
+                        #"{newshape} because shape {dimshape} didn't match",
+                        #"newshape {newshape}."
+                        #]).format(dim=dim,newshape=newshape,dimshape=shape))
         
 
     # set the coordinate to a new value
@@ -164,9 +164,9 @@ class Coordinates3d(object):
                 resval =  ma.masked_array(
                     data = np.empty(self.shape),
                     mask = np.ones( self.shape))
-                logger.info(
-                  "setting {} to completely masked arrays of shape {} ".format(
-                        ",".join(self._dim_names),self.shape))
+                #logger.debug(
+                  #"setting {} to completely masked arrays of shape {} ".format(
+                        #",".join(self._dim_names),self.shape))
 
         # set resulting value
         #logger.debug("setting {} to {}".format(coord,resval))
@@ -174,8 +174,8 @@ class Coordinates3d(object):
 
         try: # try this because resval can be None...
             if self.shape != resval.shape:
-                logger.debug("Adjusting shape from {} to {}".format(self.shape,
-                    resval.shape))
+                #logger.debug("Adjusting shape from {} to {}".format(self.shape,
+                    #resval.shape))
                 self.shape = resval.shape
         except: pass
 

@@ -36,6 +36,9 @@ logger = logging.getLogger(__name__)
 
 
 class CameraCalibrationParameters(object):
+    """
+    class to hold calibration parameters
+    """
     def __init__(self, 
                  center_row  = None,
                  center_col  = None, 
@@ -43,7 +46,14 @@ class CameraCalibrationParameters(object):
                  f = None, 
                  alpha = None
                  ):
-
+        """
+        class constructor
+        args:
+            center_row,center_col (numeric): center position of optical axis
+            north_angle (numeric): azimuth offset (see Coordinate3d docs)
+            f (numeric): proportionality factor for projected image radius
+            alpha (numeric): empirical exponent for projected image radius
+        """
         self.parameters = (center_row, center_col, north_angle, f, alpha)
 
     @property
@@ -113,44 +123,67 @@ class CameraCalibrationLossFunction(object):
         self.radial       = radial
 
     def __call__(self, estimate):
+        """
+        calculate loss function value (residuals) for a given estimate
+        args:
+            estimate (5-tuple or CameraCalibrationParameters): estimate
+        returns:
+            residual = numeric value
+        """
         try:    estimate = estimate.parameters
         except: pass
         est_row_c, est_col_c, est_north, est_f, est_alpha = estimate
         row, col = self.pixel_coords.y, self.pixel_coords.x
         azi, ele = self.sun_coords.azimuth, self.sun_coords.elevation
-        logger.debug("row: {row}, col: {col}, azi: {azi}, ele: {ele}".format(
-            row=row,col=col,azi=azi,ele=ele))
-        logger.debug("row_c: {row_c}, col_c: {col_c}, f: {f}, alpha: {a}".format(
-            row_c=est_row_c,col_c=est_col_c,f=est_f,a=est_alpha))
+        #logger.debug("row: {row}, col: {col}, azi: {azi}, ele: {ele}".format(
+            #row=row,col=col,azi=azi,ele=ele))
+        #logger.debug("row_c: {row_c}, col_c: {col_c}, f: {f}, alpha: {a}".format(
+            #row_c=est_row_c,col_c=est_col_c,f=est_f,a=est_alpha))
     
         # set estimate of azimuth offset
         self.pixel_coords.azimuth_offset = est_north
 
         ### calculate elevation residual ###
-        # estimated radius according to radial projection
-        est_radius_fisheye = est_f * self.radial(ele) ** est_alpha
-        logger.debug("estimated fisheye image radius: {}".format(est_radius_fisheye))
+        #logger.debug("estimated fisheye image radius: {}".format(est_radius_fisheye))
         # radius from estimated center for each measured input dataset
-        est_radius_image = np.sqrt((row-est_row_c)**2+(col-est_col_c)**2)
-        logger.debug("estimated image radius: {}".format(est_radius_image))
+        est_radius_image = np.sqrt((row-est_row_c)**2+(col-est_col_c)**2) ** est_alpha
+        # estimated elevation according to radial projection
+        est_ele_image = est_radius_image / est_f
+        #logger.debug("estimated image radius: {}".format(est_radius_image))
         # elevation residual
-        res_ele = est_radius_fisheye - est_radius_image
+        res_ele = ele - est_ele_image
 
         ### calculate azimuth residual ###
         res_azi = azi - self.pixel_coords.azimuth
         
         # return resulting error
-        return(np.abs(res_ele.mean()+res_azi.mean()))
+        return(abs(res_ele.mean())+abs(res_azi.mean()))
 
 
 
 # calibrator class
 class CameraCalibrator(object):
     def __init__(self, image, method=None):
+        """
+        class constructor
+        args:
+            image (pyclamster.Image): objective image
+            method (str or None): optimization method. see 
+                scipy.optimize.minimize documentation for further information.
+                Defaults to None which is not recommended because the standard
+                method varies between some scipy versions.
+        """
         self.image  = image
         self.method = method
 
     def estimate(self, lossfunc, first_guess):
+        """
+        fit calibration parameters with respect to a lossfunction given a 
+        first guess of parameters.
+        args:
+            lossfunc (CameraCalibrationLossFunction): the lossfunction
+            first_guess (CameraCalibrationParameters): the initial guess
+        """
         # empty parameterrs
         opt_estimate = CameraCalibrationParameters()
         # optimize parameters
@@ -166,17 +199,21 @@ class CameraCalibrator(object):
             )
          
         opt_estimate.parameters = estimate.x
-        logger.debug(estimate)
-        return(opt_estimate)
+
+        calibration = CameraCalibration(parameters = opt_estimate, 
+            fit = estimate )
+
+        return(calibration)
 
 
 # calibration class
 class CameraCalibration(object):
-    def __init__(self, parameters, func):
+    def __init__(self, parameters, func=None, fit=None):
 
         # copy over attributes
         self.parameters  = parameters
         self.func        = func
+        self.fit         = fit
 
     # return elevation
     def elevation(self):
