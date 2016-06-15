@@ -40,7 +40,7 @@ logger = logging.getLogger(__name__)
 ###############################
 ### classes for coordinates ###
 ###############################
-class Coordinates3d(object):
+class BaseCoordinates3d(object):
     def __init__(self, dimnames, shape=None):
         # initialize base variables
         self._dim_names = dimnames
@@ -208,9 +208,10 @@ class Coordinates3d(object):
             
 
 # class for carthesian 3d coordinates
-class CarthesianCoordinates3d(Coordinates3d):
+class CarthesianCoordinates3d(BaseCoordinates3d):
     def __init__(self, 
                  shape=None,
+                 center=None,
                  x=None, y=None, z=None,
                  clockwise=False,
                  azimuth_offset=np.pi/2
@@ -243,15 +244,22 @@ class CarthesianCoordinates3d(Coordinates3d):
         self.x = x
         self.y = y
         self.z = z
+        self.center = center
         self.clockwise = clockwise
         self.azimuth_offset = azimuth_offset
 
     @property
-    def x(self): return self._x
+    def x(self): 
+        try:    return self._x - self.center.x
+        except: return self._x
     @property
-    def y(self): return self._y
+    def y(self): 
+        try:    return self._y - self.center.y
+        except: return self._y
     @property
-    def z(self): return self._z
+    def z(self): 
+        try:    return self._z - self.center.z
+        except: return self._z
 
     @x.setter
     def x(self, value): self._set_coordinate("x", value)
@@ -357,7 +365,7 @@ class CarthesianCoordinates3d(Coordinates3d):
 
 
 # class for spherical 3d coordinates
-class SphericalCoordinates3d(Coordinates3d):
+class SphericalCoordinates3d(BaseCoordinates3d):
     def __init__(self,
                  shape=None,
                  azimuth=None,
@@ -480,3 +488,25 @@ class SphericalCoordinates3d(Coordinates3d):
             azimuth_offset = azimuth_offset
             )
                 
+
+########################################
+### convenient class for coordinates ###
+########################################
+class Coordinates3d(object):
+    def __init__(self, shape=None):
+        # initialize base variables
+        self._dim_names = [
+            "elevation","azimuth","radius","radiush","x","y","z"
+            ]
+        # initialize shape
+        self.shape = shape
+
+    def fill(self,**dimensions):
+        # check if keys are correct
+        for dim in dimensions.keys():
+            if not dim in self._dim_names:
+                raise AttributeError("invalid dimension '{}'".format(dim))
+                
+
+        
+

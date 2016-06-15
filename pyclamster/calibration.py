@@ -133,31 +133,58 @@ class CameraCalibrationLossFunction(object):
         try:    estimate = estimate.parameters
         except: pass
         est_row_c, est_col_c, est_north, est_f, est_alpha = estimate
-        row, col = self.pixel_coords.y, self.pixel_coords.x
-        azi, ele = self.sun_coords.azimuth, self.sun_coords.elevation
-        #logger.debug("row: {row}, col: {col}, azi: {azi}, ele: {ele}".format(
-            #row=row,col=col,azi=azi,ele=ele))
-        #logger.debug("row_c: {row_c}, col_c: {col_c}, f: {f}, alpha: {a}".format(
-            #row_c=est_row_c,col_c=est_col_c,f=est_f,a=est_alpha))
-    
-        # set estimate of azimuth offset
+
+        self.pixel_coords.clockwise = True
+        self.pixel_coords.center.x = est_col_c
+        self.pixel_coords.center.y = est_row_c
         self.pixel_coords.azimuth_offset = est_north
 
+        row, col = self.pixel_coords.y, self.pixel_coords.x
+        azi, ele = self.sun_coords.azimuth, self.sun_coords.elevation
+        logger.debug("================== begin iteration =====================")
+        logger.debug("row: {row}, col: {col}, azi: {azi}, ele: {ele}".format(
+            row=row,col=col,azi=azi,ele=ele))
+        logger.debug("row_c: {row_c}, col_c: {col_c}, f: {f}, alpha: {a}".format(
+            row_c=est_row_c,col_c=est_col_c,f=est_f,a=est_alpha))
+    
         ### calculate elevation residual ###
-        #logger.debug("estimated fisheye image radius: {}".format(est_radius_fisheye))
-        # radius from estimated center for each measured input dataset
-        est_radius_image = np.sqrt((row-est_row_c)**2+(col-est_col_c)**2) ** est_alpha
-        # estimated elevation according to radial projection
-        est_ele_image = est_radius_image / est_f
-        #logger.debug("estimated image radius: {}".format(est_radius_image))
-        # elevation residual
-        res_ele = ele - est_ele_image
+        if False:
+            #logger.debug("estimated fisheye image radius: {}".format(est_radius_fisheye))
+            # radius from estimated center for each measured input dataset
+            est_radius_image = np.sqrt((row-est_row_c)**2+(col-est_col_c)**2) ** est_alpha
+            # estimated elevation according to radial projection
+            est_ele_image = est_radius_image / est_f
+            #logger.debug("estimated image radius: {}".format(est_radius_image))
+            # elevation residual
+            res_radial = ele - est_ele_image
+            res_radial = res_radial / (np.pi / 2) # normation
+        else:
+            #logger.debug("estimated fisheye image radius: {}".format(est_radius_fisheye))
+            # radius from estimated center for each measured input dataset
+            #est_radius_image = np.sqrt((row-est_row_c)**2+(col-est_col_c)**2) 
+            est_radius_image = self.pixel_coords.radius_horz
+            # estimated elevation according to radial projection
+            est_radius_radial = est_f * self.radial( ele )
+            logger.debug("estimated image radius: {}".format(est_radius_image))
+            logger.debug("estimated fisheye radius: {}".format(est_radius_radial))
+            # elevation residual
+            res_radial = est_radius_radial - est_radius_image
+            #res_radial = res_radial / 300 # normation
+            
 
         ### calculate azimuth residual ###
-        res_azi = azi - self.pixel_coords.azimuth
+        res_azi = (azi - self.pixel_coords.azimuth + 2*np.pi) % 2*np.pi
+        res_azi = res_azi / (2 * np.pi) # normation
         
         # return resulting error
-        return(abs(res_ele.mean())+abs(res_azi.mean()))
+        #res = abs(res_azi.mean())
+        res = np.sqrt(((res_radial-res_azi)**2).mean())
+        #res = np.sqrt(((res - res.mean())**2).mean())
+        logger.debug("res_radial: {res_radial}".format(res_radial=res_radial))
+        logger.debug("res_azi: {res_azi}".format(res_azi=res_azi))
+        logger.debug("residual: {res}".format(res=res))
+        logger.debug("================== end iteration =====================")
+        return(res)
 
 
 
@@ -193,9 +220,9 @@ class CameraCalibrator(object):
             method=self.method,
             bounds=[(0,self.image.data.shape[0]), # row bound
                     (0,self.image.data.shape[1]), # col bound
-                    (-4*np.pi,4*np.pi),           # north_angle bound
+                    (0,2*np.pi),                  # north_angle bound
                     (0,np.Inf),                   # f bound
-                    (0,1)]                        # alpha bound
+                    (0,2)]                        # alpha bound
             )
          
         opt_estimate.parameters = estimate.x
