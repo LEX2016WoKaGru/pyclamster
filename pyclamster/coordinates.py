@@ -26,7 +26,6 @@ import copy
 # External modules
 import numpy as np
 import numpy.ma as ma
-import scipy.interpolate
 
 # Internal modules
 
@@ -41,11 +40,13 @@ logger = logging.getLogger(__name__)
 ### classes for coordinates ###
 ###############################
 class BaseCoordinates3d(object):
-    def __init__(self, dimnames, shape=None):
+    def __init__(self, dimnames, shape=None,clockwise=False,azimuth_offset=0):
         # initialize base variables
         self._dim_names = dimnames
         # initialize shape
         self.shape = shape
+        self.clockwise = clockwise
+        self.azimuth_offset = azimuth_offset
 
     @property
     def shape(self):
@@ -141,10 +142,15 @@ class BaseCoordinates3d(object):
                 if np.prod(value.shape) == 1: # only one value was given
                     # filled constant array
                     value = np.full( self.shape, value, np.array(value).dtype)
+                elif np.prod(value.shape) == np.prod(self.shape):
+                    # reshape
+                    value = value.reshape(self.shape)
                 elif value.shape != self.shape: # value shape does not match
                     raise ValueError(
                     "invalid shape {} (not {}) of new coordinate {}".format(
                             value.shape, self.shape, coord))
+            else: # shape is not defined yet
+                self.shape = value.shape # set it!
 
             resval = value # this value
 
@@ -235,7 +241,9 @@ class CarthesianCoordinates3d(BaseCoordinates3d):
         # parent constructor
         super().__init__(
             shape = shape,
-            dimnames = ["x","y","z"]
+            dimnames = ["x","y","z"],
+            azimuth_offset = azimuth_offset,
+            clockwise = clockwise
             )
 
         # initially set underlying attributes to None
@@ -245,8 +253,6 @@ class CarthesianCoordinates3d(BaseCoordinates3d):
         self.y = y
         self.z = z
         self.center = center
-        self.clockwise = clockwise
-        self.azimuth_offset = azimuth_offset
 
     @property
     def x(self): 
@@ -393,15 +399,15 @@ class SphericalCoordinates3d(BaseCoordinates3d):
         # parent constructor
         super().__init__(
             shape=shape,
-            dimnames = ["azimuth","elevation","radius"]
+            dimnames = ["azimuth","elevation","radius"],
+            azimuth_offset = azimuth_offset,
+            clockwise = clockwise
             )
 
         # copy over the arguments
         self.azimuth     = azimuth
         self.elevation   = elevation
         self.radius      = radius
-        self.azimuth_offset = azimuth_offset
-        self.clockwise = clockwise
 
     @property
     def azimuth(self):   return self._azimuth
@@ -492,21 +498,366 @@ class SphericalCoordinates3d(BaseCoordinates3d):
 ########################################
 ### convenient class for coordinates ###
 ########################################
-class Coordinates3d(object):
-    def __init__(self, shape=None):
-        # initialize base variables
-        self._dim_names = [
-            "elevation","azimuth","radius","radiush","x","y","z"
-            ]
-        # initialize shape
-        self.shape = shape
+class Coordinates3d(BaseCoordinates3d):
+    def __init__(self, shape=None, azimuth_offset=0, clockwise=False,
+                 center=None, **dimensions):
 
-    def fill(self,**dimensions):
+        # dependencies to calculate each dimension
+        self._dependencies = {
+            'elevation':{
+                ('radiush','z'):self.elevation_from_radiush_z,
+                ('radiush','radius'):self.elevation_from_radiusses,
+                },
+            'azimuth':{
+                ('x','y'):self.azimuth_from_xy,
+                },
+            'radius':{
+                ('x','y','z'):self.radius_from_xyz,
+                ('radiush','z'):self.radius_from_radiush_z,
+                ('elevation','radiush'):self.radius_from_elevation_radiush,
+                },
+            'radiush':{
+                ('x','y'):self.radiush_from_xy,
+                ('elevation','z'):self.radiush_from_elevation_z,
+                ('elevation','radius'):self.radiush_from_elevation_radius,
+                },
+            'x':{
+                ('azimuth','elevation','radius'):self.x_from_spherical,
+                ('azimuth','radiush'):self.x_from_azimuth_radiush,
+                ('radiush','y'):self.x_from_radiush_y,
+                },
+            'y':{
+                ('azimuth','elevation','radius'):self.y_from_spherical,
+                ('azimuth','radiush'):self.y_from_azimuth_radiush,
+                ('radiush','x'):self.y_from_radiush_x,
+                },
+            'z':{
+                ('azimuth','elevation','radius'):self.z_from_spherical,
+                ('radius','radiush'):self.z_from_radiusses,
+                },
+            }
+    
+        # parent constructor
+        super().__init__(
+            shape=shape,
+            dimnames = ['elevation','azimuth','radius','radiush','x','y','z'],
+            azimuth_offset = azimuth_offset,
+            clockwise = clockwise
+            )
+
+        self.center = center
+
+        # fill with given dimensions
+        if dimensions:
+            self.fill(**dimensions)
+
+    # given a tuple of dimensions, determine ALL other dimensions that can be
+    # calculated based on them
+    def _dependency_line(self,dimensions,full=True):
+        known_dimensions = list(dimensions)
+        line = [] # dependency line
+        while True:
+            # determine, which dimensions can DIRECTLY be calculated with the
+            # given information
+            calculatables = self._calculatables(known_dimensions,full)
+
+            #logger.debug("found calculatables: {}".format(calculatables))
+            if calculatables: # something calculatable was found
+                line.append(calculatables) # append calculatables to result
+                # add the new found dimensions to the list of known dimensions
+                known_dimensions.extend(calculatables.keys())
+            else: break # nothing more found, break the while loop
+
+        return line
+            
+        
+    # given a tuple of dimensions, determine which other dimensions can be
+    # calculated based DIRECTLY on it
+    def _calculatables(self,dimensions,full=True):
+        given_dimensions = list(dimensions)
+        calculatables = {}
+        # loop over all (other) dimensions and get calculation methods
+        #logger.debug("given dimensions: {}".format(given_dimensions))
+        for dim_tocalc,calc_methods in self._dependencies.items(): 
+            #logger.debug("looping over ALL dimensions {}: now '{}'".format(self._dependencies.keys(),dim_tocalc))
+            if dim_tocalc in given_dimensions:
+                #logger.debug("{} is in given dimensions {} --> skipping!".format(dim_tocalc,given_dimensions))
+                continue # skip given dimensions
+    
+            #logger.debug("methods to calculate {} are : {}".format(dim_tocalc,calc_methods))
+            methods = []
+            for deps in list(calc_methods.keys()): # loop over all possible methods
+                # if all dependencies for this calc method are given ->possible
+                if full:
+                    dependency = all(x in given_dimensions for x in deps)
+                else:
+                    dependency = any(x in given_dimensions for x in deps)
+                if dependency: 
+                    #logger.debug("all dependencies {} for {} are in given dimensions {}".format(deps,dim_tocalc,given_dimensions))
+                    methods.append(deps)
+                else:
+                    #logger.debug("not all dependencies {} for {} are in given dimensions {}".format(deps,dim_tocalc,given_dimensions))
+                    pass
+            if methods:
+                #logger.debug("found methods {} for {}".format(methods,dim_tocalc))
+                calculatables[dim_tocalc] = methods
+            else:
+                #logger.debug("not possible to calculate {} with {}".format(dim_tocalc,given_dimensions))
+                pass
+
+        return calculatables
+
+    @property
+    def x(self): 
+        try:
+            return self._x - self.center.x
+        except:
+            raise Exception("x or center.x is not specified yet")
+    @property
+    def y(self):
+        try:
+            return self._y - self.center.y
+        except:
+            raise Exception("y or center.y is not specified yet")
+    @property
+    def z(self): 
+        try:
+            return self._z - self.center.z
+        except:
+            raise Exception("z or center.z is not specified yet")
+    @property
+    def azimuth(self):   return self._azimuth
+    @property
+    def elevation(self): return self._elevation
+    @property
+    def radius(self):    return self._radius
+    @property
+    def radiush(self):    return self._radiush
+
+    @x.setter
+    def x(self, value):         self.fill(x=value)
+    @y.setter
+    def y(self, value):         self.fill(y=value)
+    @z.setter
+    def z(self, value):         self.fill(z=value)
+    @azimuth.setter
+    def azimuth(self, value):   self.fill(azimuth=value)
+    @elevation.setter
+    def elevation(self, value): self.fill(elevation=value)
+    @radius.setter
+    def radius(self, value):    self.fill(radius=value)
+    @radiush.setter
+    def radiush(self, value):   self.fill(radiush=value)
+
+    @property
+    def center(self): return self._center
+    @center.setter
+    def center(self, newcenter):
+        if all(hasattr(newcenter,val) for val in ["x","y","z"]):
+            center = newcenter
+        elif isinstance(newcenter,dict):
+            try:
+                x=newcenter["x"]
+                y=newcenter["y"]
+                z=newcenter["z"]
+                center = CarthesianCoordinates3d(x=x,y=y,z=z)
+            except:
+                center = CarthesianCoordinates3d(x=0,y=0,z=0)
+        elif isinstance(newcenter,list) or isinstance(newcenter,tuple):
+            try:
+                x,y,z = newcenter
+                center = CarthesianCoordinates3d(x=x,y=y,z=z)
+            except:
+                center = CarthesianCoordinates3d(x=0,y=0,z=0)
+        else:
+            center = CarthesianCoordinates3d(x=0,y=0,z=0)
+
+        # set attribute
+        self._center = center
+
+    def _get_defined(self):
+        defined = []
+        for dim in self._dim_names:
+            isdefined = False
+            try: value = getattr(self, dim)
+            except:  pass
+            if not value is None:
+                try: isdefined = not value.mask.all()
+                except AttributeError:
+                    isdefined = True
+            if isdefined:
+                defined.append(dim)
+        return(defined)
+        
+
+    # given specific values for some dimensions, calculate all others
+    def fill_dependencies(self,**dimensions):
         # check if keys are correct
         for dim in dimensions.keys():
             if not dim in self._dim_names:
                 raise AttributeError("invalid dimension '{}'".format(dim))
+
+        def invalidcombination(**kwargs):
+            raise Exception("invalid combination {}".format(kwargs))
+
+        if len(dimensions) < 1:
+            raise Exception("No dimension specified to set.")
+        else: # arguments given
+            # get the depenency line
+            dependency_line = self._dependency_line(dimensions,full=True)
+            reverse_dependency = self._dependency_line(dimensions,full=False)
+            logger.debug("dependency line: {}".format(dependency_line))
+            logger.debug("reverse-dependency line: {} of {}".format(dependency_line,dimensions))
+
+            # clear everything in the reverse dependency line
+            for step in dependency_line:
+                for dim,methods in step.items():
+                    logger.debug("{} depends on new dimension(s) {} and has to be cleared.".format(dim,dimensions.keys()))
+                    self._set_coordinate(dim, None)
+
+            # initially set all given variables
+            for dim, value in dimensions.items():
+                logger.debug("setting {} directly to value {}".format(dim,value))
+                self._set_coordinate(dim, value)
+
+            # do everything in the dependency line
+            for step in dependency_line:
+                for dim,methods in step.items():
+                    method = methods.pop()
+                    logger.debug("using method {} to calculate {}".format(method,dim))
+                    calcmethods = self._dependencies.get(dim)
+                    func = calcmethods.get(tuple(method), invalidcombination) 
+                    func() # call the function
+
+    # set as much variables as you can based on given dimensions
+    def fill(self, **dimensions):
+        defined_dims = self._get_defined()
+        defined = {}
+        for dim in defined_dims:
+            defined[dim] = getattr(self,dim)
+        #logger.debug("already defined dims: {}".format(defined))
+        #logger.debug("new dims: {}".format(dimensions))
                 
+        # update with the new values
+        mergeddimensions = defined.copy()
+        for dim,val in dimensions.items():
+            mergeddimensions[dim] = copy.deepcopy(val)
 
+        #logger.debug("defined dims with updated values: {}".format(mergeddimensions))
+
+        # fill the dependencies!
+        self.fill_dependencies(**mergeddimensions)
         
+    ###########################
+    ### calculation methods ###
+    ###########################
+    def radius_from_xyz(self):
+        self._radius = np.sqrt(self.x**2 + self.y**2 + self.z**2)
 
+    def radiush_from_xy(self):
+        self._radiush = np.sqrt(self.x**2 + self.y**2)
+
+    def radius_from_radiush_z(self):
+        self._radius = np.sqrt(self.radiush**2 + self.z**2)
+
+    def radius_from_elevation_radiush(self):
+        self._radius = self.radiush / np.sin( self.elevation )
+
+    def azimuth_from_xy(self):
+        north = self.azimuth_offset
+        clockwise = self.clockwise
+
+        north = - (north % (2*np.pi) )
+        if clockwise:
+            north = - north
+
+        # note np.arctan2's way of handling x and y arguments:
+        # np.arctan2( y, x ), NOT np.arctan( x, y ) !
+        #
+        # np.arctan2( y, x ) returns the SIGNED (!)
+        # angle between positive x-axis and the vector (x,y)
+        # in radians
+
+        # the azimuth angle is...
+        # ...the SIGNED angle between positive x-axis and the vector...
+        # ...plus some full circle to only have positive values...
+        # ...minux angle defined as "NORTH" (modulo 2*pi to be precise)
+        # -->  azi is not angle to x-axis but to NORTH
+        azimuth = np.arctan2(self.y, self.x) + 6 * np.pi + north
+
+        # take azimuth modulo a full circle to have sensible values
+        azimuth = azimuth % (2*np.pi)
+
+        if clockwise: # turn around if clockwise
+            azimuth = 2 * np.pi - azimuth
+
+        self._azimuth = azimuth
+
+    def elevation_from_radiush_z(self):
+        self._elevation = np.tan(self.radiush / self.z)
+
+    def x_from_spherical(self):
+        self._x = self.radius                          \
+            * np.sin( self.elevation )              \
+            * np.cos( self.azimuth + self.azimuth_offset )
+
+    def x_from_azimuth_radiush(self):
+        self._x = self.radiush * np.cos( self.azimuth + self.azimuth_offset )
+
+    def y_from_spherical(self):
+        self._y = self.radius                              \
+            * np.sin( self.elevation )                  \
+            * np.sin( self.azimuth + self.azimuth_offset )
+
+    def y_from_azimuth_radiush(self):
+        self._y = self.radiush * np.sin( self.azimuth + self.azimuth_offset )
+
+    def z_from_spherical(self):
+        self._z = self.radius * np.cos( self.elevation )
+
+    def x_from_radiush_y(self):
+        self._x = np.sqrt(self.radiush**2 - self.y**2)
+
+    def y_from_radiush_x(self):
+        self._y = np.sqrt(self.radiush**2 - self.x**2)
+
+    def z_from_radiusses(self):
+        self._z = np.sqrt(self.radius**2 - self.radiush**2)
+
+    def radiush_from_elevation_z(self):
+        self._radiush = self.z * np.arctan( self.elevation )
+
+    def radiush_from_elevation_radius(self):
+        self._radiush = self.radius * np.sin( self.elevation )
+
+    def elevation_from_radiusses(self):
+        self._elevation = np.arcsin( self.radiush / self.radius )
+    ###############################
+    ### end calculation methods ###
+    ###############################
+    
+
+    def _notimplemented(self,*args,**kwargs):
+        raise NotImplementedError("unimplemented combination".format(
+            list(kwargs.keys())))
+        
+    # summary when converted to string
+    def __str__(self):
+        formatstring = ["==================",
+                        "| 3d coordinates |",
+                        "=================="]
+        formatstring.append("         shape: {}".format(self.shape))
+        formatstring.append("     clockwise: {}".format(self.clockwise))
+        formatstring.append("azimuth_offset: {}".format(self.azimuth_offset))
+        formatstring.append("==================")
+        for dim in self._dim_names:
+            value = getattr(self, dim)
+            isdefined = False
+            if not value is None:
+                try: isdefined = not value.mask.all()
+                except AttributeError:
+                    isdefined = True
+            if isdefined: string = "defined"
+            else:         string = "empty"
+            formatstring.append("{:>11}: {}".format(dim,string))
+        return("\n".join(formatstring))
