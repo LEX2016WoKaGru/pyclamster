@@ -609,22 +609,22 @@ class Coordinates3d(BaseCoordinates3d):
 
     @property
     def x(self): 
-        try:
-            return self._x - self.center.x
+        try: return self._x - self.center.x
         except:
-            raise Exception("x or center.x is not specified yet")
+            try: return self._x
+            except: raise Exception("x is not specified yet")
     @property
     def y(self):
-        try:
-            return self._y - self.center.y
+        try: return self._y - self.center.y
         except:
-            raise Exception("y or center.y is not specified yet")
+            try: return self._y
+            except: raise Exception("y is not specified yet")
     @property
     def z(self): 
-        try:
-            return self._z - self.center.z
+        try: return self._z - self.center.z
         except:
-            raise Exception("z or center.z is not specified yet")
+            try: return self._z
+            except: raise Exception("z is not specified yet")
     @property
     def azimuth(self):   return self._azimuth
     @property
