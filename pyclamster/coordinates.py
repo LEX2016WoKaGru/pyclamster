@@ -94,6 +94,19 @@ class DependantQuantitySet(object):
     def __init__(self, *quantities, shape=None):
         self.quantities = flatten(quantities)
 
+    # make the quantities accessible as quasi-attributes
+    def __getattr__(self, name):
+        classes = [q.__class__.name for q in self._quantities]
+        names   = [q.name           for q in self._quantities]
+        if name in names: # check if name matches
+            return self._quantities[names.index(name)]
+        elif name in classes: # check if it looks like classname
+            return self._quantities[classes.index(name)]
+        else: # default behavious
+            raise AttributeError
+            
+    
+    # make the quantity set iterable
     def __iter__(self):
         return self
 
