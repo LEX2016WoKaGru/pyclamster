@@ -22,6 +22,7 @@ Created for pyclamster
 # System modules
 import logging
 import numpy as np
+import copy
 
 # External modules
 
@@ -77,10 +78,16 @@ class DependantQuantity(object):
         return self._data
     @data.setter
     def data(self, newdata):
-        self._data = np.asarray(newdata)
+        self._data = np.ma.asanyarray(newdata)
 
     def __str__(self):
         return "{name}: {data}".format(name=self.name,data=self.data)
+
+    # define own deepcopy mechanism
+    def __deepcopy__(self, memo):
+        new = self.__class__() # new empty instance
+        new.__dict__ = copy.deepcopy(self.__dict__) # copy over dict
+        return(new) # return
 
 
 class DependantQuantitySet(object):
@@ -106,7 +113,10 @@ class DependantQuantitySet(object):
             if np.prod(newshape) != np.prod(quantity.shape):
                 raise Exception(" ".join([
                     'New shape {newshape} is incompatible with shape',
-                    '{othershape} of quantity {quantity}',
+                    '{othershape} of quantity {quantity}.',
+                    'You may set the set shape to None to empty all',
+                    'dependant quantities in the set and then set the',
+                    'shape to your desired value.'
                     ]).format(quantity=quantity.name, 
                         othershape=quantity.shape, newshape=newshape))
         return True
@@ -114,11 +124,16 @@ class DependantQuantitySet(object):
 
     @property
     def shape(self):
-        return self._shape
+        try:    return self._shape
+        except: return None
 
     @shape.setter
     def shape(self, newshape):
-        if newshape is not None:
+        if self.shape is None: # if no shape is set
+            for quantity in self.quantities:
+                quantity.data = np.ma.masked_array(np.empty(newshape),
+                    np.ones(newshape))
+        elif newshape is not None:
             self._check_shape(newshape) # check if shape matches
     
             # set new shape to all quantities
@@ -131,12 +146,16 @@ class DependantQuantitySet(object):
             # set everything to empty arrays
             for quantity in self.quantities:
                 quantity.data = np.array(())
+
+        # set internal attribute
+        self._shape = newshape
             
                 
 
     @property
     def quantities(self):
-        return self._quantities
+        try:    return self._quantities
+        except: return []
 
     @quantities.setter
     def quantities(self, newquantities):
@@ -151,11 +170,14 @@ class DependantQuantitySet(object):
             # if shape does not match
             if np.prod(domshape) != np.prod(quantity.shape):
                 raise ValueError(" ".join([
-                    'New shape {newshape} of quantity {quantity} is',
+                    'shape {newshape} of new quantity {quantity} is',
                     'incompatible with set shape {domshape}',
                     ]).format(quantity=quantity.name, domshape=domshape,
                     newshape=quantity.shape))
 
+            self.shape = domshape
+
+        # if you reach this point, the new quantities are okay
         self._quantities = newquantities
         self.shape = domshape
                 
@@ -163,7 +185,7 @@ class DependantQuantitySet(object):
 
 
     def addquantity(self, quantity):
-        newquantities = self.quantities.copy() # copy old quantities
+        newquantities = copy.deepcopy(self.quantities) # copy old quantities
         for q in self.quantities:
             if quantity == q: # quantity already registered
                 raise ValueError(" ".join(["Quantity {q} is already",
@@ -173,14 +195,16 @@ class DependantQuantitySet(object):
 
     def removequantity(self, quantity):
         try: # try to find index
-            indices = [i for i,q in enumerate(self.quantities) if q == quantity]
+            indices = [i for i,q in enumerate(self.quantities) \
+                if q == quantity]
         except ValueError: # didn't work, try to remove based on class
             quantityclasses = [q.__class__ for q in self.quantities]
             try:    
-                indices = [i for i,q in enumerate(quantityclasses) if q == quantity]
+                indices = [i for i,q in enumerate(quantityclasses) \
+                    if q == quantity]
             except: 
                 raise ValueError("{} is not in the set.".format(quantity))
-        newquantities = self.quantities.copy() # copy old quantities
+        newquantities = copy.deepcopy(self.quantities) # copy old quantities
         for index in sorted(indices,reverse=True): # loop in REVERSED order
             del newquantities[index] # remove found elements
         self.quantities = newquantities # set new quantities
@@ -198,13 +222,13 @@ class DependantQuantitySet(object):
         if len(self.quantities) == 0: # no quantities
             lines.append("no quantities registered.")
         else: # quantities specified
-            lines.append("quantities:")
+            lines.append("{} quantities:".format(len(self.quantities)))
             for quantity in self.quantities:
+                lines.append("---------- {} ----------".format(quantity.name))
                 if max(quantity.shape) >= 6:
-                    lines.append("{}: shape {}".format(quantity.name,
-                        quantity.shape))
+                    lines.append("shape {}".format(quantity.shape))
                 else:
-                    lines.append("{}".format(quantity))
+                    lines.append("{}".format(quantity.data))
     
         return "\n".join(lines)
 
