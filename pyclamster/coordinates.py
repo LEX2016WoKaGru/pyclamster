@@ -194,33 +194,32 @@ class DependantQuantitySet(object):
         self._quantities = newquantities
         self.shape = domshape
                 
-        
-
-
     def addquantity(self, quantity):
-        newquantities = copy.deepcopy(self.quantities) # copy old quantities
         for q in self.quantities:
             if quantity == q: # quantity already registered
                 raise ValueError(" ".join(["Quantity {q} is already",
                 "present in the set."]).format(q=quantity.name))
-        newquantities.append(quantity)  # append new quantity
-        self.quantities = newquantities # set new quantities
+        self._check_shape(quantity.shape) # check shape
+        self.quantities.append(quantity) # append new quantity
+        self.quantities = self.quantities # adjust shape by re-setting
 
     def removequantity(self, quantity):
-        try: # try to find index
-            indices = [i for i,q in enumerate(self.quantities) \
-                if q == quantity]
-        except ValueError: # didn't work, try to remove based on class
-            quantityclasses = [q.__class__ for q in self.quantities]
-            try:    
-                indices = [i for i,q in enumerate(quantityclasses) \
-                    if q == quantity]
-            except: 
-                raise ValueError("{} is not in the set.".format(quantity))
-        newquantities = copy.deepcopy(self.quantities) # copy old quantities
+        quantitynames      = [q.name               for q in self.quantities]
+        quantityclasses    = [q.__class__          for q in self.quantities]
+        quantityclassnames = [q.__class__.__name__ for q in self.quantities]
+
+        indices = [] # start with empty list
+        for qlist in [self.quantities,quantityclasses,
+            quantitynames,quantityclassnames]:
+            try: # try to find index
+                indices.extend([i for i,q in enumerate(qlist) if q == quantity])
+            except: # nothing found with this method, try next one
+                continue
+        if len(indices) == 0:
+            raise ValueError("{} is not in the set.".format(quantity))
+
         for index in sorted(indices,reverse=True): # loop in REVERSED order
-            del newquantities[index] # remove found elements
-        self.quantities = newquantities # set new quantities
+            del self.quantities[index] # remove found elements
 
     # check if this set includes a given quantity
     def hasquantity(self, quantity):
@@ -245,6 +244,11 @@ class DependantQuantitySet(object):
     
         return "\n".join(lines)
 
+    # define own deepcopy mechanism
+    def __deepcopy__(self, memo):
+        new = self.__class__() # new empty instance
+        new.__dict__ = copy.deepcopy(self.__dict__) # copy over dict
+        return(new) # return
 
 class CalculationMethod(object):
     def __init__(self,input,output):
