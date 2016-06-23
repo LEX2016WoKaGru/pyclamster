@@ -38,7 +38,7 @@ import tables  # For HDF5
 
 # Internal modules
 import pyclamster as pycl
-from pyclamster.clustering.labels import Labels
+from pyclamster.clustering.old_labels import Labels
 # from pyclamster.clustering.kmeans import KMeans
 from pyclamster.clustering.functions import localBrightness, rbDetection, \
     listShuffleSplit, cloudPatchChecker

@@ -22,6 +22,7 @@ Created for pyclamster
 # System modules
 import operator
 import functools
+from copy import deepcopy
 
 # External modules
 import numpy as np
@@ -147,6 +148,20 @@ class MaskStore(object):
         mask = self.getMask(labels)
         labels, nb_labels = scipy.ndimage.label(~mask)
         return Labels(labels), nb_labels
+
+    def getClouds(self, image, labels=None):
+        """
+        Method to get a cloud instance with a given image for selected labels.
+        Args:
+            image (Image): Image instance of the base image for the cloud.
+            labels (optional[list of int or str]): list of mask labels to be
+                selected. Defaults to all masks.
+
+        Returns:
+            cloud_image (Cloud): Cloud instance, with only the mask bassed on
+                the selected labels.
+        """
+        pass
 
     def applyMask(self, image, labels=None, fill_value=None, replace=True):
         """
