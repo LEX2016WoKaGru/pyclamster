@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Created on 17.05.16
+Created on 25.06.2016
 
 Created for pyclamster
 
@@ -21,12 +21,14 @@ Created for pyclamster
 """
 # System modules
 import logging
-import numpy as np
 import copy
 
 # External modules
+import numpy as np
+import numpy.ma as ma
 
 # Internal modules
+from . import utils
 
 
 __version__ = "0.1"
@@ -35,240 +37,45 @@ __version__ = "0.1"
 logger = logging.getLogger(__name__)
 
 
-def flatten(x):
-    res = []                        # start with an empty list
-    for v in x:                     # loop over all elements in given list
-        if type(v) in (tuple,list): # if element is list-like
-            res.extend(flatten(v))  # extend resulting list
-        else:                       # if element is not list-like
-            res.append(v)           # append the element
-    return res # return resulting list
-            
+##########################
+### Calculation Method ###
+##########################
+class CalculationMethod(object):
+    def __init__(self,input,output,func):
+        self.input  = input
+        self.output = output
+        self.func   = func
 
-#################################################
-### abstract classes for dependant quantities ###
-#################################################
-class DependantQuantity(object):
-    def __init__(self, data=None, name=None):
-        self.data = data
-        self.name = name
+    # chack if this calculation method can be applied on quantities
+    def applicable(self,quantities):
+        return all(x in quantities for x in self.input)
 
-    #############################################
-    ### attributes/properties getters/setters ###
-    #############################################
-    # every attribute request (except _data itself) goes directly to _data
-    # this makes this class practically a subclass to numpy.ndarray
-    def __getattr__(self, key):
-        if key == '_data':
-            raise AttributeError(" ".join([
-                "Can't access _data attribute.",
-            ]))
-        return getattr(self._data, key)
+    # when this method is called
+    def __call__(self):
+        self.func() # call function
 
-    @property
-    def name(self):
-        return self._name
-    @name.setter
-    def name(self,newname):
-        if not isinstance(newname,str):
-            newname = self.__class__.__name__
-        self._name = newname
-    @property
-    def data(self):
-        return self._data
-    @data.setter
-    def data(self, newdata):
-        self._data = np.ma.asanyarray(newdata)
-
-    def __str__(self):
-        return "{name}: {data}".format(name=self.name,data=self.data)
-
-    # define own deepcopy mechanism
-    def __deepcopy__(self, memo):
-        new = self.__class__() # new empty instance
-        new.__dict__ = copy.deepcopy(self.__dict__) # copy over dict
-        return(new) # return
-
-
-class DependantQuantitySet(object):
-    def __init__(self, *quantities, shape=None):
-        self.quantities = flatten(quantities)
-
-    # make the quantities accessible as quasi-attributes
-    def __getattr__(self, name):
-        classes = [q.__class__.name for q in self._quantities]
-        names   = [q.name           for q in self._quantities]
-        if name in names: # check if name matches
-            return self._quantities[names.index(name)]
-        elif name in classes: # check if it looks like classname
-            return self._quantities[classes.index(name)]
-        else: # default behavious
-            raise AttributeError
-            
-    
-    # make the quantity set iterable
-    def __iter__(self):
-        return self
-
-    def __next__(self):
-        try:    self.current += 1 # try to count up
-        except: self.current  = 0 # if that didn't work, start with 0
-        if self.current >= len(self.quantities):
-            del self.current # reset counter
-            raise StopIteration # stop the iteration
-        else:
-            return self.quantities[self.current]
-
-    def _check_shape(self,newshape):
-        # check if newshape is compatible with current shape
-        for quantity in self.quantities:
-            # if shape does not match
-            if np.prod(newshape) != np.prod(quantity.shape):
-                raise Exception(" ".join([
-                    'New shape {newshape} is incompatible with shape',
-                    '{othershape} of quantity {quantity}.',
-                    'You may set the set shape to None to empty all',
-                    'dependant quantities in the set and then set the',
-                    'shape to your desired value.'
-                    ]).format(quantity=quantity.name, 
-                        othershape=quantity.shape, newshape=newshape))
-        return True
-
-
-    @property
-    def shape(self):
-        try:    return self._shape
-        except: return None
-
-    @shape.setter
-    def shape(self, newshape):
-        if self.shape is None: # if no shape is set
-            for quantity in self.quantities:
-                quantity.data = np.ma.masked_array(np.empty(newshape),
-                    np.ones(newshape))
-        elif newshape is not None:
-            self._check_shape(newshape) # check if shape matches
-    
-            # set new shape to all quantities
-            for quantity in self.quantities:
-                if np.prod(quantity.shape) == 1: # only one value
-                    quantity.data = np.full(shape,quantity.data)
-                else: # multiple values
-                    quantity.data = quantity.reshape(newshape)
-        else: # new shape is None
-            # set everything to empty arrays
-            for quantity in self.quantities:
-                quantity.data = np.array(())
-
-        # set internal attribute
-        self._shape = newshape
-            
-                
-
-    @property
-    def quantities(self):
-        try:    return self._quantities
-        except: return []
-
-    @quantities.setter
-    def quantities(self, newquantities):
-        domshape = ()
-        # check if shapes are compatible
-        for quantity in newquantities:
-            # higher dimensions dominate
-            if len(quantity.shape) > len(domshape):
-                domshape = quantity.shape
-                
-            if np.prod(quantity) == 1: continue # never mind if only 1 element
-            # if shape does not match
-            if np.prod(domshape) != np.prod(quantity.shape):
-                raise ValueError(" ".join([
-                    'shape {newshape} of new quantity {quantity} is',
-                    'incompatible with set shape {domshape}',
-                    ]).format(quantity=quantity.name, domshape=domshape,
-                    newshape=quantity.shape))
-
-            self.shape = domshape
-
-        # if you reach this point, the new quantities are okay
-        self._quantities = newquantities
-        self.shape = domshape
-                
-    def addquantity(self, quantity):
-        for q in self.quantities:
-            if quantity == q: # quantity already registered
-                raise ValueError(" ".join(["Quantity {q} is already",
-                "present in the set."]).format(q=quantity.name))
-        self._check_shape(quantity.shape) # check shape
-        self.quantities.append(quantity) # append new quantity
-        self.quantities = self.quantities # adjust shape by re-setting
-
-    def removequantity(self, quantity):
-        quantitynames      = [q.name               for q in self.quantities]
-        quantityclasses    = [q.__class__          for q in self.quantities]
-        quantityclassnames = [q.__class__.__name__ for q in self.quantities]
-
-        indices = [] # start with empty list
-        for qlist in [self.quantities,quantityclasses,
-            quantitynames,quantityclassnames]:
-            try: # try to find index
-                indices.extend([i for i,q in enumerate(qlist) if q == quantity])
-            except: # nothing found with this method, try next one
-                continue
-        if len(indices) == 0:
-            raise ValueError("{} is not in the set.".format(quantity))
-
-        for index in sorted(indices,reverse=True): # loop in REVERSED order
-            del self.quantities[index] # remove found elements
-
-    # check if this set includes a given quantity
-    def hasquantity(self, quantity):
-        return quantity in list(self.quantities)
-
-    # summary if converted to string
+    # summary on stringification
     def __str__(self):
         lines = []
-        lines.extend(["===============================",
-                      "| set of dependant quantities |",
-                      "==============================="])
-        if len(self.quantities) == 0: # no quantities
-            lines.append("no quantities registered.")
-        else: # quantities specified
-            lines.append("{} quantities:".format(len(self.quantities)))
-            for quantity in self.quantities:
-                lines.append("---------- {} ----------".format(quantity.name))
-                if max(quantity.shape) >= 6:
-                    lines.append("shape {}".format(quantity.shape))
-                else:
-                    lines.append("{}".format(quantity.data))
-    
+        lines.append("{func}".format(func=self.func))
+        lines.append("{o} <- function of {i}".format(o=self.output,
+            i=",".join(self.input,)))
         return "\n".join(lines)
 
-    # define own deepcopy mechanism
-    def __deepcopy__(self, memo):
-        new = self.__class__() # new empty instance
-        new.__dict__ = copy.deepcopy(self.__dict__) # copy over dict
-        return(new) # return
 
-class CalculationMethod(object):
-    def __init__(self,input,output):
-        self.input = input
-        self.output = output
-
-    # chack if this calculation method can be applied on a given quantity set
-    def applicable(self,quantities):
-        return all(quantities.hasquantity(i) for i in self.input)
-                
-            
-        
-
+##############################
+### Calculation Method set ###
+##############################
 class CalculationMethodSet(object):
     def __init__(self, *methods):
         self.methods = []
-        for method in flatten(methods):
+        for method in utils.flatten(methods):
             self.addmethod(method) 
 
+    # make the method set iterable
     def __iter__(self):
+        try: del self.current # reset counter
+        except: pass
         return self
 
     def __next__(self):
@@ -279,151 +86,531 @@ class CalculationMethodSet(object):
             raise StopIteration # stop the iteration
         else:
             return self.methods[self.current]
+        
+    def __getitem__(self,key):
+        return self.methods[key]
+
+    def __bool__(self): # return value in boolean context
+        return len(self.methods) > 0
+
+    def __call__(self): # when this set is called
+        for method in self.methods: # loop over all methods
+            method() # call the method
 
     def addmethod(self, method):
         self.methods.append(method)
 
+    def add_new_method(self, input, output, func):
+        # create new method
+        method = CalculationMethod(input=input,output=output,func=func)
+        self.addmethod(method) # add the method
+
     def removemethod(self, method):
         self.methods.remove(method)
 
-    def yields_something_given(self, quantities):
-        pass
-
     def applicable_methods(self, quantities):
-        methods = CalculationMethodSet()
+        methods = CalculationMethodSet() # new empty set
         for method in self.methods: # loop over all methods
             # check if method is applicable and add it to list if yes
             if method.applicable(quantities):
-                methods.addmethod(quantities)
+                methods.addmethod(method)
+        return methods
 
+    # return all calculatable quantities of this set
+    @property
+    def all_calculatable_quantities(self):
+        return {m.output for m in self}
+
+    # given a tuple of quantity names, determine which other quantities can be
+    # calculated based DIRECTLY on it
+    def directly_calculatable_quantities(self, quantities):
+        # get the applicable methods
+        applicable = self.applicable_methods(quantities)
+        # get all calculatable quantities
+        return applicable.all_calculatable_quantities
+
+    # given a set of quantity names, construct a calculation method set
+    # with the correct order to calculate as much other quantities as possible
+    def dependency_line(self, quantities):
+        known_quantities = set(quantities) # copy of given quantities
+        line = CalculationMethodSet() # new empty set
+        while True:
+            # get the directly calculatable quantities at this stage
+            methods = self.applicable_methods(known_quantities)
+            for method in list(methods): # loop over (a copy of) all methods
+                if method.output in known_quantities: # if we already know it
+                    methods.removemethod(method) # don't consider it
+            if methods: # if something can be calculated
+                known_quantities.update(methods.all_calculatable_quantities)
+                # extend the line with the methods
+                for method in methods:
+                    line.addmethod(method)
+            else: break # nothing found, abort
+        return line
+
+            
     # summary if converted to string
     def __str__(self):
         lines = []
         lines.extend(["==============================",
-                      "| cet of calculation methods |",
+                      "| set of calculation methods |",
                       "=============================="])
-        lines.append("calculation methods:")
-        for method in self.methods:
-            lines.append("{}".format(method))
-
+        n = len(self.methods)
+        if n > 0:
+            lines.append("{n} calculation method{s}:".format(
+                n=n,s='s' if n!=1 else ''))
+            for i,method in enumerate(self.methods):
+                lines.append("\nMethod Nr. {i}/{n}:\n{m}".format(i=i+1,
+                    m=method,n=n))
+        else:
+            lines.append("no calculation methods\n")
         return "\n".join(lines)
 
+        
 
-###########################
-### calculation methods ###
-###########################
-#class radius_from_xyz(CalculationMethod):
-    #pass
-    #_radius = np.sqrt(x**2 + y**2 + z**2)
 
-class x_from_spherical(CalculationMethod):
-    pass
-#    _x = radius                          \
-#        * np.sin( elevation )              \
-#        * np.cos( azimuth + azimuth_offset )
-#
-class x_from_azimuth_radiush(CalculationMethod):
-    pass
-#    _x = radiush * np.cos( azimuth + azimuth_offset )
-#
-class x_from_radiush_y(CalculationMethod):
-    pass
-#    _x = np.sqrt(radiush**2 - y**2)
-#
-#class radiush_from_xy(CalculationMethod):
-#    _radiush = np.sqrt(x**2 + y**2)
-#
-#class radius_from_radiush_z(CalculationMethod):
-#    _radius = np.sqrt(radiush**2 + z**2)
-#
-#class radius_from_elevation_radiush(CalculationMethod):
-#    _radius = radiush / np.sin( elevation )
-#
-#class azimuth_from_xy(CalculationMethod):
-#    north = azimuth_offset
-#    clockwise = clockwise
-#
-#    north = - (north % (2*np.pi) )
-#    if clockwise:
-#        north = - north
-#
-#    # note np.arctan2's way of handling x and y arguments:
-#    # np.arctan2( y, x ), NOT np.arctan( x, y ) !
-#    #
-#    # np.arctan2( y, x ) returns the SIGNED (!)
-#    # angle between positive x-axis and the vector (x,y)
-#    # in radians
-#
-#    # the azimuth angle is...
-#    # ...the SIGNED angle between positive x-axis and the vector...
-#    # ...plus some full circle to only have positive values...
-#    # ...minux angle class as "CalculationMethod" (modulo 2*pi to be precise)
-#    # -->  azi is not angle to x-axis but to NORTH
-#    azimuth = np.arctan2(y, x) + 6 * np.pi + north
-#
-#    # take azimuth modulo a full circle to have sensible values
-#    azimuth = azimuth % (2*np.pi)
-#
-#    if clockwise: # turn around if clockwise
-#        azimuth = 2 * np.pi - azimuth
-#
-#    _azimuth = azimuth
-#
-#class elevation_from_radiush_z(CalculationMethod):
-#    _elevation = np.tan(radiush / z)
-#
-#class y_from_spherical(CalculationMethod):
-#    _y = radius                              \
-#        * np.sin( elevation )                  \
-#        * np.sin( azimuth + azimuth_offset )
-#
-#class y_from_azimuth_radiush(CalculationMethod):
-#    _y = radiush * np.sin( azimuth + azimuth_offset )
-#
-#class z_from_spherical(CalculationMethod):
-#    _z = radius * np.cos( elevation )
-#
-#class y_from_radiush_x(CalculationMethod):
-#    _y = np.sqrt(radiush**2 - x**2)
-#
-#class z_from_radiusses(CalculationMethod):
-#    _z = np.sqrt(radius**2 - radiush**2)
-#
-#class radiush_from_elevation_z(CalculationMethod):
-#    _radiush = z * np.arctan( elevation )
-#
-#class radiush_from_elevation_radius(CalculationMethod):
-#    _radiush = radius * np.sin( elevation )
-#
-#class elevation_from_radiusses(CalculationMethod):
-#    _elevation = np.arcsin( radiush / radius )
+###############################
+### classes for coordinates ###
+###############################
+class BaseCoordinates3d(object):
+    def __init__(self, dimnames, shape=None,clockwise=False,azimuth_offset=0):
+        # initialize base variables
+        self._dim_names = dimnames
+        # initialize shape
+        self.shape = shape
+        self.clockwise = clockwise
+        self.azimuth_offset = azimuth_offset
 
-###################################################
-### classes for spherical/carthesian quantities ###
-###################################################
-class x(DependantQuantity):
-    pass
+    @property
+    def shape(self):
+        return self._shape
 
-class y(DependantQuantity):
-    pass
+    @shape.setter
+    def shape(self, newshape): # if the shape of the coordinates is set
+        """
+        set shape of coordinates
+        args:
+            newshape (tuple of int): new shape of coordinates. If newshape is
+                None, all dimensions are set to None. If a reshape of the
+                dimensions is possible, a reshape is performed on all
+                dimensions. I a reshape is not possible, all dimensions
+                are initialized with completely masked empty arrays of the
+                new shape. If newshape is equal the old shape, do nothing.
+        """
+        self._shape = newshape # set new shape
+        ### loop over all dimensions ###
+        for dim in self._dim_names: # loop over all dimensions
+            try:    shape = getattr(self, dim).shape # try to read shape
+            except: shape = None # if not yet defined, use None
 
-class z(DependantQuantity):
-    pass
+            if newshape is None: # newshape is None
+                ### new shape is None --> set everything to None ###
+                setattr(self, "_{}".format(dim), None)
+                #logger.debug("newshape is None, setting {} to None".format(dim))
+            else: # newshape is not None
+                ### new shape is not None --> further investigation ###
+                if np.prod(newshape) == np.prod(self.shape) and \
+                    not shape is None and not newshape == self.shape:
+                    ### reshape is possible --> reshape!  ###
+                    # try to reshape current content
+                    try:    
+                        new = getattr(self, dim).reshape(newshape) # try
+                        #logger.debug( " ".join([
+                        #"reshaping {dim} from shape {shape}",
+                        #"to shape {newshape}",
+                        #]).format(dim=dim,newshape=newshape,shape=shape))
+                    except: # dimension was not yet defined --> use empty
+                        #logger.debug(" ".join([
+                            #"can't reshape {dim} from shape {shape}",
+                            #"to shape {newshape}.",
+                            #"setting {dim} to empty array of shape {newshape}."
+                            #]).format(dim=dim,newshape=newshape,shape=shape))
+                        new = ma.masked_array(
+                            data = np.empty(newshape),
+                            mask = np.ones( newshape))
+                        
+                    # reshape variable
+                    setattr(self, "_{}".format(dim), new)
+                else: # reshape not possible
+                    ### reshape NOT possible 
+                    ### --> reinit with empty arrays if oldshape does not match
+                    if shape != newshape: # only if new shape does not match
+                        # set to an empty array
+                        setattr(self, "_{}".format(dim), ma.masked_array(
+                            data = np.empty(newshape),
+                            mask = np.ones( newshape)))
+                        #logger.debug( " ".join([
+                        #"setting {dim} to completely masked array of shape",
+                        #"{newshape} because shape {dimshape} didn't match",
+                        #"newshape {newshape}."
+                        #]).format(dim=dim,newshape=newshape,dimshape=shape))
+        
 
-class elevation(DependantQuantity):
-    pass
+    # set the coordinate to a new value
+    def _set_coordinate(self, coord, value):
+        """
+        Set the coordinate 'coord' to value 'value'. The value is converted
+        to an array or expanded to an array of appropriate shape if value
+        only has length 1.
+        If the other coordinates are undefined, set them to empty masked arrays
+        of appropriate shape.
 
-class azimuth(DependantQuantity):
-    pass
+        args:
+            coord (str): name of the coord attribute
+            value (array_like or single numeric): new coordinate array. 
+                Must be of shape self.shape. 
+        """
+        #logger.debug("attempt to set coordinate {} to {}.".format(coord,value))
 
-class radius(DependantQuantity):
-    pass
+        # find out names of remaining two dimensions
+        i = self._dim_names.index(coord)
+        otherdims = self._dim_names[:i] + self._dim_names[(i+1):]
 
-class radiush(DependantQuantity):
-    pass
+        if not value is None: # if value is not None
+            # make sure value is an array
+            value = ma.asanyarray(value) # try to convert to array
 
-class CarthesianSphericalVariables(DependantQuantitySet):
-    pass
+            # check shape
+            if not self.shape is None: # if shape is defined
+                if np.prod(value.shape) == 1: # only one value was given
+                    # filled constant array
+                    value = np.full( self.shape, value, np.array(value).dtype)
+                elif np.prod(value.shape) == np.prod(self.shape):
+                    # reshape
+                    value = value.reshape(self.shape)
+                elif value.shape != self.shape: # value shape does not match
+                    raise ValueError(
+                    "invalid shape {} (not {}) of new coordinate {}".format(
+                            value.shape, self.shape, coord))
+            else: # shape is not defined yet
+                self.shape = value.shape # set it!
 
-class CarthesianSphericalSystem(CarthesianSphericalVariables):
-    pass
+            resval = value # this value
+
+            # set other dims to completely masked array if necessary
+            for dim in otherdims: # loop over all other dimensions
+                try: dimval = getattr(self, dim) # try to read current dimval
+                except: dimval = None # if not yet defined, use None
+                if dimval is None: # if current dimval is not defined
+                    setattr(self, "_{}".format(dim), ma.masked_array(
+                        data = np.empty(self.shape),
+                        mask = np.ones( self.shape)))
+
+        else: # specified value is None
+            if self.shape is None: # if no shape was defined yet
+                resval = None # just set this dimension to None
+            else: # shape is defined, set to empty array of appropriate shape
+                resval =  ma.masked_array(
+                    data = np.empty(self.shape),
+                    mask = np.ones( self.shape))
+                #logger.debug(
+                  #"setting {} to completely masked arrays of shape {} ".format(
+                        #",".join(self._dim_names),self.shape))
+
+        # set resulting value
+        #logger.debug("setting {} to {}".format(coord,resval))
+        setattr(self, "_{}".format(coord), resval)
+
+        try: # try this because resval can be None...
+            if self.shape != resval.shape:
+                #logger.debug("Adjusting shape from {} to {}".format(self.shape,
+                    #resval.shape))
+                self.shape = resval.shape
+        except: pass
+
+    # crop coordinates to a box
+    def crop(self, box):
+        """
+        crop the coordinates in-place to a box
+        args:
+            box (4-tuple of int): (left, top, right, bottom)
+        """
+
+        for dim in self._dim_names: # loop over all dimensions
+            new = getattr(self, dim)[box[1]:box[3], box[0]:box[2]]
+            # set underlying coordinate directly
+            setattr(self, "_{}".format(dim) , new)
+
+    # cut out a box
+    def cut(self, box):
+        """
+        cut the coordinates to a box and return it
+        args:
+            box (4-tuple of int): (left, top, right, bottom)
+        return:
+            coordinates = copied and copped instance
+        """
+        new = copy.deepcopy(self) # copy
+        new.crop(box) # crop
+        return new # return
+        
+            
+
+
+########################################
+### convenient class for coordinates ###
+########################################
+class Coordinates3d(BaseCoordinates3d):
+    def __init__(self, shape=None, azimuth_offset=0, clockwise=False,
+                 center=None, **dimensions):
+
+        # parent constructor
+        super().__init__(
+            shape=shape,
+            dimnames = ['elevation','azimuth','radius','radiush','x','y','z'],
+            azimuth_offset = azimuth_offset,
+            clockwise = clockwise
+            )
+
+        self.center = center
+
+        self.methods = CalculationMethodSet()
+        # add methods
+        self.methods.add_new_method(output='radius',input={'x','y','z'},
+            func=self.radius_from_xyz)
+        self.methods.add_new_method(output='radiush',input={'x','y'},
+            func=self.radiush_from_xy)
+        self.methods.add_new_method(output='radius',input={'radiush','z'},
+            func=self.radius_from_radiush_z)
+        self.methods.add_new_method(output='radius',input={'elevation',
+            'radiush'}, func=self.radius_from_elevation_radiush)
+        self.methods.add_new_method(output='azimuth',input={'x','y'},
+            func=self.azimuth_from_xy)
+        self.methods.add_new_method(output='elevation',input={'radiush','z'},
+            func=self.elevation_from_radiush_z)
+        self.methods.add_new_method(output='x',input={'azimuth','elevation',
+            'radius'}, func=self.x_from_spherical)
+        self.methods.add_new_method(output='x',input={'azimuth','radiush'},
+            func=self.x_from_azimuth_radiush)
+        self.methods.add_new_method(output='y',input={'azimuth','elevation',
+            'radius'}, func=self.y_from_spherical)
+        self.methods.add_new_method(output='y',input={'azimuth','radiush'},
+            func=self.y_from_azimuth_radiush)
+        self.methods.add_new_method(output='z',input={'azimuth','elevation',
+            'radius'}, func=self.z_from_spherical)
+        self.methods.add_new_method(output='x',input={'radiush','y'},
+            func=self.x_from_radiush_y)
+        self.methods.add_new_method(output='y',input={'radiush','x'},
+            func=self.y_from_radiush_x)
+        self.methods.add_new_method(output='z',input={'radius','radiush'},
+            func=self.z_from_radiusses)
+        self.methods.add_new_method(output='radiush',input={'elevation','z'},
+            func=self.radiush_from_elevation_z)
+        self.methods.add_new_method(output='radiush',input={'elevation',
+            'radius'}, func=self.radiush_from_elevation_radius)
+        self.methods.add_new_method(output='elevation',input={'radius',
+            'radiush'}, func=self.elevation_from_radiusses)
+
+        # fill with given dimensions
+        if dimensions:
+            self.fill(**dimensions)
+
+
+    @property
+    def x(self): 
+        try: return self._x - self.center.x
+        except:
+            try: return self._x
+            except: raise Exception("x is not specified yet")
+    @property
+    def y(self):
+        try: return self._y - self.center.y
+        except:
+            try: return self._y
+            except: raise Exception("y is not specified yet")
+    @property
+    def z(self): 
+        try: return self._z - self.center.z
+        except:
+            try: return self._z
+            except: raise Exception("z is not specified yet")
+    @property
+    def azimuth(self):   return self._azimuth
+    @property
+    def elevation(self): return self._elevation
+    @property
+    def radius(self):    return self._radius
+    @property
+    def radiush(self):    return self._radiush
+
+    @x.setter
+    def x(self, value):         self.fill(x=value)
+    @y.setter
+    def y(self, value):         self.fill(y=value)
+    @z.setter
+    def z(self, value):         self.fill(z=value)
+    @azimuth.setter
+    def azimuth(self, value):   self.fill(azimuth=value)
+    @elevation.setter
+    def elevation(self, value): self.fill(elevation=value)
+    @radius.setter
+    def radius(self, value):    self.fill(radius=value)
+    @radiush.setter
+    def radiush(self, value):   self.fill(radiush=value)
+
+    @property
+    def center(self): return self._center
+    @center.setter
+    def center(self, newcenter):
+        if all(hasattr(newcenter,val) for val in ["x","y","z"]):
+            self._center = newcenter
+
+    def _get_defined(self):
+        defined = []
+        for dim in self._dim_names:
+            isdefined = False
+            try: value = getattr(self, dim)
+            except:  pass
+            if not value is None:
+                try: isdefined = not value.mask.all()
+                except AttributeError:
+                    isdefined = True
+            if isdefined:
+                defined.append(dim)
+        return(defined)
+        
+
+    # given specific values for some dimensions, calculate all others
+    def fill_dependencies(self,**dimensions):
+        # get the depenency line
+        dependency_line = self.methods.dependency_line(dimensions)
+
+        # initially set all given variables
+        for dim, value in dimensions.items():
+            logger.debug("setting {} directly to value {}".format(dim,value))
+            self._set_coordinate(dim, value)
+
+        # do everything in the dependency line
+        dependency_line() # call 
+
+    # set as much variables as you can based on given dimensions
+    def fill(self, **dimensions):
+        defined = {}
+        for dim in self._get_defined():
+            defined[dim] = getattr(self,dim)
+        #logger.debug("already defined dims: {}".format(defined))
+        #logger.debug("new dims: {}".format(dimensions))
+                
+        # update with the new values
+        mergeddimensions = defined.copy()
+        for dim,val in dimensions.items():
+            mergeddimensions[dim] = copy.deepcopy(val)
+
+        #logger.debug("defined dims with updated values: {}".format(mergeddimensions))
+
+        # fill the dependencies!
+        self.fill_dependencies(**mergeddimensions)
+        
+    ###########################
+    ### calculation methods ###
+    ###########################
+    def radius_from_xyz(self):
+        self._radius = np.sqrt(self.x**2 + self.y**2 + self.z**2)
+
+    def radiush_from_xy(self):
+        self._radiush = np.sqrt(self.x**2 + self.y**2)
+
+    def radius_from_radiush_z(self):
+        self._radius = np.sqrt(self.radiush**2 + self.z**2)
+
+    def radius_from_elevation_radiush(self):
+        self._radius = self.radiush / np.sin( self.elevation )
+
+    def azimuth_from_xy(self):
+        north = self.azimuth_offset
+        clockwise = self.clockwise
+
+        north = - (north % (2*np.pi) )
+        if clockwise:
+            north = - north
+
+        # note np.arctan2's way of handling x and y arguments:
+        # np.arctan2( y, x ), NOT np.arctan( x, y ) !
+        #
+        # np.arctan2( y, x ) returns the SIGNED (!)
+        # angle between positive x-axis and the vector (x,y)
+        # in radians
+
+        # the azimuth angle is...
+        # ...the SIGNED angle between positive x-axis and the vector...
+        # ...plus some full circle to only have positive values...
+        # ...minux angle defined as "NORTH" (modulo 2*pi to be precise)
+        # -->  azi is not angle to x-axis but to NORTH
+        azimuth = np.arctan2(self.y, self.x) + 6 * np.pi + north
+
+        # take azimuth modulo a full circle to have sensible values
+        azimuth = azimuth % (2*np.pi)
+
+        if clockwise: # turn around if clockwise
+            azimuth = 2 * np.pi - azimuth
+
+        self._azimuth = azimuth
+
+    def elevation_from_radiush_z(self):
+        self._elevation = np.tan(self.radiush / self.z)
+
+    def x_from_spherical(self):
+        self._x = self.radius                          \
+            * np.sin( self.elevation )              \
+            * np.cos( self.azimuth + self.azimuth_offset )
+
+    def x_from_azimuth_radiush(self):
+        self._x = self.radiush * np.cos( self.azimuth + self.azimuth_offset )
+
+    def y_from_spherical(self):
+        self._y = self.radius                              \
+            * np.sin( self.elevation )                  \
+            * np.sin( self.azimuth + self.azimuth_offset )
+
+    def y_from_azimuth_radiush(self):
+        self._y = self.radiush * np.sin( self.azimuth + self.azimuth_offset )
+
+    def z_from_spherical(self):
+        self._z = self.radius * np.cos( self.elevation )
+
+    def x_from_radiush_y(self):
+        self._x = np.sqrt(self.radiush**2 - self.y**2)
+
+    def y_from_radiush_x(self):
+        self._y = np.sqrt(self.radiush**2 - self.x**2)
+
+    def z_from_radiusses(self):
+        self._z = np.sqrt(self.radius**2 - self.radiush**2)
+
+    def radiush_from_elevation_z(self):
+        self._radiush = self.z * np.arctan( self.elevation )
+
+    def radiush_from_elevation_radius(self):
+        self._radiush = self.radius * np.sin( self.elevation )
+
+    def elevation_from_radiusses(self):
+        self._elevation = np.arcsin( self.radiush / self.radius )
+    ###############################
+    ### end calculation methods ###
+    ###############################
+    
+
+    def _notimplemented(self,*args,**kwargs):
+        raise NotImplementedError("unimplemented combination".format(
+            list(kwargs.keys())))
+        
+    # summary when converted to string
+    def __str__(self):
+        formatstring = ["==================",
+                        "| 3d coordinates |",
+                        "=================="]
+        formatstring.append("         shape: {}".format(self.shape))
+        formatstring.append("     clockwise: {}".format(self.clockwise))
+        formatstring.append("azimuth_offset: {}".format(self.azimuth_offset))
+        formatstring.append("==================")
+        for dim in self._dim_names:
+            value = getattr(self, dim)
+            isdefined = False
+            if not value is None:
+                try: isdefined = not value.mask.all()
+                except AttributeError:
+                    isdefined = True
+            if isdefined: string = "defined"
+            else:         string = "empty"
+            formatstring.append("{:>11}: {}".format(dim,string))
+        return("\n".join(formatstring))

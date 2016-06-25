@@ -1,43 +1,38 @@
 #!/usr/bin/env python3
 import pyclamster
-import numpy as np
 
-x = pyclamster.x([1,2,3,4])
-y = pyclamster.y([[5,6],[7,8]])
-z = pyclamster.z([[[2,4]],[[6,8]]])
 
-set = pyclamster.DependantQuantitySet(x,y,z)
+cmset = pyclamster.coordinates.CalculationMethodSet()
 
-print("INITIAL set")
-print(set)
+cmset.add_new_method(input={'x','y','z'},output='radius',
+    func=lambda:print("radius=sqrt(x^2+y^2+z^3)"))
 
-var2 = pyclamster.DependantQuantity([1,2,3])
+cmset.add_new_method(input={'x','y'},output='radiush',
+    func=lambda:print("radiush=sqrt(x^2+y^2)"))
 
-try:
-    set.addquantity(var2)
-except:
-    print("could not add quantity!")
-    
+cmset.add_new_method(input={'radius','radiush'},output='z',
+    func=lambda:print("z=sqrt(radius^2-radiush^2)"))
 
-print("AFTER trying to add new invalid shape quantity")
-print(set)
+cmset.add_new_method(input={'x','y','azimuth_offset'},output='azimuth',
+    func=lambda:print("fancy azimuth calculation..."))
 
-var3 = pyclamster.DependantQuantity(np.ma.masked_array([11,22,33,44]),
-    name="var3")
+cmset.add_new_method(input={'radiush','z'},output='elevation',
+    func=lambda:print("fancy elevation calculation..."))
 
-try:
-    set.addquantity(var3)
-except:
-    print("could not add quantity!")
-    
+cmset.add_new_method(input={'azimuth','radius'},output='x',
+    func=lambda:print("fancy x calculation..."))
 
-print("AFTER trying to add new valid quantity")
-print(set)
+print(cmset)
 
-set.shape = None
-print("AFTER setting shape to None")
-print(set)
+print("")
 
-set.shape = (2,2)
-print("AFTER setting shape to new value")
-print(set)
+q1 = {'x'}
+dcq1 = cmset.directly_calculatable_quantities(q1)
+print("based on {q}, {d} can be calculated directly.".format(q=q1,d=dcq1))
+
+q2 = {'x','y','z'}
+depline2 = cmset.dependency_line(q2)
+print("based on {q}, the dependency line is:\n{d}".format(q=q2,d=depline2))
+depline2()
+
+
