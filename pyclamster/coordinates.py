@@ -107,6 +107,8 @@ class CalculationMethodSet(object):
     # make it callable
     def __call__(self): # when this set is called
         for method in self.methods: # loop over all methods
+            logger.debug("using {i} to calculate {o}".format(i=method.input,
+                o=method.output))
             method() # call the method
 
 
@@ -199,13 +201,16 @@ class CalculationMethodSet(object):
     # with the correct order to calculate as much other quantities as possible
     def dependency_line(self, quantities):
         known_quantities = set(quantities) # copy of given quantities
+        calculated = set(known_quantities) # already calculated quantities
         line = CalculationMethodSet() # new empty set
         while True:
             # get the applicable methods at this stage
             methods = self.applicable_methods(known_quantities)
             for method in list(methods): # loop over (a copy of) all methods
-                if method.output.issubset(known_quantities): # if we know it
+                if method.output.issubset(known_quantities) or \
+                   method.output.issubset(calculated): # if we know it
                     methods.removemethod(method) # don't consider it
+                calculated.update(method.output) # update calculated quants
             if methods: # if something can be calculated
                 known_quantities.update(methods.all_calculatable_quantities)
                 # extend the line with the methods
@@ -221,13 +226,12 @@ class CalculationMethodSet(object):
 ### classes for coordinates ###
 ###############################
 class BaseCoordinates3d(object):
-    def __init__(self, dimnames, shape=None,clockwise=False,azimuth_offset=0):
+    def __init__(self, dimnames, paramnames=[], shape=None):
         # initialize base variables
         self._dim_names = dimnames
+        self._param_names = paramnames
         # initialize shape
         self.shape = shape
-        self.clockwise = clockwise
-        self.azimuth_offset = azimuth_offset
 
     @property
     def shape(self):
@@ -399,19 +403,17 @@ class BaseCoordinates3d(object):
 ### convenient class for coordinates ###
 ########################################
 class Coordinates3d(BaseCoordinates3d):
-    def __init__(self, shape=None, azimuth_offset=0, clockwise=False,
-                 center=None, **dimensions):
+    def __init__(self, shape=None, azimuth_offset=0, azimuth_clockwise=False,
+                 elevation_type='zenith',**dimensions):
 
         # parent constructor
         super().__init__(
             shape=shape,
-            dimnames = ['elevation','azimuth','radius','radiush','x','y','z'],
-            azimuth_offset = azimuth_offset,
-            clockwise = clockwise
+            dimnames = ['x','y','z','radiush','elevation','azimuth','radius'],
+            paramnames =['azimuth_clockwise','azimuth_offset','elevation_type']
             )
 
-        self.center = center
-
+        # define methods
         self.methods = CalculationMethodSet()
         # add methods
         self.methods.add_new_method(output='radius',input={'x','y','z'},
@@ -448,30 +450,44 @@ class Coordinates3d(BaseCoordinates3d):
             'radius'}, func=self.radiush_from_elevation_radius)
         self.methods.add_new_method(output='elevation',input={'radius',
             'radiush'}, func=self.elevation_from_radiusses)
+        self.methods.add_new_method(output='elevation',input={'radius','z'},
+            func=self.elevation_from_radius_z)
+
+        # initially set parameters
+        self.change_parameters(
+            azimuth_clockwise = azimuth_clockwise,
+            azimuth_offset    = azimuth_offset,
+            elevation_type    = elevation_type )
 
         # fill with given dimensions
         if dimensions:
             self.fill(**dimensions)
 
+    @property
+    def azimuth_clockwise(self): return self._azimuth_clockwise
+    @property
+    def azimuth_offset(self):    return self._azimuth_offset
+    @property
+    def elevation_type(self):    return self._elevation_type
+
+    @azimuth_clockwise.setter
+    def azimuth_clockwise(self, value): 
+        self.change_parameters(azimuth_clockwise=value)
+        
+    @azimuth_offset.setter
+    def azimuth_offset(self, value): 
+        self.change_parameters(azimuth_offset=value)
+
+    @elevation_type.setter
+    def elevation_type(self, value):
+        self.change_parameters(elevation_type=value)
 
     @property
-    def x(self): 
-        try: return self._x - self.center.x
-        except:
-            try: return self._x
-            except: raise Exception("x is not specified yet")
+    def x(self):         return self._x
     @property
-    def y(self):
-        try: return self._y - self.center.y
-        except:
-            try: return self._y
-            except: raise Exception("y is not specified yet")
+    def y(self):         return self._y
     @property
-    def z(self): 
-        try: return self._z - self.center.z
-        except:
-            try: return self._z
-            except: raise Exception("z is not specified yet")
+    def z(self):         return self._z
     @property
     def azimuth(self):   return self._azimuth
     @property
@@ -479,7 +495,7 @@ class Coordinates3d(BaseCoordinates3d):
     @property
     def radius(self):    return self._radius
     @property
-    def radiush(self):    return self._radiush
+    def radiush(self):   return self._radiush
 
     @x.setter
     def x(self, value):         self.fill(x=value)
@@ -495,13 +511,6 @@ class Coordinates3d(BaseCoordinates3d):
     def radius(self, value):    self.fill(radius=value)
     @radiush.setter
     def radiush(self, value):   self.fill(radiush=value)
-
-    @property
-    def center(self): return self._center
-    @center.setter
-    def center(self, newcenter):
-        if all(hasattr(newcenter,val) for val in ["x","y","z"]):
-            self._center = newcenter
 
     # determine which dimensions are defined
     @property
@@ -519,12 +528,50 @@ class Coordinates3d(BaseCoordinates3d):
                 defined.add(dim)
         return(defined)
         
+    # change parameters keeping some dimensions
+    def change_parameters(self,keep=set(),**parameters):
+        logger.debug(
+            "request to change parameters to {} while keeping {}".format(
+            parameters,keep))
+        for param,val in parameters.items(): # loop over new parameters
+            # check value
+            if param == "elevation_type":
+                elevation_types = {'zenith'}
+                if not val in elevation_types:
+                    raise ValueError(
+                    "wrong elevation type '{e}', has to be one of {t}".format(
+                        e=val,t=elevation_types))
+            elif param == "azimuth_clockwise":
+                if not isinstance(val, bool):
+                    raise ValueError("azimuth_clockwise has to be boolean.")
+            elif param == "azimuth_offset":
+                try: float(val)
+                except: raise ValueError("azimuth_offset has to be numeric.")
+            else:
+                raise AttributeError("parameter {} does not exist!".format(
+                    param))
+
+            # make sure to only have sensible dimensions to keep
+            try:    keep = keep.intersection(self._dim_names)
+            except: raise TypeError("keep has to be a set of dimension names.")
+
+            # set the underlying attribute
+            setattr(self,"_{}".format(param),val)
+
+        # empty all unwanted dimensions
+        notkept = set(self._dim_names).symmetric_difference(keep)
+        logger.debug("empty {}, because not kept".format(notkept))
+        for dim in notkept:
+            self._set_coordinate(dim,None) # empty this dimension
+
+        # now calculate everything based on the dimensions to keep
+        self.fill_dependencies(keep)
+            
 
     # given specific values for some dimensions, calculate all others
     def fill_dependencies(self,dimensions):
         # get the depenency line
         dependency_line = self.methods.dependency_line(dimensions)
-
         # do everything in the dependency line
         dependency_line() # call 
 
@@ -532,6 +579,14 @@ class Coordinates3d(BaseCoordinates3d):
     # defined dimensions
     def fill(self, **dimensions):
         #logger.debug("request to set {}".format(dimensions))
+        
+        # if nothing was given to fill from, empty everything 
+        if len(dimensions) == 0:
+            logger.debug("filling from nothing. emptying all dimensions.")
+            shape = self.shape
+            self.shape = None
+            self.shape = shape
+
         # first, unset all dimensions that reverse-depend on the new dimensions
         for dim in dimensions.keys(): # loop over all new given dimensions
             # get all methods that yield this new dimension
@@ -544,11 +599,11 @@ class Coordinates3d(BaseCoordinates3d):
                     # unset everything needed for this method
                     # because this is the reverse dependency of this new
                     # dimensions
+                    logger.debug(" ".join([
+                    "unsetting {d}, because they are given",
+                    "and can calculate {dim}",
+                    ]).format(m=m,d=m.input,dim=dim,i=m.input))
                     for d in m.input:
-                        #logger.debug(" ".join([
-                        #"unsetting {d}, because {i} can calculate {dim}",
-                        #"via {m}, and all of {i} are given."
-                        #]).format(m=m,d=d,dim=dim,i=m.input))
                         self._set_coordinate(d, None)
 
                 
@@ -581,10 +636,10 @@ class Coordinates3d(BaseCoordinates3d):
 
     def azimuth_from_xy(self):
         north = self.azimuth_offset
-        clockwise = self.clockwise
+        azimuth_clockwise = self.azimuth_clockwise
 
         north = - (north % (2*np.pi) )
-        if clockwise:
+        if azimuth_clockwise:
             north = - north
 
         # note np.arctan2's way of handling x and y arguments:
@@ -597,20 +652,23 @@ class Coordinates3d(BaseCoordinates3d):
         # the azimuth angle is...
         # ...the SIGNED angle between positive x-axis and the vector...
         # ...plus some full circle to only have positive values...
-        # ...minux angle defined as "NORTH" (modulo 2*pi to be precise)
+        # ...minus angle defined as "NORTH" (modulo 2*pi to be precise)
         # -->  azi is not angle to x-axis but to NORTH
         azimuth = np.arctan2(self.y, self.x) + 6 * np.pi + north
 
         # take azimuth modulo a full circle to have sensible values
         azimuth = azimuth % (2*np.pi)
 
-        if clockwise: # turn around if clockwise
+        if azimuth_clockwise: # turn around if azimuth_clockwise
             azimuth = 2 * np.pi - azimuth
 
         self._azimuth = azimuth
 
     def elevation_from_radiush_z(self):
-        self._elevation = np.tan(self.radiush / self.z)
+        self._elevation = np.arctan(self.radiush / self.z)
+
+    def elevation_from_radius_z(self):
+        self._elevation = np.arccos(self.z / self.radius)
 
     def x_from_spherical(self):
         self._x = self.radius                          \
@@ -654,13 +712,23 @@ class Coordinates3d(BaseCoordinates3d):
     
     # summary when converted to string
     def __str__(self):
+        def ndstr(a, format_string ='{0: 8.3f}'):
+            string = []
+            for i,v in enumerate(a):
+                if v is np.ma.masked:
+                    string.append("   --   ")
+                else:
+                    string.append(format_string.format(v,i))
+            return " | ".join(string)
+
         formatstring = ["==================",
                         "| 3d coordinates |",
                         "=================="]
-        formatstring.append("         shape: {}".format(self.shape))
-        formatstring.append("     clockwise: {}".format(self.clockwise))
-        formatstring.append("azimuth_offset: {}".format(self.azimuth_offset))
-        formatstring.append("==================")
+        formatstring.append("            shape: {}".format(self.shape))
+        formatstring.append("   elevation_type: {}".format(self.elevation_type))
+        formatstring.append("azimuth_clockwise: {}".format(self.azimuth_clockwise))
+        formatstring.append("   azimuth_offset: {}".format(self.azimuth_offset))
+        formatstring.append("=====================")
         for dim in self._dim_names:
             value = getattr(self, dim)
             isdefined = False
@@ -668,7 +736,13 @@ class Coordinates3d(BaseCoordinates3d):
                 try: isdefined = not value.mask.all()
                 except AttributeError:
                     isdefined = True
-            if isdefined: string = "defined"
-            else:         string = "empty"
+            if isdefined:
+                try: 
+                    if np.prod(self.shape) <= 8:
+                        string = str(ndstr(value.flatten()))
+                    else: string = "defined"
+                except: raise
+            else:
+                string = "empty"
             formatstring.append("{:>11}: {}".format(dim,string))
         return("\n".join(formatstring))
