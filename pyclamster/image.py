@@ -83,7 +83,7 @@ class Image(object):
         # set metadata
         self.time = time
         self.projection = projection
-        self.coordinates = coordinates.SphericalCoordinates3d(
+        self.coordinates = coordinates.Coordinates3d(
             azimuth = azimuth, elevation = elevation
             )
         self.zenith_pixel = zenith_pixel
