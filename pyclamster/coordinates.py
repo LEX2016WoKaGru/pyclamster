@@ -42,11 +42,16 @@ logger = logging.getLogger(__name__)
 ##########################
 class CalculationMethod(object):
     def __init__(self,input,output,func):
-        self.input  = input
-        self.output = output
+        self.input  = set()
+        self.output = set()
+        if isinstance(input,str): self.input.add(input)
+        else:                     self.input.update(input)
+        if isinstance(output,str): self.output.add(output)
+        else:                      self.output.update(output)
+
         self.func   = func
 
-    # chack if this calculation method can be applied on quantities
+    # check if this calculation method can be applied on quantities
     def applicable(self,quantities):
         return all(x in quantities for x in self.input)
 
@@ -58,8 +63,9 @@ class CalculationMethod(object):
     def __str__(self):
         lines = []
         lines.append("{func}".format(func=self.func))
-        lines.append("{o} <- function of {i}".format(o=self.output,
-            i=",".join(self.input,)))
+        lines.append("{o} <- function of {i}".format(
+            o=",".join(self.output),
+            i=",".join(self.input)))
         return "\n".join(lines)
 
 
@@ -72,7 +78,10 @@ class CalculationMethodSet(object):
         for method in utils.flatten(methods):
             self.addmethod(method) 
 
-    # make the method set iterable
+    ################################################################
+    ### make the method set behave correct in certain situations ###
+    ################################################################
+    # make it iterable
     def __iter__(self):
         try: del self.current # reset counter
         except: pass
@@ -87,68 +96,20 @@ class CalculationMethodSet(object):
         else:
             return self.methods[self.current]
         
+    # make it indexable
     def __getitem__(self,key):
         return self.methods[key]
 
+    # make it return something in boolean context
     def __bool__(self): # return value in boolean context
         return len(self.methods) > 0
 
+    # make it callable
     def __call__(self): # when this set is called
         for method in self.methods: # loop over all methods
             method() # call the method
 
-    def addmethod(self, method):
-        self.methods.append(method)
 
-    def add_new_method(self, input, output, func):
-        # create new method
-        method = CalculationMethod(input=input,output=output,func=func)
-        self.addmethod(method) # add the method
-
-    def removemethod(self, method):
-        self.methods.remove(method)
-
-    def applicable_methods(self, quantities):
-        methods = CalculationMethodSet() # new empty set
-        for method in self.methods: # loop over all methods
-            # check if method is applicable and add it to list if yes
-            if method.applicable(quantities):
-                methods.addmethod(method)
-        return methods
-
-    # return all calculatable quantities of this set
-    @property
-    def all_calculatable_quantities(self):
-        return {m.output for m in self}
-
-    # given a tuple of quantity names, determine which other quantities can be
-    # calculated based DIRECTLY on it
-    def directly_calculatable_quantities(self, quantities):
-        # get the applicable methods
-        applicable = self.applicable_methods(quantities)
-        # get all calculatable quantities
-        return applicable.all_calculatable_quantities
-
-    # given a set of quantity names, construct a calculation method set
-    # with the correct order to calculate as much other quantities as possible
-    def dependency_line(self, quantities):
-        known_quantities = set(quantities) # copy of given quantities
-        line = CalculationMethodSet() # new empty set
-        while True:
-            # get the directly calculatable quantities at this stage
-            methods = self.applicable_methods(known_quantities)
-            for method in list(methods): # loop over (a copy of) all methods
-                if method.output in known_quantities: # if we already know it
-                    methods.removemethod(method) # don't consider it
-            if methods: # if something can be calculated
-                known_quantities.update(methods.all_calculatable_quantities)
-                # extend the line with the methods
-                for method in methods:
-                    line.addmethod(method)
-            else: break # nothing found, abort
-        return line
-
-            
     # summary if converted to string
     def __str__(self):
         lines = []
@@ -167,6 +128,93 @@ class CalculationMethodSet(object):
         return "\n".join(lines)
 
         
+    ###################################
+    ### managing methods in the set ###
+    ###################################
+    def addmethod(self, method):
+        self.methods.append(method)
+
+    def add_new_method(self, input, output, func):
+        # create new method
+        method = CalculationMethod(input=input,output=output,func=func)
+        self.addmethod(method) # add the method
+
+    def removemethod(self, method):
+        self.methods.remove(method)
+
+    ############################################
+    ### getting information from the methods ###
+    ############################################
+    # given a set of quantity names, determine which methods can be
+    # applied DIRECTLY on them
+    def applicable_methods(self, quantities):
+        methods = CalculationMethodSet() # new empty set
+        for method in self.methods: # loop over all methods
+            # check if method is applicable and add it to list if yes
+            if method.applicable(quantities):
+                methods.addmethod(method)
+        return methods
+
+    # given a set of quantity names, determine which methods yield
+    # any of these quantities DIRECTLY
+    def methods_yield(self, quantities):
+        methods = CalculationMethodSet() # new empty set
+        for method in self.methods: # loop over all methods
+            # check if method is applicable and add it to list if yes
+            if any(q in method.output for q in quantities):
+                methods.addmethod(method)
+        return methods
+
+    # return all calculatable quantities of this set
+    @property
+    def all_calculatable_quantities(self):
+        q = set()
+        for m in self: q.update(m.output)
+        return q
+
+    # return all needed quantities of this set
+    @property
+    def all_needed_quantities(self):
+        q = set()
+        for m in self: q.update(m.input)
+        return q
+
+    # given a set of quantity names, determine which other quantities can be
+    # calculated based DIRECTLY on it
+    def directly_calculatable_quantities(self, quantities):
+        # get the applicable methods
+        applicable = self.applicable_methods(quantities)
+        # return all calculatable quantities
+        return applicable.all_calculatable_quantities
+
+    # given a set of quantity names, determine which other quantities can 
+    # DIRECTLY calculate these quantities
+    def quantities_can_calculate(self, quantities):
+        # get all methods that yield any of the given quantities
+        methods = self.methods_yield(quantities)
+        # return all the needed quantities for this
+        return methods.all_needed_quantities
+
+    # given a set of quantity names, construct a calculation method set
+    # with the correct order to calculate as much other quantities as possible
+    def dependency_line(self, quantities):
+        known_quantities = set(quantities) # copy of given quantities
+        line = CalculationMethodSet() # new empty set
+        while True:
+            # get the applicable methods at this stage
+            methods = self.applicable_methods(known_quantities)
+            for method in list(methods): # loop over (a copy of) all methods
+                if method.output.issubset(known_quantities): # if we know it
+                    methods.removemethod(method) # don't consider it
+            if methods: # if something can be calculated
+                known_quantities.update(methods.all_calculatable_quantities)
+                # extend the line with the methods
+                for method in methods:
+                    line.addmethod(method)
+            else: break # nothing found, abort
+        return line
+
+            
 
 
 ###############################
@@ -455,8 +503,10 @@ class Coordinates3d(BaseCoordinates3d):
         if all(hasattr(newcenter,val) for val in ["x","y","z"]):
             self._center = newcenter
 
-    def _get_defined(self):
-        defined = []
+    # determine which dimensions are defined
+    @property
+    def defined_dimensions(self):
+        defined = set()
         for dim in self._dim_names:
             isdefined = False
             try: value = getattr(self, dim)
@@ -466,40 +516,53 @@ class Coordinates3d(BaseCoordinates3d):
                 except AttributeError:
                     isdefined = True
             if isdefined:
-                defined.append(dim)
+                defined.add(dim)
         return(defined)
         
 
     # given specific values for some dimensions, calculate all others
-    def fill_dependencies(self,**dimensions):
+    def fill_dependencies(self,dimensions):
         # get the depenency line
         dependency_line = self.methods.dependency_line(dimensions)
-
-        # initially set all given variables
-        for dim, value in dimensions.items():
-            logger.debug("setting {} directly to value {}".format(dim,value))
-            self._set_coordinate(dim, value)
 
         # do everything in the dependency line
         dependency_line() # call 
 
-    # set as much variables as you can based on given dimensions
+    # set as much variables as you can based on given dimensions and already
+    # defined dimensions
     def fill(self, **dimensions):
-        defined = {}
-        for dim in self._get_defined():
-            defined[dim] = getattr(self,dim)
-        #logger.debug("already defined dims: {}".format(defined))
-        #logger.debug("new dims: {}".format(dimensions))
+        #logger.debug("request to set {}".format(dimensions))
+        # first, unset all dimensions that reverse-depend on the new dimensions
+        for dim in dimensions.keys(): # loop over all new given dimensions
+            # get all methods that yield this new dimension
+            ms = set(); ms.add(dim)
+            methods = self.methods.methods_yield(ms)
+            #logger.debug("methods, that yield {}:".format(dim))
+            for m in methods: # loop over all methods that yield this new dim
+                # if for this method all information is already given
+                if m.input.issubset(self.defined_dimensions):
+                    # unset everything needed for this method
+                    # because this is the reverse dependency of this new
+                    # dimensions
+                    for d in m.input:
+                        #logger.debug(" ".join([
+                        #"unsetting {d}, because {i} can calculate {dim}",
+                        #"via {m}, and all of {i} are given."
+                        #]).format(m=m,d=d,dim=dim,i=m.input))
+                        self._set_coordinate(d, None)
+
                 
-        # update with the new values
-        mergeddimensions = defined.copy()
-        for dim,val in dimensions.items():
-            mergeddimensions[dim] = copy.deepcopy(val)
+        # initially set all given variables
+        for dim, value in dimensions.items():
+            #logger.debug("setting {} directly to value {}".format(dim,value))
+            self._set_coordinate(dim, value)
 
-        #logger.debug("defined dims with updated values: {}".format(mergeddimensions))
+        # create a set of defined dimensions, updated with new given dimensions
+        merged = set(self.defined_dimensions)
+        merged.update(dimensions.keys())
 
-        # fill the dependencies!
-        self.fill_dependencies(**mergeddimensions)
+        # now fill the dependencies with all the information we have
+        self.fill_dependencies(merged)
         
     ###########################
     ### calculation methods ###
@@ -589,11 +652,6 @@ class Coordinates3d(BaseCoordinates3d):
     ### end calculation methods ###
     ###############################
     
-
-    def _notimplemented(self,*args,**kwargs):
-        raise NotImplementedError("unimplemented combination".format(
-            list(kwargs.keys())))
-        
     # summary when converted to string
     def __str__(self):
         formatstring = ["==================",
