@@ -23,6 +23,7 @@ Created for pyclamster
 import logging
 
 # External modules
+import numpy as np
 
 # Internal modules
 
@@ -43,3 +44,11 @@ def flatten(x):
     return res # return resulting list
             
 
+##################
+### conversion ###
+##################
+def deg2rad(x):
+    return x / 360 * 2 * np.pi
+
+def rad2deg(x):
+    return x / ( 2 * np.pi ) * 360
