@@ -255,12 +255,12 @@ class Image(object):
             # copy over attributes
             self.__dict__.update(image.__dict__)
             ### copy everything by hand ###
-            self.time = copy.deepcopy(image.time)
-            self.projection = copy.deepcopy(image.projection)
-            self.coordinates = copy.deepcopy(image.coordinates)
+            self.time         = copy.deepcopy(image.time)
+            self.projection   = copy.deepcopy(image.projection)
+            self.coordinates  = copy.deepcopy(image.coordinates)
             self.zenith_pixel = copy.deepcopy(image.zenith_pixel)
-            self.path = copy.deepcopy(image.path)
-            self.image = copy.deepcopy(image.image)
+            self.path         = copy.deepcopy(image.path)
+            self.image        = copy.copy(image.image) # deepcopy not possible?
 
             success = True
 

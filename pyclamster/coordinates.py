@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Created on 30.05.16
+Created on 25.06.2016
 
 Created for pyclamster
 
@@ -26,9 +26,9 @@ import copy
 # External modules
 import numpy as np
 import numpy.ma as ma
-import scipy.interpolate
 
 # Internal modules
+from . import utils
 
 
 __version__ = "0.1"
@@ -37,13 +37,199 @@ __version__ = "0.1"
 logger = logging.getLogger(__name__)
 
 
+##########################
+### Calculation Method ###
+##########################
+class CalculationMethod(object):
+    def __init__(self,input,output,func):
+        self.input  = set()
+        self.output = set()
+        if isinstance(input,str): self.input.add(input)
+        else:                     self.input.update(input)
+        if isinstance(output,str): self.output.add(output)
+        else:                      self.output.update(output)
+
+        self.func   = func
+
+    # check if this calculation method can be applied on quantities
+    def applicable(self,quantities):
+        return all(x in quantities for x in self.input)
+
+    # when this method is called
+    def __call__(self):
+        self.func() # call function
+
+    # summary on stringification
+    def __str__(self):
+        lines = []
+        lines.append("{func}".format(func=self.func))
+        lines.append("{o} <- function of {i}".format(
+            o=",".join(self.output),
+            i=",".join(self.input)))
+        return "\n".join(lines)
+
+
+##############################
+### Calculation Method set ###
+##############################
+class CalculationMethodSet(object):
+    def __init__(self, *methods):
+        self.methods = []
+        for method in utils.flatten(methods):
+            self.addmethod(method) 
+
+    ################################################################
+    ### make the method set behave correct in certain situations ###
+    ################################################################
+    # make it iterable
+    def __iter__(self):
+        try: del self.current # reset counter
+        except: pass
+        return self
+
+    def __next__(self):
+        try:    self.current += 1 # try to count up
+        except: self.current  = 0 # if that didn't work, start with 0
+        if self.current >= len(self.methods):
+            del self.current # reset counter
+            raise StopIteration # stop the iteration
+        else:
+            return self.methods[self.current]
+        
+    # make it indexable
+    def __getitem__(self,key):
+        return self.methods[key]
+
+    # make it return something in boolean context
+    def __bool__(self): # return value in boolean context
+        return len(self.methods) > 0
+
+    # make it callable
+    def __call__(self): # when this set is called
+        for method in self.methods: # loop over all methods
+            logger.debug("using {i} to calculate {o}".format(i=method.input,
+                o=method.output))
+            method() # call the method
+
+
+    # summary if converted to string
+    def __str__(self):
+        lines = []
+        lines.extend(["==============================",
+                      "| set of calculation methods |",
+                      "=============================="])
+        n = len(self.methods)
+        if n > 0:
+            lines.append("{n} calculation method{s}:".format(
+                n=n,s='s' if n!=1 else ''))
+            for i,method in enumerate(self.methods):
+                lines.append("\nMethod Nr. {i}/{n}:\n{m}".format(i=i+1,
+                    m=method,n=n))
+        else:
+            lines.append("no calculation methods\n")
+        return "\n".join(lines)
+
+        
+    ###################################
+    ### managing methods in the set ###
+    ###################################
+    def addmethod(self, method):
+        self.methods.append(method)
+
+    def add_new_method(self, input, output, func):
+        # create new method
+        method = CalculationMethod(input=input,output=output,func=func)
+        self.addmethod(method) # add the method
+
+    def removemethod(self, method):
+        self.methods.remove(method)
+
+    ############################################
+    ### getting information from the methods ###
+    ############################################
+    # given a set of quantity names, determine which methods can be
+    # applied DIRECTLY on them
+    def applicable_methods(self, quantities):
+        methods = CalculationMethodSet() # new empty set
+        for method in self.methods: # loop over all methods
+            # check if method is applicable and add it to list if yes
+            if method.applicable(quantities):
+                methods.addmethod(method)
+        return methods
+
+    # given a set of quantity names, determine which methods yield
+    # any of these quantities DIRECTLY
+    def methods_yield(self, quantities):
+        methods = CalculationMethodSet() # new empty set
+        for method in self.methods: # loop over all methods
+            # check if method is applicable and add it to list if yes
+            if any(q in method.output for q in quantities):
+                methods.addmethod(method)
+        return methods
+
+    # return all calculatable quantities of this set
+    @property
+    def all_calculatable_quantities(self):
+        q = set()
+        for m in self: q.update(m.output)
+        return q
+
+    # return all needed quantities of this set
+    @property
+    def all_needed_quantities(self):
+        q = set()
+        for m in self: q.update(m.input)
+        return q
+
+    # given a set of quantity names, determine which other quantities can be
+    # calculated based DIRECTLY on it
+    def directly_calculatable_quantities(self, quantities):
+        # get the applicable methods
+        applicable = self.applicable_methods(quantities)
+        # return all calculatable quantities
+        return applicable.all_calculatable_quantities
+
+    # given a set of quantity names, determine which other quantities can 
+    # DIRECTLY calculate these quantities
+    def quantities_can_calculate(self, quantities):
+        # get all methods that yield any of the given quantities
+        methods = self.methods_yield(quantities)
+        # return all the needed quantities for this
+        return methods.all_needed_quantities
+
+    # given a set of quantity names, construct a calculation method set
+    # with the correct order to calculate as much other quantities as possible
+    def dependency_line(self, quantities):
+        known_quantities = set(quantities) # copy of given quantities
+        calculated = set(known_quantities) # already calculated quantities
+        line = CalculationMethodSet() # new empty set
+        while True:
+            # get the applicable methods at this stage
+            methods = self.applicable_methods(known_quantities)
+            for method in list(methods): # loop over (a copy of) all methods
+                if method.output.issubset(known_quantities) or \
+                   method.output.issubset(calculated): # if we know it
+                    methods.removemethod(method) # don't consider it
+                calculated.update(method.output) # update calculated quants
+            if methods: # if something can be calculated
+                known_quantities.update(methods.all_calculatable_quantities)
+                # extend the line with the methods
+                for method in methods:
+                    line.addmethod(method)
+            else: break # nothing found, abort
+        return line
+
+            
+
+
 ###############################
 ### classes for coordinates ###
 ###############################
-class Coordinates3d(object):
-    def __init__(self, dimnames, shape=None):
+class BaseCoordinates3d(object):
+    def __init__(self, dimnames, paramnames=[], shape=None):
         # initialize base variables
         self._dim_names = dimnames
+        self._param_names = paramnames
         # initialize shape
         self.shape = shape
 
@@ -141,10 +327,15 @@ class Coordinates3d(object):
                 if np.prod(value.shape) == 1: # only one value was given
                     # filled constant array
                     value = np.full( self.shape, value, np.array(value).dtype)
+                elif np.prod(value.shape) == np.prod(self.shape):
+                    # reshape
+                    value = value.reshape(self.shape)
                 elif value.shape != self.shape: # value shape does not match
                     raise ValueError(
                     "invalid shape {} (not {}) of new coordinate {}".format(
                             value.shape, self.shape, coord))
+            else: # shape is not defined yet
+                self.shape = value.shape # set it!
 
             resval = value # this value
 
@@ -207,93 +398,248 @@ class Coordinates3d(object):
         
             
 
-# class for carthesian 3d coordinates
-class CarthesianCoordinates3d(Coordinates3d):
-    def __init__(self, 
-                 shape=None,
-                 x=None, y=None, z=None,
-                 clockwise=False,
-                 azimuth_offset=np.pi/2
-                 ):
-        """
-        create a set of carthesian coordinates lying on a 2-dimensional grid.
 
-        args:
-            x,y,z (optional[array_like]): coordinates x, y and z
-            clockwise(optional[boolean]): does the azimuth go clockwise? 
-                Defaults to False (mathematical direction)
-            azimuth_offset(optional[float]): azimuth angle offset (in radians). 
-                The azimuth_offset is the angle between the positive x-axis
-                and the 0-azimuth line depending on clockwise argument. 
-                Defaults to 90°, pi/2, which is the top of the image at 
-                counter-clockwise direction.
+########################################
+### convenient class for coordinates ###
+########################################
+class Coordinates3d(BaseCoordinates3d):
+    def __init__(self, shape=None, azimuth_offset=0, azimuth_clockwise=False,
+                 elevation_type='zenith',**dimensions):
 
-        returns:
-            np.maskedarray of shape (width, height) with azimuth values
-        """
         # parent constructor
         super().__init__(
-            shape = shape,
-            dimnames = ["x","y","z"]
+            shape=shape,
+            dimnames = ['x','y','z','radiush','elevation','azimuth','radius'],
+            paramnames =['azimuth_clockwise','azimuth_offset','elevation_type']
             )
 
-        # initially set underlying attributes to None
-        self._x, self._y, self._z = (None, None, None)
-        # copy over the arguments
-        self.x = x
-        self.y = y
-        self.z = z
-        self.clockwise = clockwise
-        self.azimuth_offset = azimuth_offset
+        # define methods
+        self.methods = CalculationMethodSet()
+        # add methods
+        self.methods.add_new_method(output='radius',input={'x','y','z'},
+            func=self.radius_from_xyz)
+        self.methods.add_new_method(output='radiush',input={'x','y'},
+            func=self.radiush_from_xy)
+        self.methods.add_new_method(output='radius',input={'radiush','z'},
+            func=self.radius_from_radiush_z)
+        self.methods.add_new_method(output='radius',input={'elevation',
+            'radiush'}, func=self.radius_from_elevation_radiush)
+        self.methods.add_new_method(output='azimuth',input={'x','y'},
+            func=self.azimuth_from_xy)
+        self.methods.add_new_method(output='elevation',input={'radiush','z'},
+            func=self.elevation_from_radiush_z)
+        self.methods.add_new_method(output='x',input={'azimuth','elevation',
+            'radius'}, func=self.x_from_spherical)
+        self.methods.add_new_method(output='x',input={'azimuth','radiush'},
+            func=self.x_from_azimuth_radiush)
+        self.methods.add_new_method(output='y',input={'azimuth','elevation',
+            'radius'}, func=self.y_from_spherical)
+        self.methods.add_new_method(output='y',input={'azimuth','radiush'},
+            func=self.y_from_azimuth_radiush)
+        self.methods.add_new_method(output='z',input={'azimuth','elevation',
+            'radius'}, func=self.z_from_spherical)
+        self.methods.add_new_method(output='x',input={'radiush','y'},
+            func=self.x_from_radiush_y)
+        self.methods.add_new_method(output='y',input={'radiush','x'},
+            func=self.y_from_radiush_x)
+        self.methods.add_new_method(output='z',input={'radius','radiush'},
+            func=self.z_from_radiusses)
+        self.methods.add_new_method(output='radiush',input={'elevation','z'},
+            func=self.radiush_from_elevation_z)
+        self.methods.add_new_method(output='radiush',input={'elevation',
+            'radius'}, func=self.radiush_from_elevation_radius)
+        self.methods.add_new_method(output='elevation',input={'radius',
+            'radiush'}, func=self.elevation_from_radiusses)
+        self.methods.add_new_method(output='elevation',input={'radius','z'},
+            func=self.elevation_from_radius_z)
+
+        # initially set parameters
+        self.change_parameters(
+            azimuth_clockwise = azimuth_clockwise,
+            azimuth_offset    = azimuth_offset,
+            elevation_type    = elevation_type )
+
+        # fill with given dimensions
+        if dimensions:
+            self.fill(**dimensions)
 
     @property
-    def x(self): return self._x
+    def azimuth_clockwise(self): return self._azimuth_clockwise
     @property
-    def y(self): return self._y
+    def azimuth_offset(self):    return self._azimuth_offset
     @property
-    def z(self): return self._z
+    def elevation_type(self):    return self._elevation_type
+
+    @azimuth_clockwise.setter
+    def azimuth_clockwise(self, value): 
+        self.change_parameters(azimuth_clockwise=value)
+        
+    @azimuth_offset.setter
+    def azimuth_offset(self, value): 
+        self.change_parameters(azimuth_offset=value)
+
+    @elevation_type.setter
+    def elevation_type(self, value):
+        self.change_parameters(elevation_type=value)
+
+    @property
+    def x(self):         return self._x
+    @property
+    def y(self):         return self._y
+    @property
+    def z(self):         return self._z
+    @property
+    def azimuth(self):   return self._azimuth
+    @property
+    def elevation(self): return self._elevation
+    @property
+    def radius(self):    return self._radius
+    @property
+    def radiush(self):   return self._radiush
 
     @x.setter
-    def x(self, value): self._set_coordinate("x", value)
+    def x(self, value):         self.fill(x=value)
     @y.setter
-    def y(self, value): self._set_coordinate("y", value)
+    def y(self, value):         self.fill(y=value)
     @z.setter
-    def z(self, value): self._set_coordinate("z", value)
+    def z(self, value):         self.fill(z=value)
+    @azimuth.setter
+    def azimuth(self, value):   self.fill(azimuth=value)
+    @elevation.setter
+    def elevation(self, value): self.fill(elevation=value)
+    @radius.setter
+    def radius(self, value):    self.fill(radius=value)
+    @radiush.setter
+    def radiush(self, value):   self.fill(radiush=value)
 
-    # convert these carthesian coordinates to horizontal radius
+    # determine which dimensions are defined
     @property
-    def radius_horz(self):
-        """
-        convert these carthesian coordinates to horizontal radius
-        returns:
-            an array with horizontal radius values
-        """
-        radius = np.sqrt( self.x ** 2 + self.y ** 2 )
-        return radius
+    def defined_dimensions(self):
+        defined = set()
+        for dim in self._dim_names:
+            isdefined = False
+            try: value = getattr(self, dim)
+            except:  pass
+            if not value is None:
+                try: isdefined = not value.mask.all()
+                except AttributeError:
+                    isdefined = True
+            if isdefined:
+                defined.add(dim)
+        return(defined)
+        
+    # change parameters keeping some dimensions
+    def change_parameters(self,keep=set(),**parameters):
+        logger.debug(
+            "request to change parameters to {} while keeping {}".format(
+            parameters,keep))
+        for param,val in parameters.items(): # loop over new parameters
+            # check value
+            if param == "elevation_type":
+                elevation_types = {'zenith'}
+                if not val in elevation_types:
+                    raise ValueError(
+                    "wrong elevation type '{e}', has to be one of {t}".format(
+                        e=val,t=elevation_types))
+            elif param == "azimuth_clockwise":
+                if not isinstance(val, bool):
+                    raise ValueError("azimuth_clockwise has to be boolean.")
+            elif param == "azimuth_offset":
+                try: float(val)
+                except: raise ValueError("azimuth_offset has to be numeric.")
+            else:
+                raise AttributeError("parameter {} does not exist!".format(
+                    param))
 
-    # convert these carthesian coordinates to spherical elevation
-    @property
-    def elevation(self):
-        """
-        convert these carthesian coordinates to spherical elevation
-        returns:
-            an array with elevation values
-        """
-        return np.arctan( self.radius_horz / self.z )
+            # make sure to only have sensible dimensions to keep
+            try:    keep = keep.intersection(self._dim_names)
+            except: raise TypeError("keep has to be a set of dimension names.")
 
-    # convert these carthesian coordinates to spherical azimuth
-    @property
-    def azimuth(self):
-        """
-        convert these carthesian coordinates to spherical elevation
-        returns:
-            an array with azimuth values
-        """
+            # set the underlying attribute
+            setattr(self,"_{}".format(param),val)
+
+        # empty all unwanted dimensions
+        notkept = set(self._dim_names).symmetric_difference(keep)
+        logger.debug("empty {}, because not kept".format(notkept))
+        for dim in notkept:
+            self._set_coordinate(dim,None) # empty this dimension
+
+        # now calculate everything based on the dimensions to keep
+        self.fill_dependencies(keep)
+            
+
+    # given specific values for some dimensions, calculate all others
+    def fill_dependencies(self,dimensions):
+        # get the depenency line
+        dependency_line = self.methods.dependency_line(dimensions)
+        # do everything in the dependency line
+        dependency_line() # call 
+
+    # set as much variables as you can based on given dimensions and already
+    # defined dimensions
+    def fill(self, **dimensions):
+        #logger.debug("request to set {}".format(dimensions))
+        
+        # if nothing was given to fill from, empty everything 
+        if len(dimensions) == 0:
+            logger.debug("filling from nothing. emptying all dimensions.")
+            shape = self.shape
+            self.shape = None
+            self.shape = shape
+
+        # first, unset all dimensions that reverse-depend on the new dimensions
+        for dim in dimensions.keys(): # loop over all new given dimensions
+            # get all methods that yield this new dimension
+            ms = set(); ms.add(dim)
+            methods = self.methods.methods_yield(ms)
+            #logger.debug("methods, that yield {}:".format(dim))
+            for m in methods: # loop over all methods that yield this new dim
+                # if for this method all information is already given
+                if m.input.issubset(self.defined_dimensions):
+                    # unset everything needed for this method
+                    # because this is the reverse dependency of this new
+                    # dimensions
+                    logger.debug(" ".join([
+                    "unsetting {d}, because they are given",
+                    "and can calculate {dim}",
+                    ]).format(m=m,d=m.input,dim=dim,i=m.input))
+                    for d in m.input:
+                        self._set_coordinate(d, None)
+
+                
+        # initially set all given variables
+        for dim, value in dimensions.items():
+            #logger.debug("setting {} directly to value {}".format(dim,value))
+            self._set_coordinate(dim, value)
+
+        # create a set of defined dimensions, updated with new given dimensions
+        merged = set(self.defined_dimensions)
+        merged.update(dimensions.keys())
+
+        # now fill the dependencies with all the information we have
+        self.fill_dependencies(merged)
+        
+    ###########################
+    ### calculation methods ###
+    ###########################
+    def radius_from_xyz(self):
+        self._radius = np.sqrt(self.x**2 + self.y**2 + self.z**2)
+
+    def radiush_from_xy(self):
+        self._radiush = np.sqrt(self.x**2 + self.y**2)
+
+    def radius_from_radiush_z(self):
+        self._radius = np.sqrt(self.radiush**2 + self.z**2)
+
+    def radius_from_elevation_radiush(self):
+        self._radius = self.radiush / np.sin( self.elevation )
+
+    def azimuth_from_xy(self):
         north = self.azimuth_offset
-        clockwise = self.clockwise
+        azimuth_clockwise = self.azimuth_clockwise
 
         north = - (north % (2*np.pi) )
-        if clockwise:
+        if azimuth_clockwise:
             north = - north
 
         # note np.arctan2's way of handling x and y arguments:
@@ -306,177 +652,97 @@ class CarthesianCoordinates3d(Coordinates3d):
         # the azimuth angle is...
         # ...the SIGNED angle between positive x-axis and the vector...
         # ...plus some full circle to only have positive values...
-        # ...minux angle defined as "NORTH" (modulo 2*pi to be precise)
+        # ...minus angle defined as "NORTH" (modulo 2*pi to be precise)
         # -->  azi is not angle to x-axis but to NORTH
         azimuth = np.arctan2(self.y, self.x) + 6 * np.pi + north
 
         # take azimuth modulo a full circle to have sensible values
         azimuth = azimuth % (2*np.pi)
 
-        if clockwise: # turn around if clockwise
+        if azimuth_clockwise: # turn around if azimuth_clockwise
             azimuth = 2 * np.pi - azimuth
 
-        return azimuth
+        self._azimuth = azimuth
 
-    # convert these carthesian coordinates to spherical radius
-    @property
-    def radius(self):
-        """
-        convert these carthesian coordinates to spherical radius
-        returns:
-            an array with radius values
-        """
-        return np.sqrt( self.x ** 2 + self.y ** 2 + self.z ** 2 )
+    def elevation_from_radiush_z(self):
+        self._elevation = np.arctan(self.radiush / self.z)
 
-    # convert carthesian grid to polar grid
-    def spherical(self, target=None, clockwise=None, azimuth_offset=np.pi/2):
-        """
-        convert these carthesian coordinates to spherical coordinates
-        returns:
-            an instance of class SphericalCoordinates3d
-        """
-        if not target is None:
-            clockwise = target.clockwise
-            azimuth_offset = target.azimuth_offset
-        else:
-            if clockwise is None:
-                clockwise = self.clockwise
-            if azimuth_offset is None:
-                azimuth_offset = self.azimuth_offset
+    def elevation_from_radius_z(self):
+        self._elevation = np.arccos(self.z / self.radius)
 
-        # return coordinates
-        return SphericalCoordinates3d(
-            shape       = self.shape,
-            azimuth     = self.azimuth, 
-            elevation   = self.elevation,
-            radius      = self.radius,
-            clockwise   = clockwise,
-            azimuth_offset = azimuth_offset
-            )
-                
-
-
-# class for spherical 3d coordinates
-class SphericalCoordinates3d(Coordinates3d):
-    def __init__(self,
-                 shape=None,
-                 azimuth=None,
-                 elevation=None,
-                 radius=None,
-                 clockwise=False,
-                 azimuth_offset=np.pi/2
-                 ):
-        """
-        create a set of spherical coordinates lying on a 2-dimensional grid.
-
-        args:
-            azimuth, elevation, radius (optional[array_like]): coordinates
-            clockwise(optional[boolean]): does the azimuth go clockwise? 
-                Defaults to False (mathematical direction)
-            azimuth_offset(optional[float]): azimuth angle offset (in radians). 
-                The azimuth_offset is the angle between the positive x-axis
-                and the 0-azimuth line depending on clockwise argument. 
-                Defaults to 90°, pi/2, which is the top of the image at 
-                counter-clockwise direction.
-
-        returns:
-            np.maskedarray of shape (width, height) with azimuth values
-        """
-        # parent constructor
-        super().__init__(
-            shape=shape,
-            dimnames = ["azimuth","elevation","radius"]
-            )
-
-        # copy over the arguments
-        self.azimuth     = azimuth
-        self.elevation   = elevation
-        self.radius      = radius
-        self.azimuth_offset = azimuth_offset
-        self.clockwise = clockwise
-
-    @property
-    def azimuth(self):   return self._azimuth
-    @property
-    def elevation(self): return self._elevation
-    @property
-    def radius(self):    return self._radius
-
-    @azimuth.setter
-    def azimuth(self, value):   self._set_coordinate("azimuth", value)
-    @elevation.setter
-    def elevation(self, value): self._set_coordinate("elevation", value)
-    @radius.setter
-    def radius(self, value):    self._set_coordinate("radius", value)
-
-    # convert spherical to carthesian x coordinate
-    @property
-    def x(self):
-        """
-        convert these spherical coordinates to carthesian x coordinate
-        returns:
-            an array of x values
-        """
-        return self.radius                          \
+    def x_from_spherical(self):
+        self._x = self.radius                          \
             * np.sin( self.elevation )              \
             * np.cos( self.azimuth + self.azimuth_offset )
 
-    # convert spherical to carthesian y coordinate
-    @property
-    def y(self):
-        """
-        convert these spherical coordinates to carthesian y coordinate
-        returns:
-            an array of y values
-        """
-        return self.radius                              \
+    def x_from_azimuth_radiush(self):
+        self._x = self.radiush * np.cos( self.azimuth + self.azimuth_offset )
+
+    def y_from_spherical(self):
+        self._y = self.radius                              \
             * np.sin( self.elevation )                  \
             * np.sin( self.azimuth + self.azimuth_offset )
 
-    # convert spherical to carthesian z coordinate
-    @property
-    def z(self):
-        """
-        convert these spherical coordinates to carthesian z coordinate
-        returns:
-            an array of z values
-        """
-        return self.radius * np.cos( self.elevation )
+    def y_from_azimuth_radiush(self):
+        self._y = self.radiush * np.sin( self.azimuth + self.azimuth_offset )
 
-    # convert these spherical coordinates (elevation) to spherical radius
-    # with given height z
-    def radius_with_height(self, z):
-        """
-        convert these spherical coordinates (only elevation actually) 
-        to the spherical radius given a height z
-        returns:
-            an array of radius values
-        """
-        return z / np.cos( self.elevation )
+    def z_from_spherical(self):
+        self._z = self.radius * np.cos( self.elevation )
 
-    # convert these spherical coordinates to carthesian coordinates
-    def carthesian(self, target=None, clockwise=None, azimuth_offset=np.pi / 2):
-        """
-        convert these spherical coordinates to carthesian coordinates
-        returns:
-            an instance of class CarthesianCoordinates3d
-        """
-        if not target is None:
-            clockwise = target.clockwise
-            azimuth_offset = target.azimuth_offset
-        else:
-            if clockwise is None:
-                clockwise = self.clockwise
-            if azimuth_offset is None:
-                azimuth_offset = self.azimuth_offset
+    def x_from_radiush_y(self):
+        self._x = np.sqrt(self.radiush**2 - self.y**2)
 
-        # return coordinates
-        return CarthesianCoordinates3d(
-            shape = self.shape,
-            x     = self.x, 
-            y     = self.y,
-            z     = self.z,
-            clockwise = clockwise,
-            azimuth_offset = azimuth_offset
-            )
-                
+    def y_from_radiush_x(self):
+        self._y = np.sqrt(self.radiush**2 - self.x**2)
+
+    def z_from_radiusses(self):
+        self._z = np.sqrt(self.radius**2 - self.radiush**2)
+
+    def radiush_from_elevation_z(self):
+        self._radiush = self.z * np.arctan( self.elevation )
+
+    def radiush_from_elevation_radius(self):
+        self._radiush = self.radius * np.sin( self.elevation )
+
+    def elevation_from_radiusses(self):
+        self._elevation = np.arcsin( self.radiush / self.radius )
+    ###############################
+    ### end calculation methods ###
+    ###############################
+    
+    # summary when converted to string
+    def __str__(self):
+        def ndstr(a, format_string ='{0: 8.3f}'):
+            string = []
+            for i,v in enumerate(a):
+                if v is np.ma.masked:
+                    string.append("   --   ")
+                else:
+                    string.append(format_string.format(v,i))
+            return " | ".join(string)
+
+        formatstring = ["==================",
+                        "| 3d coordinates |",
+                        "=================="]
+        formatstring.append("            shape: {}".format(self.shape))
+        formatstring.append("   elevation_type: {}".format(self.elevation_type))
+        formatstring.append("azimuth_clockwise: {}".format(self.azimuth_clockwise))
+        formatstring.append("   azimuth_offset: {}".format(self.azimuth_offset))
+        formatstring.append("=====================")
+        for dim in self._dim_names:
+            value = getattr(self, dim)
+            isdefined = False
+            if not value is None:
+                try: isdefined = not value.mask.all()
+                except AttributeError:
+                    isdefined = True
+            if isdefined:
+                try: 
+                    if np.prod(self.shape) <= 8:
+                        string = str(ndstr(value.flatten()))
+                    else: string = "defined"
+                except: raise
+            else:
+                string = "empty"
+            formatstring.append("{:>11}: {}".format(dim,string))
+        return("\n".join(formatstring))

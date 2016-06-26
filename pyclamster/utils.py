@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-Created on 10.05.16
+Created on 25.06.16
+
 Created for pyclamster
 
     Copyright (C) {2016}
@@ -19,19 +20,35 @@ Created for pyclamster
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 # System modules
+import logging
 
 # External modules
+import numpy as np
 
 # Internal modules
-from .image import *
-from .fisheye import *
-from .maskstore import *
-from .coordinates import *
-from .calibration import *
-from .camera import *
-from .utils import *
+
 
 __version__ = "0.1"
 
-__all__ = ["Image", "Camera", "FisheyeProjection","MaskStore"]
+# create logger
+logger = logging.getLogger(__name__)
 
+# recursive list flattening
+def flatten(x):
+    res = []                        # start with an empty list
+    for v in x:                     # loop over all given list elements
+        if type(v) in (tuple,list): # if element is list-like
+            res.extend(flatten(v))  # extend resulting list
+        else:                       # if element is not list-like
+            res.append(v)           # append the element
+    return res # return resulting list
+            
+
+##################
+### conversion ###
+##################
+def deg2rad(x):
+    return x / 360 * 2 * np.pi
+
+def rad2deg(x):
+    return x / ( 2 * np.pi ) * 360
