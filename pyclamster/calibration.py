@@ -21,6 +21,7 @@ Created for pyclamster
 """
 # System modules
 import logging
+import copy
 
 # External modules
 import numpy as np
@@ -43,8 +44,9 @@ class CameraCalibrationParameters(object):
                  center_row  = None,
                  center_col  = None, 
                  north_angle = None,
-                 f = None, 
-                 alpha = None
+                 r2 = None,
+                 r4 = None,
+                 r6 = None
                  ):
         """
         class constructor
@@ -52,25 +54,24 @@ class CameraCalibrationParameters(object):
             center_row,center_col (numeric): center position of optical axis
             north_angle (numeric): azimuth offset (see Coordinate3d docs)
             f (numeric): proportionality factor for projected image radius
-            alpha (numeric): empirical exponent for projected image radius
         """
-        self.parameters = (center_row, center_col, north_angle, f, alpha)
+        self.parameters = (center_row, center_col, north_angle,r2,r4,r6)
 
     @property
     def parameters(self):
         parms = (self.center_row, self.center_col, 
-                 self.north_angle, self.f, self.alpha)
+                 self.north_angle, self.r2,self.r4,self.r6)
         return(parms)
 
     @parameters.setter
     def parameters(self, newparams):
         self.center_row, self.center_col, \
-        self.north_angle, self.f, self.alpha = newparams
+        self.north_angle,self.r2,self.r4,self.r6 = newparams
 
     # summary when converted to string
     def __str__(self):
         parameters = ("center_row","center_col",
-                      "north_angle","f","alpha")
+                      "north_angle","r2","r4","r6")
         formatstring = ["=================================",
                         "| camera calibration parameters |",
                         "================================="]
@@ -78,28 +79,26 @@ class CameraCalibrationParameters(object):
             formatstring.append("{:>11}: {}".format(param,getattr(self, param)))
         return("\n".join(formatstring))
 
+class CameraCalibrationRadialFunction(object):
+    def __init__(self, parameters):
+        self.parameters = parameters
 
-class CameraCalibrationFunction(object):
-    def __init__(self, azimuth_func, elevation_func):
-        self.azimuth_func   = azimuth_func 
-        self.elevation_func = elevation_func
+    @property
+    def parameters(self):
+        return self._parameters
 
-    def azimuth(self, parameters):
-        try: parameters = parameters.parameters
-        except: pass
-        self.azimuth_func(parameters)
+    @parameters.setter
+    def parameters(self, value):
+        new = CameraCalibrationParameters()
+        try:    new.parameters = value.parameters
+        except: new.parameters = value
+        self._parameters = new
 
-    def elevation(self, parameters):
-        try: parameters = parameters.parameters
-        except: pass
-        self.elevation_func(parameters)
-
-    def __call__(self, parameters):
-        try: parameters = parameters.parameters
-        except: pass
-        # calculate and return
-        return np.array([self.azimuth(parameters),
-                         self.elevation(parameters)])
+    def __call__(self, elevation):
+        e = elevation
+        p = self.parameters
+        #return p.r6*e**3+p.r4*e**2+p.r2*e**1
+        return p.r6*np.tan(e/2)
 
 class CameraCalibrationLossFunction(object):
     def __init__(self, pixel_coords, sun_coords, radial):
@@ -130,77 +129,64 @@ class CameraCalibrationLossFunction(object):
         returns:
             residual = numeric value
         """
+        logger.debug(estimate)
         try:    estimate = estimate.parameters
         except: pass
-        est_row_c, est_col_c, est_north, est_f, est_alpha = estimate
+        est_row_c, est_col_c, est_north,*radialp = estimate
 
-        self.pixel_coords.clockwise = True
-        self.pixel_coords.center.x = est_col_c
-        self.pixel_coords.center.y = est_row_c
-        self.pixel_coords.azimuth_offset = est_north
+        # local copy of coordinates
+        pixel_coords = copy.deepcopy(self.pixel_coords) # a copy
+        sun_coords   = copy.deepcopy(self.sun_coords) # a copy
 
-        row, col = self.pixel_coords.y, self.pixel_coords.x
-        azi, ele = self.sun_coords.azimuth, self.sun_coords.elevation
         logger.debug("================== begin iteration =====================")
-        logger.debug("row: {row}, col: {col}, azi: {azi}, ele: {ele}".format(
-            row=row,col=col,azi=azi,ele=ele))
-        logger.debug("row_c: {row_c}, col_c: {col_c}, f: {f}, alpha: {a}".format(
-            row_c=est_row_c,col_c=est_col_c,f=est_f,a=est_alpha))
-    
-        ### calculate elevation residual ###
-        if False:
-            #logger.debug("estimated fisheye image radius: {}".format(est_radius_fisheye))
-            # radius from estimated center for each measured input dataset
-            est_radius_image = np.sqrt((row-est_row_c)**2+(col-est_col_c)**2) ** est_alpha
-            # estimated elevation according to radial projection
-            est_ele_image = est_radius_image / est_f
-            #logger.debug("estimated image radius: {}".format(est_radius_image))
-            # elevation residual
-            res_radial = ele - est_ele_image
-            res_radial = res_radial / (np.pi / 2) # normation
-        else:
-            #logger.debug("estimated fisheye image radius: {}".format(est_radius_fisheye))
-            # radius from estimated center for each measured input dataset
-            #est_radius_image = np.sqrt((row-est_row_c)**2+(col-est_col_c)**2) 
-            est_radius_image = self.pixel_coords.radius_horz
-            # estimated elevation according to radial projection
-            est_radius_radial = est_f * self.radial( ele )
-            logger.debug("estimated image radius: {}".format(est_radius_image))
-            logger.debug("estimated fisheye radius: {}".format(est_radius_radial))
-            # elevation residual
-            res_radial = est_radius_radial - est_radius_image
-            #res_radial = res_radial / 300 # normation
-            
+        # set the estimated center of the measured pixel coordinates
+        pixel_coords.fill( 
+            x=pixel_coords.x-est_col_c,
+            y=pixel_coords.y-est_row_c)
+        # turn the image system to the north angle
+        pixel_coords.change_parameters(azimuth_offset=est_north,
+            keep={'azimuth','radiush'})
 
-        ### calculate azimuth residual ###
-        res_azi = (azi - self.pixel_coords.azimuth + 2*np.pi) % 2*np.pi
-        res_azi = res_azi / (2 * np.pi) # normation
-        
-        # return resulting error
-        #res = abs(res_azi.mean())
-        res = np.sqrt(((res_radial-res_azi)**2).mean())
-        #res = np.sqrt(((res - res.mean())**2).mean())
-        logger.debug("res_radial: {res_radial}".format(res_radial=res_radial))
-        logger.debug("res_azi: {res_azi}".format(res_azi=res_azi))
+            
+        # calculate real (sun) x and y with the given center
+        self.radial.parameters = estimate
+        sun_coords.radiush = self.radial(sun_coords.elevation) 
+
+        logger.debug("pixel_coords\n{}".format(pixel_coords))
+        logger.debug("sun_coords\n{}".format(sun_coords))
+
+        i = 1
+        if i == 1: # optimize x/y matching (WORKS BEST)
+            res = np.sqrt((sun_coords.x-pixel_coords.x) ** 2 + \
+                      (sun_coords.y-pixel_coords.y) ** 2).mean()
+        elif i == 2: # optimize radiush matching
+            res = np.sqrt((sun_coords.radiush-pixel_coords.radiush) ** 2).mean()
+        elif i == 3: # optimize x/y and radiush matching
+            res = np.sqrt((sun_coords.x-pixel_coords.x) ** 2 + \
+                          (sun_coords.y-pixel_coords.y) ** 2 + \
+                          (sun_coords.radiush-pixel_coords.radiush) ** 2 ).mean()
+            
+        if res is np.ma.masked:
+            raise Exception("Residual is masked. Something is wrong.")
+
         logger.debug("residual: {res}".format(res=res))
         logger.debug("================== end iteration =====================")
+
         return(res)
 
 
 
 # calibrator class
 class CameraCalibrator(object):
-    def __init__(self, image, method=None):
+    def __init__(self,method=None):
         """
         class constructor
         args:
-            image (pyclamster.Image): objective image
             method (str or None): optimization method. see 
                 scipy.optimize.minimize documentation for further information.
                 Defaults to None which is not recommended because the standard
                 method varies between some scipy versions.
         """
-        self.image  = image
         self.method = method
 
     def estimate(self, lossfunc, first_guess):
@@ -218,11 +204,13 @@ class CameraCalibrator(object):
             lossfunc,
             first_guess.parameters,
             method=self.method,
-            bounds=[(0,self.image.data.shape[0]), # row bound
-                    (0,self.image.data.shape[1]), # col bound
+            bounds=[(0,1920), # row bound
+                    (0,1920), # col bound
                     (0,2*np.pi),                  # north_angle bound
-                    (0,np.Inf),                   # f bound
-                    (0,2)]                        # alpha bound
+                    (-np.Inf,np.Inf),
+                    (-np.Inf,np.Inf),
+                    (-np.Inf,np.Inf)
+                    ]                  
             )
          
         opt_estimate.parameters = estimate.x

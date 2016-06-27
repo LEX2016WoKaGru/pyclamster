@@ -6,7 +6,7 @@ import pyclamster
 logging.basicConfig(level=logging.DEBUG)
 
 # load an image
-img = pyclamster.image.Image("../images/wettermast/Image_Wkm_Aktuell_3.jpg")
+img = pyclamster.image.Image("examples/images/wettermast/Image_Wkm_Aktuell_3.jpg")
 
 # measured input data
 row = np.array([1420,1130,1300])
@@ -17,11 +17,11 @@ azi = np.array([170,90,-90])
 azi = ((azi + 2*np.pi) % 2*np.pi) / 360 * 2*np.pi
 #azi = azi + np.pi # turn the azimuth to test
 
-pixel_coords = pyclamster.coordinates.CarthesianCoordinates3d(
+pixel_coords = pyclamster.coordinates.Coordinates3d(
     x = col, y = row
     )
 
-sun_coords = pyclamster.coordinates.SphericalCoordinates3d(
+sun_coords = pyclamster.coordinates.Coordinates3d(
     elevation = ele, azimuth = azi
     )
 
@@ -35,8 +35,7 @@ params_firstguess = pyclamster.calibration.CameraCalibrationParameters(
     center_row = 900,
     center_col = 900,
     f = 1,
-    north_angle = np.pi,
-    alpha = 1
+    north_angle = np.pi
     )
 
 # create calibrator
