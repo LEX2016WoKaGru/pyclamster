@@ -107,8 +107,8 @@ class CalculationMethodSet(object):
     # make it callable
     def __call__(self): # when this set is called
         for method in self.methods: # loop over all methods
-            logger.debug("using {i} to calculate {o}".format(i=method.input,
-                o=method.output))
+            #logger.debug("using {i} to calculate {o}".format(i=method.input,
+                #o=method.output))
             method() # call the method
 
 
@@ -530,9 +530,9 @@ class Coordinates3d(BaseCoordinates3d):
         
     # change parameters keeping some dimensions
     def change_parameters(self,keep=set(),**parameters):
-        logger.debug(
-            "request to change parameters to {} while keeping {}".format(
-            parameters,keep))
+        #logger.debug(
+            #"request to change parameters to {} while keeping {}".format(
+            #parameters,keep))
         for param,val in parameters.items(): # loop over new parameters
             # check value
             if param == "elevation_type":
@@ -560,7 +560,7 @@ class Coordinates3d(BaseCoordinates3d):
 
         # empty all unwanted dimensions
         notkept = set(self._dim_names).symmetric_difference(keep)
-        logger.debug("empty {}, because not kept".format(notkept))
+        #logger.debug("empty {}, because not kept".format(notkept))
         for dim in notkept:
             self._set_coordinate(dim,None) # empty this dimension
 
@@ -582,7 +582,7 @@ class Coordinates3d(BaseCoordinates3d):
         
         # if nothing was given to fill from, empty everything 
         if len(dimensions) == 0:
-            logger.debug("filling from nothing. emptying all dimensions.")
+            #logger.debug("filling from nothing. emptying all dimensions.")
             shape = self.shape
             self.shape = None
             self.shape = shape
@@ -599,10 +599,10 @@ class Coordinates3d(BaseCoordinates3d):
                     # unset everything needed for this method
                     # because this is the reverse dependency of this new
                     # dimensions
-                    logger.debug(" ".join([
-                    "unsetting {d}, because they are given",
-                    "and can calculate {dim}",
-                    ]).format(m=m,d=m.input,dim=dim,i=m.input))
+                    #logger.debug(" ".join([
+                    #"unsetting {d}, because they are given",
+                    #"and can calculate {dim}",
+                    #]).format(m=m,d=m.input,dim=dim,i=m.input))
                     for d in m.input:
                         self._set_coordinate(d, None)
 
