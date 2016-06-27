@@ -1,9 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-Created on 27.05.16
+Created on 27.06.16
 
 Created for pyclamster
-
 
     Copyright (C) {2016}
 
@@ -23,8 +22,19 @@ Created for pyclamster
 # System modules
 
 # External modules
+import numpy as np
 
 # Internal modules
 
 
-__version__ = ""
+__version__ = "0.1"
+
+
+
+class Matching(object):
+    def __init__(self, w):
+        self.w = self._normalize_weights(w)
+
+    def _normalize_weights(self, weights):
+        normalized_weights = [w/np.sum(weights) for w in weights]
+        return normalized_weights

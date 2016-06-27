@@ -32,7 +32,7 @@ from skimage.morphology import remove_small_objects
 
 # Internal modules
 from .image import Image as pyClImage
-from .clustering.cloud import Cloud
+from .matching.cloud import Cloud
 
 __version__ = "0.1"
 
