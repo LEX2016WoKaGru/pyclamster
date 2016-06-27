@@ -71,15 +71,20 @@ kmeans = pickle.load(open(os.path.join(trained_models, "kmeans.pk"), "rb"))
 
 for image_path in all_images:
     image = Image(image_path)
+    cutted_image = image.cut([center - good_angle_dpi, center - good_angle_dpi,
+                              center + good_angle_dpi, center + good_angle_dpi])
+    cutted_image.save("original.png")
     image.data = LCN(size=(50,50,3), scale=False).fit_transform(image.data)
     image.data = image.data[center - good_angle_dpi:center + good_angle_dpi,
                  center - good_angle_dpi:center + good_angle_dpi]
     w, h, _ = original_shape = image.data.shape
     raw_image = rbDetection(image.data).reshape((w*h, -1))
+    #raw_image = image.data.reshape((w*h, -1))
     label = kmeans.predict(raw_image)
     label.reshape((w, h), replace=True)
+    scipy.misc.imsave("cloud.png", label.labels)
     masks = label.getMaskStore()
-    masks.denoise([0], 1000)
-    cloud_labels, _ = masks.labelMask([0,])
+    masks.denoise([1], 1000)
+    cloud_labels, _ = masks.labelMask([1,])
     cloud_store = cloud_labels.getMaskStore()
-    scipy.misc.imshow(cloud_labels.labels)
+    scipy.misc.imsave("labels.png", cloud_labels.labels)

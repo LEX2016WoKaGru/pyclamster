@@ -31,4 +31,18 @@ __version__ = ""
 
 
 class Cloud(Image):
-    pass
+    def __init__(self, image, mask):
+        self.image = image
+        self.label = mask
+
+    def merge(self, clouds):
+        """
+        Method to merge colud spatially. This method is based on a template
+        matching algorithm.
+        Args:
+            clouds (list[Cloud]):
+
+        Returns:
+
+        """
+        pass

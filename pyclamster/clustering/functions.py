@@ -64,7 +64,7 @@ def rbDetection(data):
     Args:
         data (numpy array):
             The data field that should be transformed. The first entry of the
-            second dimension should be the red array and
+            third dimension should be the red array and
             the last entry the blue array.
     Returns:
         transformed_data (numpy array): The transformed data array.
