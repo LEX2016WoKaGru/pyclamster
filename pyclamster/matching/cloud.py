@@ -29,11 +29,19 @@ from ..image import Image
 
 __version__ = ""
 
+class BaseCloud(Image):
+    def __init__(self, image):
+        pass
+
 
 class Cloud(Image):
-    def __init__(self, image, mask):
-        self.image = image
+    def __init__(self, image, mask, w=None):
+        self.data = image
         self.label = mask
+        if w is None:
+            w = [1] * self.data.shape[2]
+        self.matching_algorithm = Matching(w=w)
+        self.data = Preprocess(data)
 
     def merge(self, clouds):
         """
@@ -41,8 +49,21 @@ class Cloud(Image):
         matching algorithm.
         Args:
             clouds (list[Cloud]):
-
         Returns:
-
+            matched_cloud (SpatialCloud):
+            prob_clouds (list[numpy array])
+            informations (dict[informations]):
         """
+        prob = []
+        for c in clouds:
+            c_data = Preprocess(data)
+            prob.append(self.matching_algorithm.match(self.data, c.data))
         pass
+
+
+class SpatialCloud(Cloud):
+    pass
+
+
+class TemporalCloud(BaseCloud):
+    pass

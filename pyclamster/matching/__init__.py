@@ -25,6 +25,7 @@ Created for pyclamster
 # External modules
 
 # Internal modules
-
+from .cloud import *
+from .matching import *
 
 __version__ = ""
