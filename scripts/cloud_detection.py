@@ -59,8 +59,8 @@ for image_path in all_images:
     image.data = image.data[center - good_angle_dpi:center + good_angle_dpi,
                             center - good_angle_dpi:center + good_angle_dpi]
     anomaly_image = rbDetection(image.data)
-    w, h = original_shape = tuple(anomaly_image.shape)
-    anomaly_image = np.reshape(anomaly_image, (w * h, -1))
+    w, h = original_shape = tuple(anomaly_image[:, :].shape)
+    anomaly_image = np.reshape(anomaly_image, (w * h, 1))
     if anomaly_images is None:
         anomaly_images = anomaly_image
     else:

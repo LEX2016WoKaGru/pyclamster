@@ -32,6 +32,7 @@ from skimage.morphology import remove_small_objects
 
 # Internal modules
 from .image import Image as pyClImage
+from .matching.cloud import Cloud
 
 __version__ = "0.1"
 
@@ -149,7 +150,7 @@ class MaskStore(object):
         labels, nb_labels = scipy.ndimage.label(~mask)
         return Labels(labels), nb_labels
 
-    def getClouds(self, image, labels=None):
+    def getCloud(self, image, labels=None):
         """
         Method to get a cloud instance with a given image for selected labels.
         Args:
@@ -158,10 +159,12 @@ class MaskStore(object):
                 selected. Defaults to all masks.
 
         Returns:
-            cloud_image (Cloud): Cloud instance, with only the mask bassed on
+            cloud_image (Cloud): Cloud instance, with only the mask based on
                 the selected labels.
         """
-        pass
+        mask = self.getMask(labels)
+        return Cloud(image, mask)
+
 
     def applyMask(self, image, labels=None, fill_value=None, replace=True):
         """

@@ -23,9 +23,8 @@ Created for pyClamster
 # External modules
 
 # Internal modules
-from .cloud import *
 from .functions import *
-from .kmeans import *
+#from .kmeans import *
 from .preprocess import *
 
 
