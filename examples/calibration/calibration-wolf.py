@@ -8,11 +8,11 @@ import datetime,pytz
 
 logging.basicConfig(level=logging.DEBUG)
 
-# position of wettermast camera
-LAT = 53.519917
-LON = 10.105139
+# position of wolf-1 camera
+LAT = 53.99777
+LON = 9.56673
 
-files = glob.glob("examples/images/wettermast/calibration/*")
+files = glob.glob("examples/images/wolf/calibration/*")
 files.sort()
 
 elevations= []
@@ -24,7 +24,7 @@ for imgfile in files:
     #img = pyclamster.image.Image(imgfile)
     # read time from filename
     name = os.path.basename(imgfile)
-    r = re.compile('^Wettermast_(\w+)UTC[^_]+_sunrow(\d+)_suncol(\d+)')
+    r = re.compile('^Wolf_(\w+)_UTC[^_]+_sunrow(\d+)_suncol(\d+)')
     m = r.match(name)
     timestr  = m.group(1)
     sunrow   = np.float(m.group(2))
@@ -71,6 +71,7 @@ params_firstguess = pyclamster.CameraCalibrationParameters(
     center_row = 0,
     center_col = 0,
     north_angle = 0,
+    r0 = 100,
     r2 = 100,
     r4 = 30,
     r6 = 0

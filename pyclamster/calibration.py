@@ -44,6 +44,7 @@ class CameraCalibrationParameters(object):
                  center_row  = None,
                  center_col  = None, 
                  north_angle = None,
+                 r0 = None,
                  r2 = None,
                  r4 = None,
                  r6 = None
@@ -55,23 +56,23 @@ class CameraCalibrationParameters(object):
             north_angle (numeric): azimuth offset (see Coordinate3d docs)
             f (numeric): proportionality factor for projected image radius
         """
-        self.parameters = (center_row, center_col, north_angle,r2,r4,r6)
+        self.parameters = (center_row, center_col, north_angle,r0,r2,r4,r6)
 
     @property
     def parameters(self):
         parms = (self.center_row, self.center_col, 
-                 self.north_angle, self.r2,self.r4,self.r6)
+                 self.north_angle, self.r0,self.r2,self.r4,self.r6)
         return(parms)
 
     @parameters.setter
     def parameters(self, newparams):
         self.center_row, self.center_col, \
-        self.north_angle,self.r2,self.r4,self.r6 = newparams
+        self.north_angle,self.r0,self.r2,self.r4,self.r6 = newparams
 
     # summary when converted to string
     def __str__(self):
         parameters = ("center_row","center_col",
-                      "north_angle","r2","r4","r6")
+                      "north_angle","r0","r2","r4","r6")
         formatstring = ["=================================",
                         "| camera calibration parameters |",
                         "================================="]
@@ -97,8 +98,9 @@ class CameraCalibrationRadialFunction(object):
     def __call__(self, elevation):
         e = elevation
         p = self.parameters
-        #return p.r6*e**3+p.r4*e**2+p.r2*e**1
-        return p.r6*np.tan(e/2)
+        return p.r0*e**4+p.r6*e**3+p.r4*e**2+p.r2*e**1
+        #return p.r6*e+p.r4*e**2
+        #return p.r6*e
 
 class CameraCalibrationLossFunction(object):
     def __init__(self, pixel_coords, sun_coords, radial):
@@ -207,6 +209,7 @@ class CameraCalibrator(object):
             bounds=[(0,1920), # row bound
                     (0,1920), # col bound
                     (0,2*np.pi),                  # north_angle bound
+                    (-np.Inf,np.Inf),
                     (-np.Inf,np.Inf),
                     (-np.Inf,np.Inf),
                     (-np.Inf,np.Inf)
