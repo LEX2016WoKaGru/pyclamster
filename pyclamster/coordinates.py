@@ -671,20 +671,28 @@ class Coordinates3d(BaseCoordinates3d):
         self._elevation = np.arccos(self.z / self.radius)
 
     def x_from_spherical(self):
+        if not self.azimuth_clockwise:azimuth = self.azimuth
+        else: azimuth = 2*np.pi - self.azimuth
         self._x = self.radius                          \
             * np.sin( self.elevation )              \
-            * np.cos( self.azimuth + self.azimuth_offset )
+            * np.cos( azimuth + self.azimuth_offset )
 
     def x_from_azimuth_radiush(self):
-        self._x = self.radiush * np.cos( self.azimuth + self.azimuth_offset )
+        if not self.azimuth_clockwise:azimuth = self.azimuth
+        else: azimuth = 2*np.pi - self.azimuth
+        self._x = self.radiush * np.cos( azimuth + self.azimuth_offset )
 
     def y_from_spherical(self):
+        if not self.azimuth_clockwise:azimuth = self.azimuth
+        else: azimuth = 2*np.pi - self.azimuth
         self._y = self.radius                              \
             * np.sin( self.elevation )                  \
-            * np.sin( self.azimuth + self.azimuth_offset )
+            * np.sin( azimuth + self.azimuth_offset )
 
     def y_from_azimuth_radiush(self):
-        self._y = self.radiush * np.sin( self.azimuth + self.azimuth_offset )
+        if not self.azimuth_clockwise:azimuth = self.azimuth
+        else: azimuth = 2*np.pi - self.azimuth
+        self._y = self.radiush * np.sin( azimuth + self.azimuth_offset )
 
     def z_from_spherical(self):
         self._z = self.radius * np.cos( self.elevation )

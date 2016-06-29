@@ -26,8 +26,10 @@ import copy
 # External modules
 import numpy as np
 import scipy.optimize as optimize
+import scipy.interpolate as interpolate
 
 # Internal modules
+from . import coordinates
 
 
 __version__ = "0.1"
@@ -39,23 +41,45 @@ logger = logging.getLogger(__name__)
 class CameraCalibrationParameters(object):
     """
     class to hold calibration parameters
+    You may alter the bounds attribute, which is a list of (upper,lower) bounds
+    of the parameters. They are initially set to sensible values, i.e.
+    (0,Inf) for the center positions and (0,2*pi) for the north_angle.
+    The bounds may improve the optimization for some optimization methods.
     """
-    def __init__(self, 
-                 center_row  = None,
-                 center_col  = None, 
-                 north_angle = None,
-                 *radialp
-                 ):
+    def __init__(self, center_row=0, center_col=0, north_angle=0,
+                 *radialp):
         """
         class constructor
         args:
             center_row,center_col (numeric): center position of optical axis
-            north_angle (numeric): azimuth offset (see Coordinate3d docs)
-            f (numeric): proportionality factor for projected image radius
+            north_angle (numeric): azimuth offset (see Coordinates3d docs)
+            radialp (numeric): arbitrary number of radial distortion parameters 
+                that have to be sufficient for the radial distortion function.
+                They will be named r0 ... rn.
         """
+        # set the parameters
         parameters = [center_row, center_col, north_angle]
         for p in radialp: parameters.append(p)
         self.parameters = parameters
+
+    # make it iterable
+    def __iter__(self):
+        try: del self.current # reset counter
+        except: pass
+        return self
+
+    def __next__(self):
+        try:    self.current += 1 # try to count up
+        except: self.current  = 0 # if that didn't work, start with 0
+        if self.current >= len(self.parameters):
+            del self.current # reset counter
+            raise StopIteration # stop the iteration
+        else:
+            return self.parameters[self.current]
+        
+    # make it indexable
+    def __getitem__(self,key):
+        return self.parameters[key]
 
     @property
     def parameter_names(self):
@@ -69,8 +93,16 @@ class CameraCalibrationParameters(object):
             # set new parameter names
             self._parameter_names = newnames
             # set all parameters to None
+            self.bounds = []
             for p in self.parameter_names:
-                setattr(self,p,None)
+                setattr(self,p,0) # set parameter value to 0
+                # set bounds to infinity
+                self.bounds.append((-np.Inf,np.Inf))
+            # initially set sensible bounds
+            self.bounds[0] = (0,np.Inf)
+            self.bounds[1] = (0,np.Inf)
+            self.bounds[2] = (0,2*np.pi)
+
 
     @property
     def parameters(self):
@@ -95,17 +127,32 @@ class CameraCalibrationParameters(object):
 
     # summary when converted to string
     def __str__(self):
-        formatstring = ["=================================",
-                        "| camera calibration parameters |",
-                        "================================="]
-        for param in self.parameter_names:
-            formatstring.append("{:>11}: {}".format(param,getattr(self, param)))
+        formatstring = ["===========================================",
+                        "|      camera calibration parameters      |",
+                        "==========================================="]
+        formatstring.extend(
+                       ["  parameter |      bounds      |    value  ",
+                        "-------------------------------------------"])
+        for i,param in enumerate(self.parameter_names):
+            formatstring.append(
+                "{p:>11} ({bl: 8.3f},{bu: 8.3f}): {pv:>10.3f}".format(
+                p=param,pv=getattr(self, param),bl=self.bounds[i][0],
+                bu=self.bounds[i][1]))
         return("\n".join(formatstring))
 
 
 
 class CameraCalibrationRadialFunction(object):
+    """
+    Base class for camera calibration radial functions.
+    """
     def __init__(self, parameters):
+        """
+        class constructor
+        args:
+            parameters(CameraCalibrationParameters): The parameters for the 
+                function.
+        """
         self.parameters = parameters
 
     @property
@@ -119,14 +166,126 @@ class CameraCalibrationRadialFunction(object):
         except: new.parameters = value
         self._parameters = new
 
-    def __call__(self, elevation):
-        e = elevation
+    def radiush(self, elevation):
+        """ 
+        based on the parameters, returns the horizontal radius on the image
+        plane given an elevation.
+        """
+        raise NotImplementedError("radiush has to be implemented!")
+
+    def elevation(self, radiush):
+        """ 
+        based on the parameters, returns the elevation given a horizontal 
+        radius on the image plane.
+        """
+        raise NotImplementedError("elevation has to be implemented!")
+
+    def __call__(self, elevation=None, radiush=None):
+        """ 
+        return elevation or radiush depending on what you specify
+        """
+        if elevation is None and radiush is None:
+            raise ValueError("either elevation or radiush have to be defined.")
+        elif elevation is None:
+            return self.elevation(radiush)
+        elif radiush is None:
+            return self.radiush(elevation)
+        else:
+            raise Exception("You should never see this Error...")
+
+
+class FisheyeEquidistantRadialFunction(CameraCalibrationRadialFunction):
+    """
+    Ideal equidistant fisheye radial function.
+    """
+    def radiush(self, elevation):
         p = self.parameters
-        return p.r0*e**4+p.r6*e**3+p.r4*e**2+p.r2*e**1
-        #return p.r6*e+p.r4*e**2
-        #return p.r6*e
+        return p.r0*elevation
+
+    def elevation(self, radiush):
+        p = self.parameters
+        return radiush / p.r0
+        
+
+class FisheyeEquiangleRadialFunction(CameraCalibrationRadialFunction):
+    """
+    Ideal equi-angle fisheye radial function.
+    """
+    def radiush(self, elevation):
+        p = self.parameters
+        return 2*p.r0*np.tan(elevation/2)
+
+    def elevation(self, radiush):
+        return 2 * np.arctan(radiush / (2 * p.r0))
+
+class FisheyeEquiareaRadialFunction(CameraCalibrationRadialFunction):
+    """
+    Ideal equi-area fisheye radial function.
+    """
+    def radiush(self, elevation):
+        p = self.parameters
+        return 2*p.r0*np.sin(elevation/2)
+
+    def elevation(self, radiush):
+        p = self.parameters
+        return 2 * np.arcsin(radiush / (2 * p.r0))
+
+class FisheyeOrthogonalRadialFunction(CameraCalibrationRadialFunction):
+    """
+    Ideal orthogonal fisheye radial function.
+    """
+    def radiush(self, elevation):
+        p = self.parameters
+        return p.r0*np.sin(elevation)
+
+    def elevation(self, radiush):
+        p = self.parameters
+        return np.arcsin(radiush / p.r0)
+
+class FisheyePolynomialRadialFunction(CameraCalibrationRadialFunction):
+    def __init__(self, parameters, n):
+        """
+        class constructor
+        args:
+            parameters(CameraCalibrationParameters): The parameters for the 
+                function.
+            n (integer): Polynomial degree, i.e. highest exponent.
+        """
+        super().__init__(parameters)
+        self.n = n
+
+    def polynomial(self):
+        """
+        return the string representation of the polynomial
+        """
+        polystr = []
+        for i in range(self.n):
+            polystr.append("r{i}*x**{ie}".format(i=i,ie=i+1))
+        return "+".join(polystr)
+
+
+    def radiush(self, elevation):
+        p = self.parameters
+        return sum([getattr(p,"r{}".format(i))*elevation**(i+1) \
+                                                    for i in range(self.n)])
+
+    def elevation(self, radiush):
+        # set up the interpolation
+        ele = np.linspace(0,np.pi/2,100) # sequence for elevation
+        rh  = self.radiush(ele)
+        ele_interpolation = interpolate.interp1d(rh, ele,bounds_error=False)
+
+        
+        # return the interpolated values masked where interpolation didn't
+        # work
+        return np.ma.masked_invalid(ele_interpolation(radiush))
+
+
 
 class CameraCalibrationLossFunction(object):
+    """
+    Class to hold a lossfunction for calibration optimization
+    """
     def __init__(self, pixel_coords, sun_coords, radial):
         """
         class constructor.
@@ -135,10 +294,9 @@ class CameraCalibrationLossFunction(object):
                 (y=row,x=col) of sun pixel positions on image.
             sun_coords (SphericalCoordinates3D): spherical coordinates
                 (azimuth, elevation) of sun positions.
-            radial (callable): radial distortion funciton. Given the elevation 
-                as parameter, return the (unified) image radius in pixel units.
-                This does not need to be the exact radius, it may be
-                (in all directions equally) scaled by an arbitrary factor.
+            radial (CameraCalibrationRadialFunction): radial distortion 
+                funciton. With the parameter estimate set and the elevation as
+                argument, return the image radius in pixel units.
         returns:
             calibration(CameraCalibrationLossFunction)
         """
@@ -176,7 +334,7 @@ class CameraCalibrationLossFunction(object):
             
         # calculate real (sun) x and y with the given center
         self.radial.parameters = estimate
-        sun_coords.radiush = self.radial(sun_coords.elevation) 
+        sun_coords.radiush = self.radial.radiush(sun_coords.elevation) 
 
         logger.debug("pixel_coords\n{}".format(pixel_coords))
         logger.debug("sun_coords\n{}".format(sun_coords))
@@ -223,44 +381,76 @@ class CameraCalibrator(object):
             lossfunc (CameraCalibrationLossFunction): the lossfunction
             first_guess (CameraCalibrationParameters): the initial guess
         """
-        # empty parameterrs
-        opt_estimate = CameraCalibrationParameters()
         # optimize parameters
         estimate = optimize.minimize(
             lossfunc,
             first_guess.parameters,
             method=self.method,
-            bounds=[(0,1920), # row bound
-                    (0,1920), # col bound
-                    (0,2*np.pi),                  # north_angle bound
-                    (-np.Inf,np.Inf),
-                    (-np.Inf,np.Inf),
-                    (-np.Inf,np.Inf),
-                    (-np.Inf,np.Inf)
-                    ]                  
+            bounds=first_guess.bounds
             )
-         
-        opt_estimate.parameters = estimate.x
 
-        calibration = CameraCalibration(parameters = opt_estimate, 
-            fit = estimate )
+        # create new optimal parameters
+        opt_estimate = copy.deepcopy(first_guess) # based on the first guess
+        opt_estimate.parameters = estimate.x # set the new parameters
+
+        # create and return a CameraCalibration
+        calibration = CameraCalibration(
+            parameters = opt_estimate, 
+            lossfunc   = lossfunc,
+            fit        = estimate )
 
         return(calibration)
 
 
 # calibration class
 class CameraCalibration(object):
-    def __init__(self, parameters, func=None, fit=None):
+    """
+    class that holds calibration results
+    """
+    def __init__(self, parameters, lossfunc, fit=None):
+        """
+        class constructor
+        args:
+            parameters (CameraCalibrationParameters): calibration parameters
+            lossfunc (CameraCalibrationLossFunction): calibration lossfunction
+            fit (optional[scipy.optimize.Result]): calibration fit
+        """
 
         # copy over attributes
         self.parameters  = parameters
-        self.func        = func
+        self.lossfunc    = lossfunc
         self.fit         = fit
 
-    # return elevation
-    def elevation(self):
-        pass
+    def create_coordinates(self,shape):
+        # create row and col arrays
+        row, col = np.mgrid[:shape[0],:shape[1]]
+        # center them
+        row = shape[0] - row # invert, because y increases to the top
+        row -= self.parameters.center_row
+        col -= self.parameters.center_col
 
-    # return azimuth
-    def azimuth(self):
-        pass
+        # create coordinates
+        # these coordinates are coordinates on the image!
+        plane = coordinates.Coordinates3d(shape=shape)
+        plane.azimuth_offset    = self.parameters.north_angle
+        plane.azimuth_clockwise = self.lossfunc.pixel_coords.azimuth_clockwise
+        # first, take x and y as row and col to calculate the azimuth/radiush
+        plane.fill(x=col,y=row) # set row and col and calculate azimuth/radiush
+    
+        # now we can get the elevation based on the horizontal image radius
+        elevation = self.lossfunc.radial.elevation(plane.radiush)
+        # get the azimuth
+        azimuth   = plane.azimuth
+
+        coords = coordinates.Coordinates3d(
+            azimuth_offset   =self.lossfunc.pixel_coords.azimuth_offset,
+            azimuth_clockwise=True # meteorological azimuth is clockwise
+            )
+        coords.shape = shape # set shape
+        # fill the new coordinates with the calculated elevation and azimuth
+        coords.fill(elevation=elevation,azimuth=azimuth)
+        # return the new coordinates
+        return(coords)
+
+
+
