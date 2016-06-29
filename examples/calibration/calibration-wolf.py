@@ -5,6 +5,7 @@ import pyclamster
 import pysolar
 import os,glob,re
 import datetime,pytz
+import pickle
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -108,8 +109,14 @@ calibrator = pyclamster.CameraCalibrator(method="l-bfgs-b")
 calibration = calibrator.estimate(lossfunction, params_firstguess)
 
 # print the results
-print(calibration.fit)
-print(calibration.parameters)
+logging.debug(calibration.fit)
+logging.debug(calibration.parameters)
+
+filename = "examples/calibration/wolf-3-calibration.pickle"
+logging.debug("pickling calibration to file '{}'".format(filename))
+fh = open(filename,'wb')
+pickle.dump(calibration,fh)
+fh.close()
 
 cal_coords=calibration.create_coordinates((1920,1920))
 cal_coords.z = 1 # assume a height to see x and y

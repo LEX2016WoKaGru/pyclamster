@@ -8,11 +8,11 @@ logging.basicConfig(level=logging.DEBUG)
 
 start_time = time.time()
 # read an image
-img = pyclamster.image.Image("../images/wettermast/Image_Wkm_Aktuell_2.jpg")
+img = pyclamster.image.Image("examples/images/wettermast/Image_Wkm_Aktuell_2.jpg")
 # convert to grayscale
 #img.image = img.convert("L")
 # resize image
-img.image = img.resize((80,80))
+#img.image = img.resize((80,80))
 
 ### create a fisheye projection object ###
 f=pyclamster.fisheye.FisheyeProjection("equidistant")
@@ -25,14 +25,15 @@ rect_x,rect_y=np.meshgrid(
     np.linspace(-20,20,num=outshape[1]),# image x coordinate goes right
     np.linspace(20,-20,num=outshape[0]) # image y coordinate goes up
     )
-rect_z = 10 # rectify for height rect_z
+rect_z = 50 # rectify for height rect_z
 
-rect_coord = pyclamster.coordinates.CarthesianCoordinates3d(
+rect_coord = pyclamster.coordinates.Coordinates3d(
     x = rect_x,
     y = rect_y,
     z = rect_z,
     azimuth_offset = rect_azimuth_offset,
-    clockwise = rect_clockwise
+    azimuth_clockwise = rect_clockwise,
+    shape=outshape
     )
 
 ### create spherical coordinates of original image ###
@@ -44,7 +45,7 @@ maxelepos = (0,int(shape[1]/2)) # (one) position of maxium elevation
 maxele = np.pi / 2.2 # maximum elevation on the image border, < 90° here
 
 img.coordinates.azimuth_offset = orig_azimuth_offset
-img.coordinates.clockwise = False
+img.coordinates.azimuth_clockwise = False
 
 logging.debug("setting image elevation")
 img.coordinates.elevation = f.createFisheyeElevation(
@@ -65,7 +66,7 @@ img.coordinates.azimuth = f.createAzimuth(
     )
 
 logging.debug("setting image radius")
-img.coordinates.radius = img.coordinates.radius_with_height(z=rect_z)
+img.coordinates.z = rect_z
 
 ### create rectification map ###
 # based on regular grid
