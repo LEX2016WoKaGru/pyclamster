@@ -44,10 +44,7 @@ class CameraCalibrationParameters(object):
                  center_row  = None,
                  center_col  = None, 
                  north_angle = None,
-                 r0 = None,
-                 r2 = None,
-                 r4 = None,
-                 r6 = None
+                 *radialp
                  ):
         """
         class constructor
@@ -56,29 +53,56 @@ class CameraCalibrationParameters(object):
             north_angle (numeric): azimuth offset (see Coordinate3d docs)
             f (numeric): proportionality factor for projected image radius
         """
-        self.parameters = (center_row, center_col, north_angle,r0,r2,r4,r6)
+        parameters = [center_row, center_col, north_angle]
+        for p in radialp: parameters.append(p)
+        self.parameters = parameters
+
+    @property
+    def parameter_names(self):
+        try:    return self._parameter_names
+        except: return []
+
+    @parameter_names.setter
+    def parameter_names(self, newnames):
+        # If new parameter names
+        if not newnames == self.parameter_names:
+            # set new parameter names
+            self._parameter_names = newnames
+            # set all parameters to None
+            for p in self.parameter_names:
+                setattr(self,p,None)
 
     @property
     def parameters(self):
-        parms = (self.center_row, self.center_col, 
-                 self.north_angle, self.r0,self.r2,self.r4,self.r6)
+        parms = []
+        for p in self.parameter_names:
+            parms.append(getattr(self,p))
         return(parms)
 
     @parameters.setter
     def parameters(self, newparams):
-        self.center_row, self.center_col, \
-        self.north_angle,self.r0,self.r2,self.r4,self.r6 = newparams
+        # create a list of parameter names
+        parameter_names = ["center_row","center_col","north_angle"]
+        for i,p in enumerate(newparams[3:]):
+            parameter_names.append("r{}".format(i))
+
+        # set the parameter names
+        self.parameter_names = parameter_names
+
+        # set the new parameters
+        for name,val in zip(self.parameter_names,newparams):
+            setattr(self,name,val)
 
     # summary when converted to string
     def __str__(self):
-        parameters = ("center_row","center_col",
-                      "north_angle","r0","r2","r4","r6")
         formatstring = ["=================================",
                         "| camera calibration parameters |",
                         "================================="]
-        for param in parameters:
+        for param in self.parameter_names:
             formatstring.append("{:>11}: {}".format(param,getattr(self, param)))
         return("\n".join(formatstring))
+
+
 
 class CameraCalibrationRadialFunction(object):
     def __init__(self, parameters):

@@ -71,6 +71,7 @@ params_firstguess = pyclamster.CameraCalibrationParameters(
     center_row = 0,
     center_col = 0,
     north_angle = 0,
+    r0 = 0,
     r2 = 100,
     r4 = 30,
     r6 = 0
