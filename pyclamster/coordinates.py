@@ -671,28 +671,28 @@ class Coordinates3d(BaseCoordinates3d):
         self._elevation = np.arccos(self.z / self.radius)
 
     def x_from_spherical(self):
-        if not self.azimuth_clockwise:azimuth = self.azimuth
-        else: azimuth = 2*np.pi - self.azimuth
+        azimuth = self.azimuth + self.azimuth_offset
+        if self.azimuth_clockwise: azimuth = 2*np.pi - azimuth
         self._x = self.radius                          \
             * np.sin( self.elevation )              \
-            * np.cos( azimuth + self.azimuth_offset )
+            * np.cos( azimuth )
 
     def x_from_azimuth_radiush(self):
-        if not self.azimuth_clockwise:azimuth = self.azimuth
-        else: azimuth = 2*np.pi - self.azimuth
-        self._x = self.radiush * np.cos( azimuth + self.azimuth_offset )
+        azimuth = self.azimuth + self.azimuth_offset
+        if self.azimuth_clockwise: azimuth = 2*np.pi - azimuth
+        self._x = self.radiush * np.cos( azimuth )
 
     def y_from_spherical(self):
-        if not self.azimuth_clockwise:azimuth = self.azimuth
-        else: azimuth = 2*np.pi - self.azimuth
+        azimuth = self.azimuth + self.azimuth_offset
+        if self.azimuth_clockwise: azimuth = 2*np.pi - azimuth
         self._y = self.radius                              \
             * np.sin( self.elevation )                  \
-            * np.sin( azimuth + self.azimuth_offset )
+            * np.sin( azimuth )
 
     def y_from_azimuth_radiush(self):
-        if not self.azimuth_clockwise:azimuth = self.azimuth
-        else: azimuth = 2*np.pi - self.azimuth
-        self._y = self.radiush * np.sin( azimuth + self.azimuth_offset )
+        azimuth = self.azimuth + self.azimuth_offset
+        if self.azimuth_clockwise: azimuth = 2*np.pi - azimuth
+        self._y = self.radiush * np.sin( azimuth )
 
     def z_from_spherical(self):
         self._z = self.radius * np.cos( self.elevation )
@@ -746,7 +746,7 @@ class Coordinates3d(BaseCoordinates3d):
                     isdefined = True
             if isdefined:
                 try: 
-                    if np.prod(self.shape) <= 8:
+                    if np.prod(self.shape) <= 10:
                         string = str(ndstr(value.flatten()))
                     else: string = "defined"
                 except: raise
