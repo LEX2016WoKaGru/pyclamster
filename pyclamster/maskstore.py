@@ -162,8 +162,8 @@ class MaskStore(object):
             cloud_image (Cloud): Cloud instance, with only the mask based on
                 the selected labels.
         """
-        mask = self.getMask(labels)
-        return Cloud(image, mask)
+        data = self.applyMask(image, labels)
+        return Cloud(data)
 
 
     def applyMask(self, image, labels=None, fill_value=None, replace=True):
