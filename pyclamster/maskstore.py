@@ -191,6 +191,13 @@ class MaskStore(object):
             image.data.set_fill_value(fill_value)
         return image
 
+    def cutMask(self, image, labels=None):
+        mask = (~self.getMask(labels)).astype(int)
+        nozero = np.nonzero(mask[:,:])
+        cut = [np.min(nozero[1]), np.min(nozero[0]), np.max(nozero[1]), np.max(nozero[0])]
+        return image.cut(cut)
+    # TODO Method to cut a mask out of an image
+
 
 class Labels(object):
     """
