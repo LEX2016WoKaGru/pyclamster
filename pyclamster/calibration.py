@@ -135,7 +135,7 @@ class CameraCalibrationParameters(object):
                         "-------------------------------------------"])
         for i,param in enumerate(self.parameter_names):
             formatstring.append(
-                "{p:>11} ({bl: 8.3f},{bu: 8.3f}): {pv:>10.3f}".format(
+                "{p:>11} ({bl: 10.3f},{bu: 10.3f}): {pv:>10.3f}".format(
                 p=param,pv=getattr(self, param),bl=self.bounds[i][0],
                 bu=self.bounds[i][1]))
         return("\n".join(formatstring))
@@ -290,9 +290,9 @@ class CameraCalibrationLossFunction(object):
         """
         class constructor.
         args:
-            pixel_coords (CarthesianCoordinates3d): carthesian coordinates
+            pixel_coords (Coordinates3d): carthesian coordinates
                 (y=row,x=col) of sun pixel positions on image.
-            sun_coords (SphericalCoordinates3D): spherical coordinates
+            sun_coords (Coordinates3d): spherical coordinates
                 (azimuth, elevation) of sun positions.
             radial (CameraCalibrationRadialFunction): radial distortion 
                 funciton. With the parameter estimate set and the elevation as
@@ -362,16 +362,20 @@ class CameraCalibrationLossFunction(object):
 
 # calibrator class
 class CameraCalibrator(object):
-    def __init__(self,method=None):
+    def __init__(self,shape,method=None):
         """
         class constructor
         args:
+            shape (2-tuple of ints): shape of objective image. This is
+                important for the optimization parameter bounds and the
+                resulting output.
             method (str or None): optimization method. see 
                 scipy.optimize.minimize documentation for further information.
                 Defaults to None which is not recommended because the standard
                 method varies between some scipy versions.
         """
         self.method = method
+        self.shape  = shape
 
     def estimate(self, lossfunc, first_guess):
         """
@@ -381,6 +385,10 @@ class CameraCalibrator(object):
             lossfunc (CameraCalibrationLossFunction): the lossfunction
             first_guess (CameraCalibrationParameters): the initial guess
         """
+        # set bounds for center_row and center_col
+        #first_guess.bounds[0] = (0,int(self.shape[0])) # set row bounds
+        #first_guess.bounds[1] = (0,int(self.shape[1])) # set col bounds
+
         # optimize parameters
         estimate = optimize.minimize(
             lossfunc,
@@ -397,6 +405,7 @@ class CameraCalibrator(object):
         calibration = CameraCalibration(
             parameters = opt_estimate, 
             lossfunc   = lossfunc,
+            shape      = self.shape,
             fit        = estimate )
 
         return(calibration)
@@ -407,31 +416,33 @@ class CameraCalibration(object):
     """
     class that holds calibration results
     """
-    def __init__(self, parameters, lossfunc, fit=None):
+    def __init__(self, parameters, lossfunc, shape, fit=None):
         """
         class constructor
         args:
             parameters (CameraCalibrationParameters): calibration parameters
             lossfunc (CameraCalibrationLossFunction): calibration lossfunction
+            shape (2-tuple of ints): shape of objective image
             fit (optional[scipy.optimize.Result]): calibration fit
         """
 
         # copy over attributes
         self.parameters  = parameters
         self.lossfunc    = lossfunc
+        self.shape       = shape
         self.fit         = fit
 
-    def create_coordinates(self,shape):
+    def create_coordinates(self):
         # create row and col arrays
-        row, col = np.mgrid[:shape[0],:shape[1]]
+        row, col = np.mgrid[:self.shape[0],:self.shape[1]]
         # center them
-        row = shape[0] - row # invert, because y increases to the top
-        row -= self.parameters.center_row
-        col -= self.parameters.center_col
+        row = self.shape[0] - row # invert, because y increases to the top
+        row = row - self.parameters.center_row
+        col = col - self.parameters.center_col
 
         # create coordinates
         # these coordinates are coordinates on the image!
-        plane = coordinates.Coordinates3d(shape=shape)
+        plane = coordinates.Coordinates3d(shape=self.shape)
         plane.azimuth_offset    = self.parameters.north_angle
         plane.azimuth_clockwise = self.lossfunc.pixel_coords.azimuth_clockwise
         # first, take x and y as row and col to calculate the azimuth/radiush
@@ -446,7 +457,7 @@ class CameraCalibration(object):
             azimuth_offset   =self.lossfunc.pixel_coords.azimuth_offset,
             azimuth_clockwise=True # meteorological azimuth is clockwise
             )
-        coords.shape = shape # set shape
+        coords.shape = self.shape # set shape
         # fill the new coordinates with the calculated elevation and azimuth
         coords.fill(elevation=elevation,azimuth=azimuth)
         # return the new coordinates

@@ -9,6 +9,9 @@ import pickle
 
 logging.basicConfig(level=logging.DEBUG)
 
+# shape of images
+imgshape = (1920,1920) # hard-coded shape here...
+
 # position of wolf-1 camera
 LAT = 53.99777
 LON = 9.56673
@@ -68,7 +71,7 @@ elevations = np.pi/2 - pyclamster.deg2rad(np.asarray(elevations))
 #####################################################
 # sun coordinates on the image plane based on (row, col)
 pixel_coords = pyclamster.Coordinates3d(
-    x = suncols, y = 1920 - sunrows, # TODO: HARD CODED shape here!!!
+    x = suncols, y = imgshape[0] - sunrows, # TODO: HARD CODED shape here!!!
     azimuth_clockwise = False,
     azimuth_offset=np.pi/2
     )
@@ -102,7 +105,7 @@ lossfunction = pyclamster.calibration.CameraCalibrationLossFunction(
     )
 
 # create calibrator
-calibrator = pyclamster.CameraCalibrator(method="l-bfgs-b")
+calibrator = pyclamster.CameraCalibrator(shape=imgshape,method="l-bfgs-b")
 
 
 # let the calibrator estimate a calibration
@@ -118,7 +121,7 @@ fh = open(filename,'wb')
 pickle.dump(calibration,fh)
 fh.close()
 
-cal_coords=calibration.create_coordinates((1920,1920))
+cal_coords=calibration.create_coordinates()
 cal_coords.z = 1 # assume a height to see x and y
 
 import matplotlib.pyplot as plt
