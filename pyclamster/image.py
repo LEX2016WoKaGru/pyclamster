@@ -343,7 +343,7 @@ class Image(object):
         returns:
             center (numpy array): center pixel of the image - shape(2)
         """
-        center = np.round(np.array(self.data.shape) * 0.5)
+        center = (np.array(self.data.shape) * 0.5).astype(int)
         return center
 
     ##########################
