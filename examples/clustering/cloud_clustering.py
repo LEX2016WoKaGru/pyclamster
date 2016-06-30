@@ -89,8 +89,8 @@ for image_path in all_images:
     label.reshape((w, h), replace=True)
     scipy.misc.imsave("cloud.png", label.labels)
     masks = label.getMaskStore()
-    masks.denoise([1], 250)
-    cloud_labels, _ = masks.labelMask([1,])
+    masks.denoise([0], 100)
+    cloud_labels, _ = masks.labelMask([0,])
     scipy.misc.imsave("labels.png", cloud_labels.labels)
     cloud_store = cloud_labels.getMaskStore()
     clouds = [cloud_store.getCloud(cutted_image, [k,]) for k in cloud_store.masks.keys()]
