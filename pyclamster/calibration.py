@@ -455,8 +455,8 @@ class CameraCalibration(object):
         azimuth   = plane.azimuth
 
         coords = coordinates.Coordinates3d(
-            azimuth_offset   =self.lossfunc.pixel_coords.azimuth_offset,
-            azimuth_clockwise=True # meteorological azimuth is clockwise
+            azimuth_offset   =3/2*np.pi,
+            azimuth_clockwise=True
             )
         coords.shape = self.shape # set shape
         # fill the new coordinates with the calculated elevation and azimuth
