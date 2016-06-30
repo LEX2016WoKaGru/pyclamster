@@ -93,9 +93,6 @@ params_firstguess = pyclamster.CameraCalibrationParameters(
     960, # center_col
     0, # north_angle
     600, # r0
-    100, # r0
-    0, # r0
-    0, # r0
     )
 
 # create a lossfunction

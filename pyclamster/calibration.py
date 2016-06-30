@@ -405,8 +405,9 @@ class CameraCalibrator(object):
         calibration = CameraCalibration(
             parameters = opt_estimate, 
             lossfunc   = lossfunc,
-            shape      = self.shape,
-            fit        = estimate )
+            shape      = self.shape #,fit        = estimate 
+            # the fit makes problems at copying/pickling...
+            )
 
         return(calibration)
 
