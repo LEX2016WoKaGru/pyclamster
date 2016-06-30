@@ -24,67 +24,70 @@ Created for pyclamster
 # External modules
 import numpy as np
 
-# Internal modules
+#from skimage
 
+# Internal modules
+#from pyclamster.matching.cloud import SpatialCloud, TemporalCloud
 
 __version__ = "0.1"
 
 
-
 class Matching(object):
-    def __init__(self, w):
-        self.w = self._normalize_weights(w)
-        self.mapping = ProbabilityMap(self.w)
+    def __init__(self, w=None):
+        self.w = w
 
-    def _calc_prob(self, cloud1, cloud2):
-        return self.mapping.probability(cloud1, cloud2)
+    def matching(self, clouds1, clouds2, temporal=False):
+        maps = [[], []]
+        best_maps = []
+        for k, c in enumerate(clouds1):
+            maps[0, k] = c.merge(clouds2)[2]
+        for k, c in enumerate(clouds2):
+            maps[1, k] = c.merge(clouds1)[2]
+        # TODO Algorithm for best maps needs to be implemented
+        best_clouds = None
+        return best_clouds
 
-    def _normalize_weights(self, weights):
+
+
+class ProbabilityMapping(object):
+    def __init__(self, w=None):
+        self.w = w
+
+    def _normalize_weights(weights):
         normalized_weights = [w/np.sum(weights) for w in weights]
         return normalized_weights
-
-    def match(self, cloud1, cloud2):
-        """
-        Matches two clouds and get the probability distribution map and the
-        best match for the two clouds.
-        Args:
-            cloud1 (Cloud/SpatialCloud): The first cloud.
-            cloud2 (Cloud/SpatialCloud): The cloud, in which the first cloud
-                should be moved.
-
-        Returns:
-            best_match (dict[prob, x, y]): The best matching point in the
-                second cloud.
-                'prob': the probability that the clouds are belongs together
-                    in this specific point.
-                'x': The x position of the best matching point.
-                'y': The y position of the best matching point.
-            probability_map (numpy array): The probability map for every
-                possible matching point. Should have the same data shape like
-                the second cloud.
-        """
-        probability_map = self._calc_prob(cloud1, cloud2)
-        # here is missing a method to get the best point!
-        best_match = {'prob': None, 'x': None, 'y': None}
-        return best_match, probability_map
-
-
-class ProbabilityMap(object):
-    def __init__(self, w):
-        self.w = w
 
     def _check_dimensions(self, data):
         if data.shape[-1] != len(self.w):
             raise ValueError('The dimension of the weights and of the cloud'
                              'channels are not the same!')
 
-    def get_probability(self, cloud1, cloud2):
+    def calc_map(self, cloud1, cloud2):
+        if self.w is None:
+            self.w = [1] * cloud1.data.shape[2]
+        self.w = self._normalize_weights(self.w)
+        self._check_dimensions(cloud1)
+        self._check_dimensions(cloud2)
+        return ProbabilityMap(cloud1, cloud2, self.w)
+
+
+class ProbabilityMap(object):
+    def __init__(self, cloud1, cloud2, w):
+        self.clouds = [cloud1, cloud2]
+        self.w = w
+        self.map = self._calc_map()
+
+    def __call__(self):
+        return self.map
+
+    def _calc_map(self):
         """
         Method to get the probability map of two different clouds.
         Args:
             cloud1 (Cloud/SpatialCloud): The first cloud.
             cloud2 (Cloud/SpatialCloud): The cloud in which the first cloud
                 should be moved.
+            w (list[float]): Weights for the different channels.
 
         Returns:
             probability_map (numpy array): The probability map for every
@@ -92,5 +95,21 @@ class ProbabilityMap(object):
                 the second cloud.
         """
         probability_map = None
-        # Needs algorithm to create the probability map
+        """
+        TODO
+        template = cloud_store.cutMask(cutted_image, [1,])
+        result = match_template(cutted_image.data, template.data, pad_input=True, mode='reflect', constant_values=0)
+        Second cloud cut has to have the same size as the first cloud cut
+        """
         return probability_map
+
+    def get_best(self):
+        """
+        Method to get the best point of the map.
+        Returns:
+            best (dict[float]): A dict with information about the best point
+                within the map.
+        """
+        # TODO here is a method to get the best point needed
+        best = {'prob': None, 'x': None, 'y': None}
+        return best
