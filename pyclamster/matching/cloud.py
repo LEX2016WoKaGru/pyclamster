@@ -24,31 +24,43 @@ Created for pyclamster
 # External modules
 
 # Internal modules
+from .matching import Matching
 from ..image import Image
+from ..clustering import preprocess
 
 
 __version__ = ""
 
 class BaseCloud(Image):
-    def __init__(self, image):
+    def __init__(self, data):
         pass
 
 
-class Cloud(Image):
-    def __init__(self, image, mask, w=None):
-        self.data = image
-        self.label = mask
+class Cloud(BaseCloud):
+    def __init__(self, data, preprocess=[], matching=None, w=None):
         if w is None:
             w = [1] * self.data.shape[2]
-        self.matching_algorithm = Matching(w=w)
-        self.data = Preprocess(data)
+        self.preprocessing = preprocess
+        if matching is None:
+            self.matching_algorithm = Matching(w=w)
+        else:
+            self.matching_algorithm = matching
+        self.data = self._preprocess(data)
 
-    def merge(self, clouds):
+    def _preprocess(self, data):
+        output = data
+        if self.preprocessing:
+            for layer in self.preprocessing:
+                output = layer.preprocess(data)
+        return output
+
+    def merge(self, clouds, threshold):
         """
         Method to merge colud spatially. This method is based on a template
         matching algorithm.
         Args:
             clouds (list[Cloud]):
+            thres (float): Level of probability,
         Returns:
             matched_cloud (SpatialCloud):
             prob_clouds (list[numpy array])
@@ -56,13 +68,19 @@ class Cloud(Image):
         """
         prob = []
         for c in clouds:
-            c_data = Preprocess(data)
-            prob.append(self.matching_algorithm.match(self.data, c.data))
+            best, prob_map = self.matching_algorithm.match(self.data, c.data)
+            best
         pass
 
 
 class SpatialCloud(Cloud):
-    pass
+    def __init__(self, c1, c2, preprocess=[], matching=None, w=None):
+        data
+        super().__init__([c1, c2], preprocess, matching, w)
+
+    def _preprocess(self, data):
+        return [super()._preprocess(c) for c in data]
+
 
 
 class TemporalCloud(BaseCloud):
