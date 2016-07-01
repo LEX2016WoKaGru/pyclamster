@@ -3,8 +3,8 @@ import pyclamster
 import numpy as np
 
 c = pyclamster.coordinates.Coordinates3d(
-    azimuth_clockwise = True,
-    azimuth_offset    = 3/2*np.pi
+    azimuth_clockwise = False,
+    azimuth_offset    = 1/2*np.pi
     )
 
 # from x and y

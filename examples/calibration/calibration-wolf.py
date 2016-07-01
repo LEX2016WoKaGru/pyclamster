@@ -16,7 +16,6 @@ imgshape = (1920,1920) # hard-coded shape here...
 LAT = 53.99777
 LON = 9.56673
 
-
 ###################################################
 ### Read times and sun positions from filenames ###
 ###################################################
@@ -70,18 +69,22 @@ elevations = np.pi/2 - pyclamster.deg2rad(np.asarray(elevations))
 ### Merge input data into Coordinates3d instances ###
 #####################################################
 # sun coordinates on the image plane based on (row, col)
-pixel_coords = pyclamster.Coordinates3d(
-    x = suncols, y = imgshape[0] - sunrows, # TODO: HARD CODED shape here!!!
+sun_img = pyclamster.Coordinates3d(
+    x = suncols, y = imgshape[0] - sunrows, # row increases to top
     azimuth_clockwise = False,
-    azimuth_offset=np.pi/2
+    azimuth_offset=0 # This azimuth offset is unimportant
     )
+sun_img._max_print=25
 
-# real sun cooridnates based on (elevation,azimuth)
-sun_coords = pyclamster.Coordinates3d(
-    elevation = elevations, azimuth = azimuths,
-    azimuth_offset = 3*np.pi/2,
-    azimuth_clockwise = False
+# real-world astronomical sun coordiates based on (elevation,azimuth)
+sun_real = pyclamster.Coordinates3d(
+    elevation = elevations, azimuth = azimuths, # sun elevation and azimuth
+    # astronomical azimuth increases from east to south to west --> clockwise!
+    azimuth_clockwise = True,
+    # astronomical azimuth is 0 in the south
+    azimuth_offset = np.pi/2,
     )
+sun_real._max_print=25
 
 
 #######################################
@@ -93,14 +96,17 @@ params_firstguess = pyclamster.CameraCalibrationParameters(
     960, # center_col
     0, # north_angle
     600, # r0
+    100, # r0
+    50, # r0
+    10, # r0
     )
 # for equidistant projection: only positive r0 is sensible
 params_firstguess.bounds[3]=(0,np.Inf)
 
 # create a lossfunction
 lossfunction = pyclamster.calibration.CameraCalibrationLossFunction(
-    pixel_coords = pixel_coords, sun_coords = sun_coords,
-    radial = pyclamster.FisheyeEquidistantRadialFunction(params_firstguess)
+    sun_img = sun_img, sun_real = sun_real,
+    radial = pyclamster.FisheyePolynomialRadialFunction(params_firstguess,n=4)
     )
 
 # create calibrator
