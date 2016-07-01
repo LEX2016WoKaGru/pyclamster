@@ -723,14 +723,14 @@ class Coordinates3d(BaseCoordinates3d):
     
     # summary when converted to string
     def __str__(self):
-        def ndstr(a, format_string ='{0: 8.3f}'):
+        def ndstr(a, format_string ='{0: 9.3f}'):
             string = []
             for i,v in enumerate(a):
                 if v is np.ma.masked:
-                    string.append("   --   ")
+                    string.append("  --  ")
                 else:
                     string.append(format_string.format(v,i))
-            return " | ".join(string)
+            return "|".join(string)
 
         formatstring = ["==================",
                         "| 3d coordinates |",
