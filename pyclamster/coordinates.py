@@ -406,12 +406,15 @@ class Coordinates3d(BaseCoordinates3d):
     def __init__(self, shape=None, azimuth_offset=0, azimuth_clockwise=False,
                  elevation_type='zenith',**dimensions):
 
+
         # parent constructor
         super().__init__(
             shape=shape,
             dimnames = ['x','y','z','radiush','elevation','azimuth','radius'],
             paramnames =['azimuth_clockwise','azimuth_offset','elevation_type']
             )
+
+        self._max_print = 10 # maximum values to print
 
         # define methods
         self.methods = CalculationMethodSet()
@@ -746,7 +749,7 @@ class Coordinates3d(BaseCoordinates3d):
                     isdefined = True
             if isdefined:
                 try: 
-                    if np.prod(self.shape) <= 10:
+                    if np.prod(self.shape) < self._max_print:
                         string = str(ndstr(value.flatten()))
                     else: string = "defined"
                 except: raise
