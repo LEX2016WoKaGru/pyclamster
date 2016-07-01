@@ -127,7 +127,7 @@ class Cloud(BaseCloud):
         if mapping is None:
             mapping = ProbabilityMapping(w=w)
         prob_map = mapping.calc_map(self.data, cloud.data)
-        matched_cloud = self.__merge_cloud_type(*prob_map.clouds, prob_map)
+        #matched_cloud = self.__merge_cloud_type(*prob_map.clouds, prob_map)
         return matched_cloud, prob_map
 
 
