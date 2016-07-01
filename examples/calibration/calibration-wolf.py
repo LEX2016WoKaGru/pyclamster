@@ -94,6 +94,8 @@ params_firstguess = pyclamster.CameraCalibrationParameters(
     0, # north_angle
     600, # r0
     )
+# for equidistant projection: only positive r0 is sensible
+params_firstguess.bounds[3]=(0,np.Inf)
 
 # create a lossfunction
 lossfunction = pyclamster.calibration.CameraCalibrationLossFunction(
