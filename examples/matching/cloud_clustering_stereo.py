@@ -33,8 +33,8 @@ import numpy as np
 import scipy.misc
 import scipy.ndimage
 
-from sklearn.cluster import MiniBatchKMeans
-from sklearn.preprocessing import StandardScaler
+#from sklearn.cluster import MiniBatchKMeans
+#from sklearn.preprocessing import StandardScaler
 
 from skimage.feature import match_template
 from skimage.segmentation import random_walker
