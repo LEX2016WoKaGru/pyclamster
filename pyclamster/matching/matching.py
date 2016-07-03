@@ -75,7 +75,7 @@ class ProbabilityMap(object):
     def __init__(self, cloud1, cloud2, w):
         self.clouds = [cloud1, cloud2]
         self.w = w
-        self.map = self._calc_map()
+        self.prop_map = self._calc_map()
 
     def __call__(self):
         return self.map
@@ -123,6 +123,7 @@ class ProbabilityMap(object):
             best (dict[float]): A dict with information about the best point
                 within the map.
         """
-        # TODO here is a method to get the best point needed
-        best = {'prob': None, 'x': None, 'y': None}
+        idx = self.prop_map.argmax()
+        xy = np.unravel_index(idx,self.prop_map.shape)
+        best = {'prob': self.prop_map[xy[0],xy[1]], 'x': xy[0], 'y': xy[1]}
         return best
