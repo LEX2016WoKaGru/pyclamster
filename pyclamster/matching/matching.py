@@ -39,14 +39,54 @@ class Matching(object):
 
     def matching(self, clouds1, clouds2, temporal=False):
         maps = [[], []]
-        best_maps = []
+        best_probs = [[], []]
         for k, c in enumerate(clouds1):
             maps[0, k] = c.merge(clouds2)[2]
+            best_probs[0,k] = maps[0,k].get_best()
         for k, c in enumerate(clouds2):
             maps[1, k] = c.merge(clouds1)[2]
+            best_probs[1,k] = [m.get_best() for m in maps[1,k]]
         # TODO Algorithm for best maps needs to be implemented
-        best_clouds = None
-        return best_clouds
+        # find best match from cloud1 clouds to cloud2 clouds
+        best_matches1 = [ np.argmax(c1) for c1 in best_probs[0]]
+        best_matches2 = [ np.argmax(c2) for c2 in best_probs[1]]
+
+        #check if every cloud got unique match
+        seen = []
+        for c in range(len(best_matches1)):
+            m = best_matches1[c]
+            if not m in seen:
+                seen.append(m)
+            else: 
+                raise('matching error: clouds not uniquely matched')
+
+        seen = []
+        for c in range(len(best_matches2)):
+            m = best_matches2[c]
+            if not m in seen:
+                seen.append(m)
+            else:
+                raise('matching error: clouds not uniquely matched')
+
+        best_clouds1 = [[ci,cmatch] for ci,cmatch in enumerate(best_matches1)]
+        best_clouds2 = [[cmatch,ci] for ci,cmatch in enumerate(best_matches2)]
+        if not sorted(best_clouds1) == sorted(best_clouds2):
+            #check if only different number of clouds
+            if len(best_clouds1) > len(best_clouds2):
+                long_list = best_clouds1
+                best_clouds = best_clouds2
+            elif len(best_clouds1) < len(best_clouds2):
+                long_list = best_clouds2
+                best_clouds = best_clouds1
+            else:
+                raise('matching error: cloud number is the same but no unique matching')
+            for m in enumerate(best_clouds):
+                if not in long_list:
+                    raise('matching error: cloud match failed. no bijective match')
+       else: 
+           best_clouds = best_clouds1
+
+       return best_clouds # returns the indices of best matches as list of [cloud1,cloud2]
 
 
 
