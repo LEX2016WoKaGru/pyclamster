@@ -23,6 +23,7 @@ Created for pyclamster
 
 # External modules
 import numpy as np
+from skimage.feature import match_template
 
 #from skimage
 
@@ -52,7 +53,6 @@ class Matching(object):
 class ProbabilityMapping(object):
     def __init__(self, w=None):
         self.w = w
-
     def _normalize_weights(weights):
         normalized_weights = [w/np.sum(weights) for w in weights]
         return normalized_weights
@@ -94,14 +94,27 @@ class ProbabilityMap(object):
                 possible matching point. Should have the same data shape like
                 the second cloud.
         """
-        probability_map = None
-        """
-        TODO
-        template = cloud_store.cutMask(cutted_image, [1,])
-        result = match_template(cutted_image.data, template.data, pad_input=True, mode='reflect', constant_values=0)
-        Second cloud cut has to have the same size as the first cloud cut
-        """
-        return probability_map
+        probability_map = []
+
+        main_img = np.array(self.clouds[0].data) # if mask array the mask will be dismissed
+        template = np.array(self.clouds[1].data)
+        
+        #make sure that the main_img is the bigger-cloud #NOTE assuming that the cloud img is cut as small as possible
+        if main_img.shape[0] <= template.shape[0] and main_img.shape[1] <= template.shape[1]:
+            temp = template
+            template = main_img
+            main_img = temp
+        elif (main_img.shape[0] >  template.shape[0] and main_img.shape[1] <= template.shape[1]) or\
+             (main_img.shape[0] <= template.shape[0] and main_img.shape[1] >  template.shape[1]):
+            raise('cloud propability-map error: cloud dimension missmatch (no cloud is smaller in every dimension)')
+            # TODO need algorithm to fix that 
+
+        for i in range(main_img.shape[2]):
+            propability_map.append(match_template(main_img[:,:,i], template[:,:,i],
+                                   pad_input=True, mode='reflect', constant_values=0)
+                                   *self.w[i])
+        
+        return np.sum(probability_map,0)
 
     def get_best(self):
         """
