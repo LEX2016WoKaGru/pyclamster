@@ -81,12 +81,12 @@ class Matching(object):
             else:
                 raise('matching error: cloud number is the same but no unique matching')
             for m in enumerate(best_clouds):
-                if not in long_list:
+                if not m in long_list:
                     raise('matching error: cloud match failed. no bijective match')
-       else: 
-           best_clouds = best_clouds1
+        else: 
+            best_clouds = best_clouds1
 
-       return best_clouds # returns the indices of best matches as list of [cloud1,cloud2]
+        return best_clouds # returns the indices of best matches as list of [cloud1,cloud2]
 
 
 
