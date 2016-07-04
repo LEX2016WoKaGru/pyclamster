@@ -48,7 +48,31 @@ def flatten(x):
 ### conversion ###
 ##################
 def deg2rad(x):
+    """
+    convert degrees to radians
+    args:
+        x(numeric): angle in radians
+    returns:
+        radianangle = numeric
+    """
     return x / 360 * 2 * np.pi
 
 def rad2deg(x):
+    """
+    convert radians to degrees
+    args:
+        x(numeric): angle in degrees
+    returns:
+        degreeangle = numeric
+    """
     return x / ( 2 * np.pi ) * 360
+
+def pos_rad(x):
+    """
+    convert the given radian angle to a positive value
+    args:
+        x(numeric): angle in radians
+    return:
+        radianangle = numeric
+    """
+    return (x%(2*np.pi)+2*np.pi)%(2*np.pi)
