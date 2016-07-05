@@ -378,6 +378,13 @@ class CameraCalibrationLossFunction(object):
         logger.debug(" ".join(["sun_real: real sun coordinates",
             "projected onto the image\n{}"]).format(sun_real))
 
+        #import matplotlib.pyplot as plt
+        #sun_img.plot()
+        #plt.title('sun on image')
+        #sun_real.plot()
+        #plt.title('sun in real')
+        #plt.show()
+
         ####################################################################
         ### calculate the residual/difference between projected real and ###
         ### image sun coordinates                                        ###

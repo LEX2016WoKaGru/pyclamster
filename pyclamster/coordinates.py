@@ -757,3 +757,63 @@ class Coordinates3d(BaseCoordinates3d):
                 string = "empty"
             formatstring.append("{:>11}: {}".format(dim,string))
         return("\n".join(formatstring))
+
+
+    ###################
+    ### Plot method ###
+    ###################
+    def plot(self):
+        """
+        create a matplotlib plot of the coordinates.
+        The plot has then to be shown.
+        returns:
+            plot = (unshown) matplotlib plot
+        """
+        try: # try to import matplotlib
+            import matplotlib.pyplot as plt
+        except ImportError:
+            raise NotImplementedError(" ".join([
+            "Plotting coordinates not possible because",
+            "matplotlib could not be found."]))
+
+        
+        p = plt.figure()
+
+        # all of the following is necessary to enlarge the 
+        # axis to a tiny extent, so that the points are fully visible
+        # ... unbelievable that this is not the default
+        axwidth = 1.1
+        xmin = np.nanmin(self.x)
+        ymin = np.nanmin(self.y)
+        xmax = np.nanmax(self.x)
+        ymax = np.nanmax(self.y)
+        xmean = np.mean([xmin,xmax]) 
+        ymean = np.mean([ymin,ymax]) 
+        xd = np.abs(xmax - xmin)
+        yd = np.abs(ymax - ymin)
+        xlim = [ min(0,xmean - axwidth * xd/2), max(0,xmean + axwidth * xd/2) ]
+        ylim = [ min(0,ymean - axwidth * yd/2), max(0,ymean + axwidth * yd/2) ]
+        plt.xlim(xlim)
+        plt.ylim(ylim)
+        # the axis ranges are now set... what a mess...
+
+        # x=0 and y=0
+        plt.axhline(y=0,ls='dashed',color='k')
+        plt.axvline(x=0,ls='dashed',color='k')
+
+        # show north angle
+        maxxy = 2*axwidth * np.abs(np.array([xmin,ymin,xmax,ymax])).max()
+        plt.plot(
+            (0,maxxy*np.cos(self.azimuth_offset)),
+            (0,maxxy*np.sin(self.azimuth_offset)),
+            'r--',linewidth=4
+            )
+
+
+        # plot the points
+        #plt.plot(self.x,self.y,'o')
+        for x,y in zip(self.x,self.y):
+            plt.annotate(s='',xy=(x,y),xytext=(0,0),
+                arrowprops=dict(arrowstyle='->'))
+
+        return p
