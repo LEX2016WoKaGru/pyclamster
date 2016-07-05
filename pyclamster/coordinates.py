@@ -797,9 +797,14 @@ class Coordinates3d(BaseCoordinates3d):
         plt.ylim(ylim)
         # the axis ranges are now set... what a mess...
 
+        # equally-spaced axes
+        plt.axes().set_aspect('equal', 'datalim')
         # x=0 and y=0
         plt.axhline(y=0,ls='dashed',color='k')
         plt.axvline(x=0,ls='dashed',color='k')
+        # grid
+        plt.grid(True)
+
 
         # show north angle
         maxxy = 2*axwidth * np.abs(np.array([xmin,ymin,xmax,ymax])).max()

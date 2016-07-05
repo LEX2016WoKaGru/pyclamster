@@ -374,7 +374,8 @@ class CameraCalibrationLossFunction(object):
             keep={'azimuth','radiush'} 
             )
 
-        logger.debug("sun_img: measured sun coodinates on the image\n{}".format(sun_img))
+        logger.debug(
+        "sun_img: measured sun coodinates on the image\n{}".format(sun_img))
         logger.debug(" ".join(["sun_real: real sun coordinates",
             "projected onto the image\n{}"]).format(sun_real))
 
