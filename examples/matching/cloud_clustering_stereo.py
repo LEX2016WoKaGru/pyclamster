@@ -68,8 +68,8 @@ denoising_ratio = 10
 #all_images = glob.glob(os.path.join(image_directory, "Image_20160531_114000_UTCp1_*.jpg"))
 #print(all_images)
 all_images = [
-    os.path.join(image_directory, "Image_20160531_114100_UTCp1_3.jpg"),
-    os.path.join(image_directory, "Image_20160531_114100_UTCp1_4.jpg")]
+    os.path.join(image_directory, "Image_20160531_114000_UTCp1_3.jpg"),
+    os.path.join(image_directory, "Image_20160531_114000_UTCp1_4.jpg")]
 
 
 
@@ -104,6 +104,6 @@ result = result.mean(axis=2)
 print(time.time()-start)
 print(np.min(result), np.max(result))
 print(np.unravel_index(result.argmax(), result.shape))
-scipy.misc.imshow(result)
+scipy.misc.imsave('matching.png', result)
     #template = template.data.data[~template.data.mask]
     #print(clouds[2].data.data)
