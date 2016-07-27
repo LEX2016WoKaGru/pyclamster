@@ -816,9 +816,10 @@ class Coordinates3d(BaseCoordinates3d):
 
 
         # plot the points
-        #plt.plot(self.x,self.y,'o')
-        for x,y in zip(self.x,self.y):
+        plt.plot(self.x,self.y,'o')
+        for x,y,n in zip(self.x,self.y,np.arange(len(self.x))+1):
             plt.annotate(s='',xy=(x,y),xytext=(0,0),
                 arrowprops=dict(arrowstyle='->'))
+            plt.annotate(str(n),xy=(x,y))
 
         return p

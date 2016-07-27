@@ -15,6 +15,15 @@ c.shape = None
 c.x = [1,1,0,-1,-1,-1,0,1]
 c.y = [0,1,1,1,0,-1,-1,-1]
 print(c)
+c.plot()
+#plt.show()
 
+alpha = np.pi/5
+print("Coordinates turned by {} degrees radian".format(alpha))
+c.change_parameters(azimuth_offset=alpha,keep={'radiush','azimuth'})
+print(c)
+#plt.figure()
 c.plot()
 plt.show()
+
+
