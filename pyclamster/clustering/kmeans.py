@@ -22,12 +22,14 @@ Created for pyclamster
 # System modules
 
 # External modules
+import numpy as np
+
 from sklearn.cluster import MiniBatchKMeans
 from sklearn.base import BaseEstimator, TransformerMixin, ClusterMixin
 from sklearn.metrics import silhouette_score
 
 # Internal modules
-from .old_labels import Labels
+from ..maskstore import Labels
 
 __version__ = "0.1"
 
@@ -58,8 +60,15 @@ class KMeans(BaseEstimator, ClusterMixin, TransformerMixin):
     def fit(self, X):
         if self.n_cluster is None:
             self.n_cluster, _ = self.bestK(X)
-        self.algorithm = self.base_algorithm(self.n_cluster)
+        if self.algorithm is None:
+            self.algorithm = self.base_algorithm(self.n_cluster)
         self.algorithm.fit(X)
+        return self
+
+    def partial_fit(self, X):
+        if self.algorithm is None:
+            self.algorithm = self.base_algorithm(self.n_cluster)
+        self.algorithm.partial_fit(X)
         return self
 
     def predict(self, X):
