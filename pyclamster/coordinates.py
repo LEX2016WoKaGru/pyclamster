@@ -720,6 +720,17 @@ class Coordinates3d(BaseCoordinates3d):
     ###############################
     ### end calculation methods ###
     ###############################
+
+    ######################
+    ### string methods ###
+    ######################
+    def _str_params(self):
+        fstr = []
+        fstr.append("            shape: {}".format(self.shape))
+        fstr.append("   elevation_type: {}".format(self.elevation_type))
+        fstr.append("azimuth_clockwise: {}".format(self.azimuth_clockwise))
+        fstr.append("   azimuth_offset: {}".format(self.azimuth_offset))
+        return("\n".join(fstr))
     
     # summary when converted to string
     def __str__(self):
@@ -735,10 +746,7 @@ class Coordinates3d(BaseCoordinates3d):
         formatstring = ["==================",
                         "| 3d coordinates |",
                         "=================="]
-        formatstring.append("            shape: {}".format(self.shape))
-        formatstring.append("   elevation_type: {}".format(self.elevation_type))
-        formatstring.append("azimuth_clockwise: {}".format(self.azimuth_clockwise))
-        formatstring.append("   azimuth_offset: {}".format(self.azimuth_offset))
+        formatstring.append(self._str_params())
         formatstring.append("=====================")
         for dim in self._dim_names:
             value = getattr(self, dim)
@@ -805,6 +813,8 @@ class Coordinates3d(BaseCoordinates3d):
         # grid
         plt.grid(True)
 
+        # set the title
+        plt.title(self._str_params())
 
         # show north angle
         maxxy = 2*axwidth * np.abs(np.array([xmin,ymin,xmax,ymax])).max()
@@ -813,7 +823,6 @@ class Coordinates3d(BaseCoordinates3d):
             (0,maxxy*np.sin(self.azimuth_offset)),
             'r--',linewidth=4
             )
-
 
         # plot the points
         plt.plot(self.x,self.y,'o')
