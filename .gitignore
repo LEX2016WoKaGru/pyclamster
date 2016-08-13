@@ -162,3 +162,4 @@ __pycache__
 #/trained_models
 *.pk
 *.ipynb_checkpoints/
+/examples/clustering/keras_nnet.py
