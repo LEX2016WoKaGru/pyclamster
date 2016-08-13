@@ -818,11 +818,12 @@ class Coordinates3d(BaseCoordinates3d):
 
         # show north angle
         maxxy = 2*axwidth * np.abs(np.array([xmin,ymin,xmax,ymax])).max()
-        plt.plot(
-            (0,maxxy*np.cos(self.azimuth_offset)),
-            (0,maxxy*np.sin(self.azimuth_offset)),
-            'r--',linewidth=4
-            )
+        if self.azimuth_clockwise:
+            aox, aoy = np.cos(2*np.pi-self.azimuth_offset), \
+                       np.sin(2*np.pi-self.azimuth_offset)
+        else:
+            aox, aoy = np.cos(self.azimuth_offset),np.sin(self.azimuth_offset)
+        plt.plot((0,maxxy*aox),(0,maxxy*aoy), 'r--',linewidth=4)
 
         # plot the points
         plt.plot(self.x,self.y,'o')
