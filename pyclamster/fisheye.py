@@ -259,7 +259,8 @@ class FisheyeProjection(object):
 
 
     # create a distortion map
-    def distortionMap(self, in_coord, out_coord, method="nearest"):
+    @staticmethod
+    def distortionMap(in_coord, out_coord, method="nearest"):
         """
         create a distortion map for fast distortion of images in 2d plane.
         This map can be used to distort efficiently with 
@@ -276,8 +277,8 @@ class FisheyeProjection(object):
             coordinate array for scipy.ndimage.interpolation.map_coordinates()
         """
         # input/output shape
-        in_shape = np.shape(in_coord.x)
-        out_shape = np.shape(out_coord.x)
+        in_shape  = in_coord.shape
+        out_shape = out_coord.shape
 
         # input image coordinates (row, col)
         in_row, in_col = np.mgrid[:in_shape[0],:in_shape[1]]

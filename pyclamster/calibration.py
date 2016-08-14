@@ -319,8 +319,8 @@ class CameraCalibrationLossFunction(object):
             residual = numeric value
         """
         # Development switches
-        PLOT    = True# Plot coordinate transformation steps
-        VERBOSE = True # Print steps
+        PLOT    = False # Plot coordinate transformation steps
+        VERBOSE = False # Print steps
 
         if VERBOSE: logger.debug("Estimate of parameters {}".format(estimate))
         try:    estimate = estimate.parameters
@@ -512,23 +512,41 @@ class CameraCalibration(object):
         self.shape       = shape
         self.fit         = fit
 
-    def create_coordinates(self):
+    def create_coordinates(self, shape=None):
+        if shape is None: # no shape specified
+            shape = self.shape
+
+        # calculate zoom factor (new = zoom * old)
+        zoom = np.unique(np.divide(shape, self.shape))
+
+        # check if specified shape meets aspect ratio
+        if zoom.size != 1:
+            raise ValueError(" ".join([
+                "specified shape {} does not meet calibration",
+                "shape {} (aspect ratio does not fit)"]).format(
+                shape,self.shape))
+
+        logger.debug(
+            "creating new coordinates of shape {}, i.e. zoomed by {}".format(
+                shape,zoom))
+        
         # create row and col arrays
-        row, col = np.mgrid[:self.shape[0],:self.shape[1]]
+        row, col = np.mgrid[:shape[0],:shape[1]]
         # center them
-        row = self.shape[0] - row # invert, because y increases to the top
-        row = row - self.parameters.center_row
-        col = col - self.parameters.center_col
+        row = shape[0] - row # invert, because y increases to the top
+        row = ( row - self.parameters.center_row)
+        col = ( col - self.parameters.center_col)
 
         # create coordinates
         # these coordinates are coordinates on the image!
-        plane = coordinates.Coordinates3d(shape=self.shape)
+        plane = coordinates.Coordinates3d(shape=shape)
         plane.azimuth_offset    = self.parameters.north_angle
         plane.azimuth_clockwise = self.lossfunc.sun_img.azimuth_clockwise
         # first, take x and y as row and col to calculate the azimuth/radiush
         plane.fill(x=col,y=row) # set row and col and calculate azimuth/radiush
         # now we can get the elevation based on the horizontal image radius
         elevation = self.lossfunc.radial.elevation(plane.radiush)
+        logger.debug(plane)
         # get the azimuth
         azimuth   = plane.azimuth
 
@@ -540,7 +558,7 @@ class CameraCalibration(object):
             azimuth_offset   =3/2*np.pi,
             azimuth_clockwise=True
             )
-        coords.shape = self.shape # set shape
+        coords.shape = shape # set shape
         # fill the new coordinates with the calculated elevation and azimuth
         coords.fill(elevation=elevation,azimuth=azimuth)
         # return the new coordinates
