@@ -292,10 +292,13 @@ class CameraCalibrationLossFunction(object):
         """
         class constructor.
         args:
-            sun_img (Coordinates3d): carthesian coordinates
+            sun_img (Coordinates3d): coordinates
                 (y=row,x=col) of sun pixel positions on image.
-            sun_real (Coordinates3d): spherical coordinates
-                (azimuth, elevation) of sun positions.
+            sun_real (Coordinates3d): coordinates
+                (containing azimuth&elevation) of real-world sun positions.
+                Since this is a meteorological project, the meteorological
+                azimuth definition is expected. That is, looking onto a map
+                the azimuth is 0 in the north and increases clockwise.
             radial (CameraCalibrationRadialFunction): radial distortion 
                 funciton. With the parameter estimate set and the elevation as
                 argument, return the image radius in pixel units.
@@ -315,7 +318,11 @@ class CameraCalibrationLossFunction(object):
         returns:
             residual = numeric value
         """
-        logger.debug("Estimate of parameters".format(estimate))
+        # Development switches
+        PLOT    = True# Plot coordinate transformation steps
+        VERBOSE = True # Print steps
+
+        if VERBOSE: logger.debug("Estimate of parameters {}".format(estimate))
         try:    estimate = estimate.parameters
         except: pass
         est_row_c, est_col_c, est_north,*radialp = estimate
@@ -324,7 +331,9 @@ class CameraCalibrationLossFunction(object):
         sun_img    = copy.deepcopy(self.sun_img) # a copy
         sun_real   = copy.deepcopy(self.sun_real) # a copy
 
-        logger.debug("================== begin iteration ====================")
+        if VERBOSE: logger.debug(
+            "================== begin iteration ====================")
+
         ##########################################
         ### set up the image coordinate system ###
         ##########################################
@@ -335,13 +344,13 @@ class CameraCalibrationLossFunction(object):
             )
 
         # print sun on image coordinates
-        logger.debug(
-        "sun_img: measured sun coodinates on the image\n{}".format(sun_img))
+        if VERBOSE: logger.debug(
+            "sun_img: measured sun coodinates on the image\n{}".format(sun_img))
 
         # plot sun on image coordinates
-        logger.debug("plotting sun on image coordinates")
-        sun_img.plot()
-        plt.gcf().canvas.set_window_title("sun on image coordinates")
+        if VERBOSE: logger.debug("plotting sun on image coordinates")
+        if PLOT: sun_img.plot()
+        if PLOT: plt.gcf().canvas.set_window_title("sun on image coordinates")
             
         #########################################################
         ### project real-world sun coordinates onto the image ###
@@ -352,41 +361,53 @@ class CameraCalibrationLossFunction(object):
         sun_real.radiush = self.radial.radiush(sun_real.elevation) 
 
         # print real sun coordinates before projection
-        logger.debug(
+        if VERBOSE: logger.debug(
         "sun_img: real sun coodinates BEFORE projection\n{}".format(sun_real))
 
         # plot real sun coordinates
-        logger.debug("plotting real sun coordinates BEFORE projection")
-        sun_real.plot()
-        plt.gcf().canvas.set_window_title(
+        if VERBOSE: logger.debug("plotting real sun coordinates BEFORE projection")
+        if PLOT: sun_real.plot()
+        if PLOT: plt.gcf().canvas.set_window_title(
             "real sun coordinates BEFORE projection")
 
         # now transform/turn the real sun coordinates to the image system
-        # --> image azimuth turns the other way round, because camera looks up
+        # --> e.g. image azimuth may turn the other way round (cam looking up)
+        # azimuth_offset may have to be adjusted
+        if sun_img.azimuth_clockwise == sun_real.azimuth_clockwise:
+            # if direction matches, just use the old offset
+            new_offset = sun_real.azimuth_offset
+        else: # if not, turn the offset arount
+            new_offset = 2*np.pi-sun_real.azimuth_offset
+
+        ### First, adjust the azimuth direction to sun image coordinates ###
         sun_real.change_parameters(
             # the astronomical azimuth is not clockwise on the image
             # so 
             azimuth_clockwise=sun_img.azimuth_clockwise, 
-            #azimuth_offset=sun_img.azimuth_offset,
-            azimuth_offset=3/2*np.pi+est_north,
+            # adjusted azimuth_offset
+            azimuth_offset=new_offset,
             # turn by keeping azimuth and radiush
             keep={'azimuth','radiush'} 
             )
-#        sun_real.change_parameters(
-#            # the astronomical azimuth is not clockwise on the image
-#            azimuth_offset=-3/2*np.pi+est_north-sun_real.azimuth_offset, 
-#            # turn by keeping azimuth and radiush
-#            keep={'azimuth','radiush'} 
-#            )
+        ### Second, adjust the azimuth offset to the sun image coordinates ###
+        ### and turn it in one step                                        ###
+        sun_real.change_parameters(
+            # the astronomical azimuth is not clockwise on the image
+            azimuth_offset=+sun_img.azimuth_offset+est_north, 
+            # turn by keeping azimuth and radiush
+            keep={'azimuth','radiush'} 
+            )
 
         # print real sun coordinates before projection after projection
-        logger.debug(
-        "sun_img: real sun coodinates AFTER projection\n{}".format(sun_real))
+        if VERBOSE: logger.debug(
+          "sun_img: real sun coodinates AFTER projection\n{}".format(sun_real))
 
         # plot real sun coordinates after projection onto image
-        logger.debug("plotting real sun coordinates AFTER projection (flipping azimuth direction and turning by {} radians)".format(est_north))
-        sun_real.plot()
-        plt.gcf().canvas.set_window_title("real sun coordinates AFTER projection (flipping azimuth direction and turning by {} radians)".format(est_north))
+        if VERBOSE: logger.debug("plot real sun coordinates AFTER projection")
+        if PLOT: sun_real.plot()
+        if PLOT: plt.gcf().canvas.set_window_title(
+            "real sun AFTER projection (flip+turning by {} radians)".format(
+            est_north))
 
 
         ####################################################################
@@ -407,10 +428,12 @@ class CameraCalibrationLossFunction(object):
         if res is np.ma.masked:
             raise Exception("Residual is masked. Something is wrong.")
 
-        logger.debug("residual: {res}".format(res=res))
-        logger.debug("================== end iteration =====================")
+        if VERBOSE: logger.debug("Estimate of parameters {}".format(estimate))
+        if VERBOSE: logger.debug("residual: {res}".format(res=res))
+        if VERBOSE: logger.debug(
+            "================== end iteration =====================")
 
-        #plt.show() # show all plots
+        if PLOT: plt.show() # show all plots
         return(res)
 
 
@@ -460,7 +483,8 @@ class CameraCalibrator(object):
         calibration = CameraCalibration(
             parameters = opt_estimate, 
             lossfunc   = lossfunc,
-            shape      = self.shape #,fit        = estimate 
+            shape      = self.shape 
+            #,fit       = estimate 
             # the fit makes problems at copying/pickling...
             )
 

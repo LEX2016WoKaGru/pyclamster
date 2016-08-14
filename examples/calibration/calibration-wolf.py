@@ -57,7 +57,10 @@ sunrows = np.asarray(sunrows)
 suncols = np.asarray(suncols)
 
 # convert azimuth to radiant
-azimuths   = pyclamster.deg2rad(np.asarray(azimuths))
+azimuths = pyclamster.deg2rad(np.asarray(azimuths))
+# pysolar uses astronomical azimuth. Convert it to meteorological
+# azimuth by adding pi.
+azimuths = azimuths + np.pi
 # project azimuth on (0,2*pi)
 azimuths = (azimuths + 2*np.pi) % (2*np.pi)
 
@@ -82,7 +85,7 @@ sun_real = pyclamster.Coordinates3d(
     # astronomical azimuth increases from east to south to west --> clockwise!
     azimuth_clockwise = True,
     # astronomical azimuth is 0 in the south
-    azimuth_offset = np.pi/2,
+    azimuth_offset = 3/2*np.pi,
     )
 sun_real._max_print=25
 
@@ -116,8 +119,10 @@ calibrator = pyclamster.CameraCalibrator(shape=imgshape,method="l-bfgs-b")
 calibration = calibrator.estimate(lossfunction, params_firstguess)
 
 # print the results
-logging.debug(calibration.fit)
-logging.debug(calibration.parameters)
+logging.debug("The fit: {}".format(calibration.fit))
+logging.debug("The optimal parameters: {}".format(calibration.parameters))
+logging.debug("The optimal residual: {}".format(calibration.lossfunc(
+    calibration.parameters)))
 
 filename = "examples/calibration/wolf-3-calibration.pk"
 logging.debug("pickling calibration to file '{}'".format(filename))
