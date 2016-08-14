@@ -61,6 +61,9 @@ class Camera(object):
         # add images to internal series
         self.add_images( images, times )
 
+        # Every camera needs to be calibrated
+        self.calibration = None
+
         #self.Azi_displacement = {timestamp: Azi}
         #self.Ele_displacement = {timestamp: Ele}
 
