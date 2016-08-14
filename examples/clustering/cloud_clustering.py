@@ -55,11 +55,9 @@ warnings.catch_warnings()
 warnings.filterwarnings('ignore')
 
 
-__version__ = ""
-
-base_folder = "../../"
-image_directory = os.path.join(base_folder, "examples", "images", "wettermast")
-trained_models = os.path.join(base_folder, "trained_models")
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+image_directory = os.path.join(BASE_DIR, "examples", "images", "wettermast")
+trained_models = os.path.join(BASE_DIR, "data")
 
 good_angle = 45
 center = int(1920/2)
