@@ -767,9 +767,9 @@ class Coordinates3d(BaseCoordinates3d):
         return("\n".join(formatstring))
 
 
-    ###################
-    ### Plot method ###
-    ###################
+    ####################
+    ### Plot methods ###
+    ####################
     def plot(self):
         """
         create a matplotlib plot of the coordinates.
@@ -832,4 +832,25 @@ class Coordinates3d(BaseCoordinates3d):
                 arrowprops=dict(arrowstyle='->'))
             plt.annotate(str(n),xy=(x,y))
 
+        return p
+
+    def plot3d(self):
+        """
+        create a matplotlib 3d scatterplot of the coordinates.
+        The plot has then to be shown.
+        returns:
+            plot = (unshown) matplotlib plot
+        """
+        try: # try to import matplotlib
+            import matplotlib.pyplot as plt
+            from mpl_toolkits.mplot3d import Axes3D
+        except ImportError:
+            raise NotImplementedError(" ".join([
+            "Plotting coordinates not possible because",
+            "matplotlib could not be found."]))
+
+        
+        p = plt.figure()
+        ax = Axes3D(p)
+        ax.scatter3D(self.x,self.y,self.z)
         return p
