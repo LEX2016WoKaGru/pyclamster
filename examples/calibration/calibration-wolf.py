@@ -107,8 +107,8 @@ params_firstguess.bounds[3]=(0,np.Inf)
 # create a lossfunction
 lossfunction = pyclamster.calibration.CameraCalibrationLossFunction(
     sun_img = sun_img, sun_real = sun_real,
-    radial = pyclamster.FisheyePolynomialRadialFunction(params_firstguess,n=4)
-    #radial = pyclamster.FisheyeEquidistantRadialFunction(params_firstguess)
+    #radial = pyclamster.FisheyePolynomialRadialFunction(params_firstguess,n=4)
+    radial = pyclamster.FisheyeEquidistantRadialFunction(params_firstguess)
     )
 
 # create calibrator

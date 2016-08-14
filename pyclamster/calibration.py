@@ -534,8 +534,8 @@ class CameraCalibration(object):
         row, col = np.mgrid[:shape[0],:shape[1]]
         # center them
         row = shape[0] - row # invert, because y increases to the top
-        row = ( row - self.parameters.center_row)
-        col = ( col - self.parameters.center_col)
+        row = ( row - self.parameters.center_row * zoom ) / zoom
+        col = ( col - self.parameters.center_col * zoom ) / zoom
 
         # create coordinates
         # these coordinates are coordinates on the image!

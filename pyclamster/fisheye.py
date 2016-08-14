@@ -286,11 +286,11 @@ class FisheyeProjection(object):
         in_col = in_col.flatten() # one dimension
     
         # input image coordinates (ele, azi)
-        points = (in_coord.x.flatten(), 
-                  in_coord.y.flatten())
+        points = (in_coord.elevation.flatten(), 
+                  in_coord.azimuth.flatten())
         # output image coordinates (ele, azi)
-        xi = (out_coord.x.flatten(),
-              out_coord.y.flatten())
+        xi = (out_coord.elevation.flatten(),
+              out_coord.azimuth.flatten())
     
         logger.debug("interpolation started...")
 

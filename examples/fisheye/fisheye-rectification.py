@@ -25,7 +25,7 @@ rect_x,rect_y=np.meshgrid(
     np.linspace(-20,20,num=outshape[1]),# image x coordinate goes right
     np.linspace(20,-20,num=outshape[0]) # image y coordinate goes up
     )
-rect_z = 50 # rectify for height rect_z
+rect_z = 15 # rectify for height rect_z
 
 rect_coord = pyclamster.coordinates.Coordinates3d(
     x = rect_x,

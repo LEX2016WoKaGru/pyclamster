@@ -10,23 +10,23 @@ logging.basicConfig(level=logging.DEBUG)
 
 start_time = time.time()
 # read an image
-img = pyclamster.image.Image(os.path.join("examples/images/wolf/calibration/",
-    "Wolf_20160530_094400_UTCp1_sunrow1338_suncol616.jpg"))
+img = pyclamster.image.Image(os.path.join("examples/images/wolf/",
+    "Image_20160527_144000_UTCp1_3.jpg"))
 # convert to grayscale
 img.image = img.convert("L")
 # resize image
-img.image = img.resize((100,100))
+img.image = img.resize((500,500))
 
 
 ### create rectified coordinates ###
-outshape=(100,100) # size of output image
-rect_azimuth_offset = np.pi / 2 # north angle of rectified image
-rect_clockwise = False
+outshape=(500,500) # size of output image
+rect_azimuth_offset = 3/2 * np.pi # north angle of rectified image
+rect_clockwise = True
 rect_x,rect_y=np.meshgrid(
     np.linspace(-20,20,num=outshape[1]),# image x coordinate goes right
     np.linspace(20,-20,num=outshape[0]) # image y coordinate goes up
     )
-rect_z = 20 # rectify for height rect_z
+rect_z = 2 # rectify for height rect_z
 
 rect_coord = pyclamster.coordinates.Coordinates3d(
     x = rect_x,
@@ -44,7 +44,7 @@ calibration = pickle.load(open(calibrationfile,"rb"))
 
 # get calibrated coordinates
 img.coordinates = calibration.create_coordinates(img.data.shape)
-img.coordinates.z = rect_z
+#img.coordinates.z = 100
 
 
 ### create rectification map ###
@@ -63,11 +63,11 @@ plt.title("original image (fix)")
 plt.imshow(img.data, interpolation="nearest", cmap='Greys_r')
 plt.subplot(3,4,2)
 plt.title("image radius (calculated)")
-plt.imshow(img.coordinates.radius, interpolation="nearest")
+plt.imshow(img.coordinates.radiush, interpolation="nearest")
 plt.colorbar()
 plt.subplot(3,4,3)
 plt.title("rectified r (calculated)")
-plt.imshow(rect_coord.radius,interpolation="nearest")
+plt.imshow(rect_coord.radiush,interpolation="nearest")
 plt.colorbar()
 plt.subplot(3,4,4)
 plt.title("rectified image (calculated)")
