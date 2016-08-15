@@ -48,11 +48,16 @@ img.coordinates.z = rect_z
 
 
 ### create rectification map ###
-# based on regular grid
-logging.debug("calculating rectification map")
-distmap = pyclamster.fisheye.FisheyeProjection.distortionMap(
-    in_coord=img.coordinates, out_coord=rect_coord, method="nearest"
-    ,basedon="spherical")
+distmapfile = "examples/fisheye/fisheye-wolf-distmap.pk"
+if True and os.path.exists(distmapfile): # use distmap from file
+    logging.debug("read rectifiation map from file")
+    distmap = pickle.load(open(distmapfile,"rb"))
+else: # calculate distmap
+    # based on regular grid
+    logging.debug("calculating rectification map")
+    distmap = pyclamster.fisheye.FisheyeProjection.distortionMap(
+        in_coord=img.coordinates, out_coord=rect_coord, method="nearest"
+        ,basedon="spherical")
 
 ### rectify image ##
 rectimage = img.applyDistortionMap(distmap)
