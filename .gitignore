@@ -161,5 +161,6 @@ __pycache__
 !/scripts
 #/trained_models
 *.pk
+*.pickle
 *.ipynb_checkpoints/
 /examples/clustering/keras_nnet.py
