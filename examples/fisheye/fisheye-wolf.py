@@ -15,18 +15,18 @@ img = pyclamster.image.Image(os.path.join("examples/images/wolf/",
 # convert to grayscale
 img.image = img.convert("L")
 # resize image
-img.image = img.resize((500,500))
+img.image = img.resize((200,200))
 
 
 ### create rectified coordinates ###
-outshape=(500,500) # size of output image
+outshape=(300,300) # size of output image
 rect_azimuth_offset = 3/2 * np.pi # north angle of rectified image
 rect_clockwise = True
 rect_x,rect_y=np.meshgrid(
     np.linspace(-20,20,num=outshape[1]),# image x coordinate goes right
     np.linspace(20,-20,num=outshape[0]) # image y coordinate goes up
     )
-rect_z = 2 # rectify for height rect_z
+rect_z = 4 # rectify for height rect_z
 
 rect_coord = pyclamster.coordinates.Coordinates3d(
     x = rect_x,
@@ -44,14 +44,15 @@ calibration = pickle.load(open(calibrationfile,"rb"))
 
 # get calibrated coordinates
 img.coordinates = calibration.create_coordinates(img.data.shape)
-#img.coordinates.z = 100
+img.coordinates.z = rect_z
 
 
 ### create rectification map ###
 # based on regular grid
 logging.debug("calculating rectification map")
 distmap = pyclamster.fisheye.FisheyeProjection.distortionMap(
-    in_coord=img.coordinates, out_coord=rect_coord, method="nearest")
+    in_coord=img.coordinates, out_coord=rect_coord, method="nearest"
+    ,basedon="spherical")
 
 ### rectify image ##
 rectimage = img.applyDistortionMap(distmap)
