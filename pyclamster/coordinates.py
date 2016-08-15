@@ -710,7 +710,7 @@ class Coordinates3d(BaseCoordinates3d):
         self._z = np.sqrt(self.radius**2 - self.radiush**2)
 
     def radiush_from_elevation_z(self):
-        self._radiush = self.z * np.arctan( self.elevation )
+        self._radiush = self.z * np.tan( self.elevation )
 
     def radiush_from_elevation_radius(self):
         self._radiush = self.radius * np.sin( self.elevation )
