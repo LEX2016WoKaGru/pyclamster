@@ -260,16 +260,20 @@ class FisheyeProjection(object):
 
     # create a distortion map
     @staticmethod
-    def distortionMap(in_coord, out_coord, method="nearest"):
+    def distortionMap(in_coord, out_coord, method="nearest",
+                      basedon="spherical"):
         """
         create a distortion map for fast distortion of images in 2d plane.
         This map can be used to distort efficiently with 
         scipy.ndimage.interpolation.map_coordinates(...)
 
         args:
-            in_coord (Coordinates3d child): input image coordinates
-            out_coord (Coordinates3d child): output image coordinates
+            in_coord (Coordinates3d): input image coordinates
+            out_coord (Coordinates3d): output image coordinates
             method (str): interpolation method, see scipy.interpolate.griddata
+            basedon (str): base interpolation on spherical (azimuth, elevation)
+                or carthesian (x,y) coordinates. Defaults to "spherical",
+                because "carthesian" makes problems at too large numbers.
 
         returns:
             array of shape (shape(out_coord_2/out_coord_1),2) with interpolated 
@@ -285,12 +289,22 @@ class FisheyeProjection(object):
         in_row = in_row.flatten() # one dimension
         in_col = in_col.flatten() # one dimension
     
-        # input image coordinates (ele, azi)
-        points = (in_coord.elevation.flatten(), 
-                  in_coord.azimuth.flatten())
-        # output image coordinates (ele, azi)
-        xi = (out_coord.elevation.flatten(),
-              out_coord.azimuth.flatten())
+        if basedon == "carthesian":
+            logger.debug("interpolate based on carthesian coordinates.")
+            # input image coordinates (ele, azi)
+            points = (in_coord.x.flatten(), 
+                      in_coord.y.flatten())
+            # output image coordinates (ele, azi)
+            xi = (out_coord.x.flatten(),
+                  out_coord.y.flatten())
+        else:
+            logger.debug("interpolate based on spherical coordinates.")
+            # input image coordinates (ele, azi)
+            points = (in_coord.azimuth.flatten(), 
+                      in_coord.elevation.flatten())
+            # output image coordinates (ele, azi)
+            xi = (out_coord.azimuth.flatten(),
+                  out_coord.elevation.flatten())
     
         logger.debug("interpolation started...")
 
