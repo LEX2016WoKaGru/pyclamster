@@ -110,7 +110,6 @@ class Camera(object):
         self.image_series.extend( images )
         self.time_series.extend( time )
 
-
     def _get_images_and_time_series_from_filelist(self, files, times = None):
         """
         get image and time series from a list of full filepaths
