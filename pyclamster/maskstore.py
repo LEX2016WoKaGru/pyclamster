@@ -181,7 +181,7 @@ class MaskStore(object):
         """
         mask = self.getMask(labels)
         if replace:
-            image = pyClImage(image)
+            image = pyClImage(image=image)
         if image.data.shape[2]>1:
             w, h = mask.shape
             mask = np.reshape(mask, (w, h, 1))
