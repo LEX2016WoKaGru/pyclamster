@@ -45,7 +45,7 @@ from skimage import morphology
 
 
 # Internal modules
-from pyclamster import Image
+from pyclamster import Image, Labels
 from pyclamster.matching.cloud import Cloud, SpatialCloud
 from pyclamster.clustering.preprocess import LCN, ZCA
 from pyclamster.clustering.kmeans import KMeans
@@ -57,7 +57,7 @@ warnings.filterwarnings('ignore')
 
 __version__ = ""
 
-base_folder = "/home/tfinn/Projects/pyclamster/"
+base_folder = "../../"
 image_directory = os.path.join(base_folder, "examples", "images", "wettermast")
 trained_models = os.path.join(base_folder, "trained_models")
 
@@ -65,34 +65,25 @@ good_angle = 45
 center = int(1920/2)
 good_angle_dpi = int(np.round(1920 / 180 * good_angle))
 denoising_ratio = 10
-#all_images = glob.glob(os.path.join(image_directory, "Image_20160527_144000_UTCp1_*.jpg"))
-#print(all_images)
-all_images = [os.path.join(image_directory, "Image_Wkm_Aktuell_2.jpg"),]
+all_images = glob.glob(os.path.join(image_directory, "Image_Wkm_Aktuell_*.jpg"))
 
 
-
-kmeans = pickle.load(open(os.path.join(trained_models, "kmeans.pk"), "rb"))
+predictor = pickle.load(open(os.path.join(trained_models, "kmeans.pk"), "rb"))
 
 for image_path in all_images:
     image = Image(image_path)
-    image.data = scipy.misc.imresize(image.data, 0.25, interp='bicubic')
-    cutted_image = image.cut([120, 120, 360, 360])
-    # cutted_image = image.cut([center - good_angle_dpi, center - good_angle_dpi,
-    #                           center + good_angle_dpi, center + good_angle_dpi])
-    cutted_image.save("original.png")
-    image.data = LCN(size=(13,13,3), scale=False).fit_transform(image.data)
-    image = image.cut([120, 120, 360, 360])
-    w, h, _ = original_shape = image.data.shape
-    raw_image = rbDetection(image.data).reshape((w*h, -1))
-    #raw_image = image.data.reshape((w*h, -1))
-    label = kmeans.predict(raw_image)
-    label.reshape((w, h), replace=True)
+    image.data = LCN(size=(50,50,3), scale=False).fit_transform(image.data/256)
+    image.data = image.data[center - good_angle_dpi:center + good_angle_dpi,
+                            center - good_angle_dpi:center + good_angle_dpi]
+    raw_image = rbDetection(image.data)
+    w, h = original_shape = tuple(raw_image[:, :].shape)
+    raw_image = np.reshape(raw_image, (w * h, 1))
+    label = predictor.predict(raw_image)
+    label.reshape((960, 960), replace=True)
     scipy.misc.imsave("cloud.png", label.labels)
     masks = label.getMaskStore()
-    masks.denoise([0], 100)
+    masks.denoise([0], 960)
     cloud_labels, _ = masks.labelMask([0,])
     scipy.misc.imsave("labels.png", cloud_labels.labels)
+    scipy.misc.imshow(cloud_labels.labels)
     cloud_store = cloud_labels.getMaskStore()
-    clouds = [cloud_store.getCloud(cutted_image, [k,]) for k in cloud_store.masks.keys()]
-    s = SpatialCloud(clouds[1], clouds[2])
-    print(s._calc_position(500))

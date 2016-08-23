@@ -3,29 +3,30 @@ import time
 import pyclamster
 import logging
 import numpy as np
+import os
+import pickle
 
 logging.basicConfig(level=logging.DEBUG)
 
 start_time = time.time()
 # read an image
-img = pyclamster.image.Image("examples/images/wettermast/Image_Wkm_Aktuell_2.jpg")
+img = pyclamster.image.Image(os.path.join("examples/images/wolf/",
+    "Image_20160527_144000_UTCp1_3.jpg"))
 # convert to grayscale
 img.image = img.convert("L")
 # resize image
 img.image = img.resize((200,200))
 
-### create a fisheye projection object ###
-f=pyclamster.fisheye.FisheyeProjection("equidistant")
 
 ### create rectified coordinates ###
-outshape=(50,50) # size of output image
-rect_azimuth_offset = np.pi / 2 # north angle of rectified image
-rect_clockwise = False
+outshape=(300,300) # size of output image
+rect_azimuth_offset = 3/2 * np.pi # north angle of rectified image
+rect_clockwise = True
 rect_x,rect_y=np.meshgrid(
     np.linspace(-20,20,num=outshape[1]),# image x coordinate goes right
     np.linspace(20,-20,num=outshape[0]) # image y coordinate goes up
     )
-rect_z = 15 # rectify for height rect_z
+rect_z = 4 # rectify for height rect_z
 
 rect_coord = pyclamster.coordinates.Coordinates3d(
     x = rect_x,
@@ -37,42 +38,26 @@ rect_coord = pyclamster.coordinates.Coordinates3d(
     )
 
 ### create spherical coordinates of original image ###
-shape=np.shape(img.data)[:2] # shape of image
-image_north_angle = 6 * np.pi / 5 # north angle ON the original image
-orig_azimuth_offset = np.pi / 2 # "north angle" on image coordinates
-center = None # center of elevation/azimuth in the image
-maxelepos = (0,int(shape[1]/2)) # (one) position of maxium elevation
-maxele = np.pi / 2.2 # maximum elevation on the image border, < 90° here
+# read calibration of wolf-3-camera
+calibrationfile = "examples/calibration/wolf-3-calibration.pk"
+calibration = pickle.load(open(calibrationfile,"rb"))
 
-img.coordinates.azimuth_offset = orig_azimuth_offset
-img.coordinates.azimuth_clockwise = False
-
-logging.debug("setting image elevation")
-img.coordinates.elevation = f.createFisheyeElevation(
-    shape,
-    maxelepos=maxelepos,
-    maxele=maxele,
-    center=center
-    )
-logging.debug("mean image elevation is {}".format(img.coordinates.elevation.mean()))
-
-logging.debug("setting image azimuth")
-img.coordinates.azimuth = f.createAzimuth(
-    shape,
-    maxelepos=maxelepos,
-    center=center,
-    north_angle = image_north_angle,
-    clockwise=False
-    )
-
-logging.debug("setting image radius")
+# get calibrated coordinates
+img.coordinates = calibration.create_coordinates(img.data.shape)
 img.coordinates.z = rect_z
 
+
 ### create rectification map ###
-# based on regular grid
-logging.debug("calculating rectification map")
-distmap = f.distortionMap(in_coord=img.coordinates, 
-    out_coord=rect_coord, method="nearest")
+distmapfile = "examples/fisheye/fisheye-wolf-distmap.pk"
+if True and os.path.exists(distmapfile): # use distmap from file
+    logging.debug("read rectifiation map from file")
+    distmap = pickle.load(open(distmapfile,"rb"))
+else: # calculate distmap
+    # based on regular grid
+    logging.debug("calculating rectification map")
+    distmap = pyclamster.fisheye.FisheyeProjection.distortionMap(
+        in_coord=img.coordinates, out_coord=rect_coord, method="nearest"
+        ,basedon="spherical")
 
 ### rectify image ##
 rectimage = img.applyDistortionMap(distmap)
@@ -81,18 +66,18 @@ rectimage = img.applyDistortionMap(distmap)
 import matplotlib.pyplot as plt
 plt.subplot(3,4,1)
 plt.title("original image (fix)")
-plt.imshow(img.data, interpolation="nearest")
+plt.imshow(img.data, interpolation="nearest", cmap='Greys_r')
 plt.subplot(3,4,2)
 plt.title("image radius (calculated)")
-plt.imshow(img.coordinates.radius, interpolation="nearest")
+plt.imshow(img.coordinates.radiush, interpolation="nearest")
 plt.colorbar()
 plt.subplot(3,4,3)
 plt.title("rectified r (calculated)")
-plt.imshow(rect_coord.radius,interpolation="nearest")
+plt.imshow(rect_coord.radiush,interpolation="nearest")
 plt.colorbar()
 plt.subplot(3,4,4)
 plt.title("rectified image (calculated)")
-plt.imshow(rectimage.data, interpolation="nearest")
+plt.imshow(rectimage.data, interpolation="nearest", cmap='Greys_r')
 plt.subplot(3,4,5)
 plt.title("image elevation (fix)")
 plt.imshow(img.coordinates.elevation,interpolation="nearest")

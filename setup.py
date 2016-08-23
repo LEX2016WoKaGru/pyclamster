@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 Created on 09.05.16
@@ -81,5 +82,6 @@ setup(
 
     # You can just specify the packages manually here if your project is
     # simple. Or you can use find_packages().
-    #install_requires=['numpy', 'scpiy', 'sklearn']
+    install_requires=['numpy', 'scipy', 'scikit-learn','scikit-image',
+        'pillow','pysolar','tables','matplotlib']
 )

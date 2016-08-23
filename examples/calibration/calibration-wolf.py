@@ -57,7 +57,10 @@ sunrows = np.asarray(sunrows)
 suncols = np.asarray(suncols)
 
 # convert azimuth to radiant
-azimuths   = pyclamster.deg2rad(np.asarray(azimuths))
+azimuths = pyclamster.deg2rad(np.asarray(azimuths))
+# pysolar uses astronomical azimuth. Convert it to meteorological
+# azimuth by adding pi.
+azimuths = azimuths + np.pi
 # project azimuth on (0,2*pi)
 azimuths = (azimuths + 2*np.pi) % (2*np.pi)
 
@@ -82,7 +85,7 @@ sun_real = pyclamster.Coordinates3d(
     # astronomical azimuth increases from east to south to west --> clockwise!
     azimuth_clockwise = True,
     # astronomical azimuth is 0 in the south
-    azimuth_offset = np.pi/2,
+    azimuth_offset = 3/2*np.pi,
     )
 sun_real._max_print=25
 
@@ -95,10 +98,8 @@ params_firstguess = pyclamster.CameraCalibrationParameters(
     960, # center_row
     960, # center_col
     0, # north_angle
-    600, # r0
-    100, # r0
-    50, # r0
-    10, # r0
+    600 # r0
+    ,100, 50, 10 # r1, r2, r3
     )
 # for equidistant projection: only positive r0 is sensible
 params_firstguess.bounds[3]=(0,np.Inf)
@@ -106,7 +107,8 @@ params_firstguess.bounds[3]=(0,np.Inf)
 # create a lossfunction
 lossfunction = pyclamster.calibration.CameraCalibrationLossFunction(
     sun_img = sun_img, sun_real = sun_real,
-    radial = pyclamster.FisheyePolynomialRadialFunction(params_firstguess,n=4)
+    #radial = pyclamster.FisheyePolynomialRadialFunction(params_firstguess,n=4)
+    radial = pyclamster.FisheyeEquidistantRadialFunction(params_firstguess)
     )
 
 # create calibrator
@@ -117,8 +119,10 @@ calibrator = pyclamster.CameraCalibrator(shape=imgshape,method="l-bfgs-b")
 calibration = calibrator.estimate(lossfunction, params_firstguess)
 
 # print the results
-logging.debug(calibration.fit)
-logging.debug(calibration.parameters)
+logging.debug("The fit: {}".format(calibration.fit))
+logging.debug("The optimal parameters: {}".format(calibration.parameters))
+logging.debug("The optimal residual: {}".format(calibration.lossfunc(
+    calibration.parameters)))
 
 filename = "examples/calibration/wolf-3-calibration.pk"
 logging.debug("pickling calibration to file '{}'".format(filename))

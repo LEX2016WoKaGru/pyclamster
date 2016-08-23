@@ -159,5 +159,8 @@ __pycache__
 /examples/detection.png
 /examples/detection.jpg
 !/scripts
-/trained_models
+#/trained_models
 *.pk
+*.pickle
+*.ipynb_checkpoints/
+/examples/clustering/keras_nnet.py

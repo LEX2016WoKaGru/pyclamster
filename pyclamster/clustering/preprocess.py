@@ -39,7 +39,7 @@ class LCN(BaseEstimator, TransformerMixin):
     normalization.
     """
     def __init__(self, size=None, patches=False, estimator=None,
-                 copy=True, mean=True, scale=True):
+                 copy=True, mean=True, scale=False):
         if estimator is None:
             self.base_estimator_ = scipy.ndimage.uniform_filter
         else:

@@ -27,6 +27,7 @@ import copy
 import numpy as np
 import scipy.optimize as optimize
 import scipy.interpolate as interpolate
+import matplotlib.pyplot as plt
 
 # Internal modules
 from . import coordinates
@@ -275,10 +276,11 @@ class FisheyePolynomialRadialFunction(CameraCalibrationRadialFunction):
         rh  = self.radiush(ele)
         ele_interpolation = interpolate.interp1d(rh, ele,bounds_error=False)
 
-        
         # return the interpolated values masked where interpolation didn't
         # work
-        return np.ma.masked_invalid(ele_interpolation(radiush))
+        # interpolate.interp1d instance doesn't like masked arrays, so
+        # make sure to convert it to a normal array
+        return np.ma.masked_invalid(ele_interpolation(np.asarray(radiush)))
 
 
 
@@ -290,10 +292,13 @@ class CameraCalibrationLossFunction(object):
         """
         class constructor.
         args:
-            sun_img (Coordinates3d): carthesian coordinates
+            sun_img (Coordinates3d): coordinates
                 (y=row,x=col) of sun pixel positions on image.
-            sun_real (Coordinates3d): spherical coordinates
-                (azimuth, elevation) of sun positions.
+            sun_real (Coordinates3d): coordinates
+                (containing azimuth&elevation) of real-world sun positions.
+                Since this is a meteorological project, the meteorological
+                azimuth definition is expected. That is, looking onto a map
+                the azimuth is 0 in the north and increases clockwise.
             radial (CameraCalibrationRadialFunction): radial distortion 
                 funciton. With the parameter estimate set and the elevation as
                 argument, return the image radius in pixel units.
@@ -313,7 +318,11 @@ class CameraCalibrationLossFunction(object):
         returns:
             residual = numeric value
         """
-        logger.debug(estimate)
+        # Development switches
+        PLOT    = False # Plot coordinate transformation steps
+        VERBOSE = False # Print steps
+
+        if VERBOSE: logger.debug("Estimate of parameters {}".format(estimate))
         try:    estimate = estimate.parameters
         except: pass
         est_row_c, est_col_c, est_north,*radialp = estimate
@@ -322,7 +331,9 @@ class CameraCalibrationLossFunction(object):
         sun_img    = copy.deepcopy(self.sun_img) # a copy
         sun_real   = copy.deepcopy(self.sun_real) # a copy
 
-        logger.debug("================== begin iteration ====================")
+        if VERBOSE: logger.debug(
+            "================== begin iteration ====================")
+
         ##########################################
         ### set up the image coordinate system ###
         ##########################################
@@ -331,28 +342,15 @@ class CameraCalibrationLossFunction(object):
             x=sun_img.x-est_col_c,
             y=sun_img.y-est_row_c
             )
-        # turn the image system to the estimated north angle
-        print(sun_img.azimuth_offset)
-        sun_img.change_parameters(
-            ### NOTE: This is UTTERLY UNREALISTIC! ###
-            # Okay, we ADD the current azimuth_offset.
-            # If we only add the current offset, the coordinates stay the same.
-            # If we add an angle (and keep azimuth and radiush as we do here),
-            # the system turns it's x and y coordinates according to the
-            # azimuth_clockwise attribute. So if we subtract something,
-            # this goes the other way round.
-            # Since this works, the image coordinate system has to be rotated
-            # backwards to fit the sun coordinates (which may be because
-            # real sun azimuth was clockwise?) and then np.pi/2 forward.
-            # DAFUQ!?
-            # Nevertheless, this works... I don't have the slightest idea, why.
-            azimuth_offset=sun_img.azimuth_offset-est_north+np.pi/2,
-            # turn by keeping azimuth and radiush
-            keep={'azimuth','radiush'} 
-            )
-        #sun_img.fill(azimuth=np.pi/2+sun_img.azimuth-est_north,
-                     #radiush=sun_img.radiush)
 
+        # print sun on image coordinates
+        if VERBOSE: logger.debug(
+            "sun_img: measured sun coodinates on the image\n{}".format(sun_img))
+
+        # plot sun on image coordinates
+        if VERBOSE: logger.debug("plotting sun on image coordinates")
+        if PLOT: sun_img.plot()
+        if PLOT: plt.gcf().canvas.set_window_title("sun on image coordinates")
             
         #########################################################
         ### project real-world sun coordinates onto the image ###
@@ -362,21 +360,55 @@ class CameraCalibrationLossFunction(object):
         self.radial.parameters = estimate # set parameters for the radial model
         sun_real.radiush = self.radial.radiush(sun_real.elevation) 
 
+        # print real sun coordinates before projection
+        if VERBOSE: logger.debug(
+        "sun_img: real sun coodinates BEFORE projection\n{}".format(sun_real))
+
+        # plot real sun coordinates
+        if VERBOSE: logger.debug("plotting real sun coordinates BEFORE projection")
+        if PLOT: sun_real.plot()
+        if PLOT: plt.gcf().canvas.set_window_title(
+            "real sun coordinates BEFORE projection")
+
         # now transform/turn the real sun coordinates to the image system
-        # --> image azimuth turns the other way round, because camera looks up
+        # --> e.g. image azimuth may turn the other way round (cam looking up)
+        # azimuth_offset may have to be adjusted
+        if sun_img.azimuth_clockwise == sun_real.azimuth_clockwise:
+            # if direction matches, just use the old offset
+            new_offset = sun_real.azimuth_offset
+        else: # if not, turn the offset arount
+            new_offset = 2*np.pi-sun_real.azimuth_offset
+
+        ### First, adjust the azimuth direction to sun image coordinates ###
         sun_real.change_parameters(
             # the astronomical azimuth is not clockwise on the image
             # so 
             azimuth_clockwise=sun_img.azimuth_clockwise, 
-            # the astronomical azimuth is still 0 in the south
-            azimuth_offset=3/2*np.pi, 
+            # adjusted azimuth_offset
+            azimuth_offset=new_offset,
+            # turn by keeping azimuth and radiush
+            keep={'azimuth','radiush'} 
+            )
+        ### Second, adjust the azimuth offset to the sun image coordinates ###
+        ### and turn it in one step                                        ###
+        sun_real.change_parameters(
+            # the astronomical azimuth is not clockwise on the image
+            azimuth_offset=+sun_img.azimuth_offset+est_north, 
             # turn by keeping azimuth and radiush
             keep={'azimuth','radiush'} 
             )
 
-        logger.debug("sun_img: measured sun coodinates on the image\n{}".format(sun_img))
-        logger.debug(" ".join(["sun_real: real sun coordinates",
-            "projected onto the image\n{}"]).format(sun_real))
+        # print real sun coordinates before projection after projection
+        if VERBOSE: logger.debug(
+          "sun_img: real sun coodinates AFTER projection\n{}".format(sun_real))
+
+        # plot real sun coordinates after projection onto image
+        if VERBOSE: logger.debug("plot real sun coordinates AFTER projection")
+        if PLOT: sun_real.plot()
+        if PLOT: plt.gcf().canvas.set_window_title(
+            "real sun AFTER projection (flip+turning by {} radians)".format(
+            est_north))
+
 
         ####################################################################
         ### calculate the residual/difference between projected real and ###
@@ -396,9 +428,12 @@ class CameraCalibrationLossFunction(object):
         if res is np.ma.masked:
             raise Exception("Residual is masked. Something is wrong.")
 
-        logger.debug("residual: {res}".format(res=res))
-        logger.debug("================== end iteration =====================")
+        if VERBOSE: logger.debug("Estimate of parameters {}".format(estimate))
+        if VERBOSE: logger.debug("residual: {res}".format(res=res))
+        if VERBOSE: logger.debug(
+            "================== end iteration =====================")
 
+        if PLOT: plt.show() # show all plots
         return(res)
 
 
@@ -448,7 +483,8 @@ class CameraCalibrator(object):
         calibration = CameraCalibration(
             parameters = opt_estimate, 
             lossfunc   = lossfunc,
-            shape      = self.shape #,fit        = estimate 
+            shape      = self.shape 
+            #,fit       = estimate 
             # the fit makes problems at copying/pickling...
             )
 
@@ -476,24 +512,41 @@ class CameraCalibration(object):
         self.shape       = shape
         self.fit         = fit
 
-    def create_coordinates(self):
+    def create_coordinates(self, shape=None):
+        if shape is None: # no shape specified
+            shape = self.shape
+
+        # calculate zoom factor (new = zoom * old)
+        zoom = np.unique(np.divide(shape, self.shape))
+
+        # check if specified shape meets aspect ratio
+        if zoom.size != 1:
+            raise ValueError(" ".join([
+                "specified shape {} does not meet calibration",
+                "shape {} (aspect ratio does not fit)"]).format(
+                shape,self.shape))
+
+        logger.debug(
+            "creating new coordinates of shape {}, i.e. zoomed by {}".format(
+                shape,zoom))
+        
         # create row and col arrays
-        row, col = np.mgrid[:self.shape[0],:self.shape[1]]
+        row, col = np.mgrid[:shape[0],:shape[1]]
         # center them
-        row = self.shape[0] - row # invert, because y increases to the top
-        row = row - self.parameters.center_row
-        col = col - self.parameters.center_col
+        row = shape[0] - row # invert, because y increases to the top
+        row = ( row - self.parameters.center_row * zoom ) / zoom
+        col = ( col - self.parameters.center_col * zoom ) / zoom
 
         # create coordinates
         # these coordinates are coordinates on the image!
-        plane = coordinates.Coordinates3d(shape=self.shape)
+        plane = coordinates.Coordinates3d(shape=shape)
         plane.azimuth_offset    = self.parameters.north_angle
         plane.azimuth_clockwise = self.lossfunc.sun_img.azimuth_clockwise
         # first, take x and y as row and col to calculate the azimuth/radiush
         plane.fill(x=col,y=row) # set row and col and calculate azimuth/radiush
-    
         # now we can get the elevation based on the horizontal image radius
         elevation = self.lossfunc.radial.elevation(plane.radiush)
+        logger.debug(plane)
         # get the azimuth
         azimuth   = plane.azimuth
 
@@ -505,7 +558,7 @@ class CameraCalibration(object):
             azimuth_offset   =3/2*np.pi,
             azimuth_clockwise=True
             )
-        coords.shape = self.shape # set shape
+        coords.shape = shape # set shape
         # fill the new coordinates with the calculated elevation and azimuth
         coords.fill(elevation=elevation,azimuth=azimuth)
         # return the new coordinates

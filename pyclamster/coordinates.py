@@ -710,7 +710,7 @@ class Coordinates3d(BaseCoordinates3d):
         self._z = np.sqrt(self.radius**2 - self.radiush**2)
 
     def radiush_from_elevation_z(self):
-        self._radiush = self.z * np.arctan( self.elevation )
+        self._radiush = self.z * np.tan( self.elevation )
 
     def radiush_from_elevation_radius(self):
         self._radiush = self.radius * np.sin( self.elevation )
@@ -720,6 +720,17 @@ class Coordinates3d(BaseCoordinates3d):
     ###############################
     ### end calculation methods ###
     ###############################
+
+    ######################
+    ### string methods ###
+    ######################
+    def _str_params(self):
+        fstr = []
+        fstr.append("            shape: {}".format(self.shape))
+        fstr.append("   elevation_type: {}".format(self.elevation_type))
+        fstr.append("azimuth_clockwise: {}".format(self.azimuth_clockwise))
+        fstr.append("   azimuth_offset: {}".format(self.azimuth_offset))
+        return("\n".join(fstr))
     
     # summary when converted to string
     def __str__(self):
@@ -735,10 +746,7 @@ class Coordinates3d(BaseCoordinates3d):
         formatstring = ["==================",
                         "| 3d coordinates |",
                         "=================="]
-        formatstring.append("            shape: {}".format(self.shape))
-        formatstring.append("   elevation_type: {}".format(self.elevation_type))
-        formatstring.append("azimuth_clockwise: {}".format(self.azimuth_clockwise))
-        formatstring.append("   azimuth_offset: {}".format(self.azimuth_offset))
+        formatstring.append(self._str_params())
         formatstring.append("=====================")
         for dim in self._dim_names:
             value = getattr(self, dim)
@@ -757,3 +765,92 @@ class Coordinates3d(BaseCoordinates3d):
                 string = "empty"
             formatstring.append("{:>11}: {}".format(dim,string))
         return("\n".join(formatstring))
+
+
+    ####################
+    ### Plot methods ###
+    ####################
+    def plot(self):
+        """
+        create a matplotlib plot of the coordinates.
+        The plot has then to be shown.
+        returns:
+            plot = (unshown) matplotlib plot
+        """
+        try: # try to import matplotlib
+            import matplotlib.pyplot as plt
+        except ImportError:
+            raise NotImplementedError(" ".join([
+            "Plotting coordinates not possible because",
+            "matplotlib could not be found."]))
+
+        
+        p = plt.figure()
+
+        # all of the following is necessary to enlarge the 
+        # axis to a tiny extent, so that the points are fully visible
+        # ... unbelievable that this is not the default
+        axwidth = 1.1
+        xmin = np.nanmin(self.x)
+        ymin = np.nanmin(self.y)
+        xmax = np.nanmax(self.x)
+        ymax = np.nanmax(self.y)
+        xmean = np.mean([xmin,xmax]) 
+        ymean = np.mean([ymin,ymax]) 
+        xd = np.abs(xmax - xmin)
+        yd = np.abs(ymax - ymin)
+        xlim = [ min(0,xmean - axwidth * xd/2), max(0,xmean + axwidth * xd/2) ]
+        ylim = [ min(0,ymean - axwidth * yd/2), max(0,ymean + axwidth * yd/2) ]
+        plt.xlim(xlim)
+        plt.ylim(ylim)
+        # the axis ranges are now set... what a mess...
+
+        # equally-spaced axes
+        plt.axes().set_aspect('equal', 'datalim')
+        # x=0 and y=0
+        plt.axhline(y=0,ls='dashed',color='k')
+        plt.axvline(x=0,ls='dashed',color='k')
+        # grid
+        plt.grid(True)
+
+        # set the title
+        plt.title(self._str_params())
+
+        # show north angle
+        maxxy = 2*axwidth * np.abs(np.array([xmin,ymin,xmax,ymax])).max()
+        if self.azimuth_clockwise:
+            aox, aoy = np.cos(2*np.pi-self.azimuth_offset), \
+                       np.sin(2*np.pi-self.azimuth_offset)
+        else:
+            aox, aoy = np.cos(self.azimuth_offset),np.sin(self.azimuth_offset)
+        plt.plot((0,maxxy*aox),(0,maxxy*aoy), 'r--',linewidth=4)
+
+        # plot the points
+        plt.plot(self.x,self.y,'o')
+        for x,y,n in zip(self.x,self.y,np.arange(len(self.x))+1):
+            plt.annotate(s='',xy=(x,y),xytext=(0,0),
+                arrowprops=dict(arrowstyle='->'))
+            plt.annotate(str(n),xy=(x,y))
+
+        return p
+
+    def plot3d(self):
+        """
+        create a matplotlib 3d scatterplot of the coordinates.
+        The plot has then to be shown.
+        returns:
+            plot = (unshown) matplotlib plot
+        """
+        try: # try to import matplotlib
+            import matplotlib.pyplot as plt
+            from mpl_toolkits.mplot3d import Axes3D
+        except ImportError:
+            raise NotImplementedError(" ".join([
+            "Plotting coordinates not possible because",
+            "matplotlib could not be found."]))
+
+        
+        p = plt.figure()
+        ax = Axes3D(p)
+        ax.scatter3D(self.x,self.y,self.z)
+        return p
