@@ -57,7 +57,7 @@ warnings.filterwarnings('ignore')
 
 __version__ = ""
 
-base_folder = "/home/tfinn/Projects/pyclamster/"
+base_folder = "../../"
 image_directory = os.path.join(base_folder, "examples", "images", "wolf")
 trained_models = os.path.join(base_folder, "trained_models")
 
@@ -101,9 +101,11 @@ image = image.cut([120, 120, 360, 360])
 start = time.time()
 result = match_template(image.data, template.data, pad_input=True, mode='reflect', constant_values=0)
 result = result.mean(axis=2)
-print(time.time()-start)
-print(np.min(result), np.max(result))
-print(np.unravel_index(result.argmax(), result.shape))
+print('------ results ----')
+print('time  '+str(time.time()-start))
+print('min = '+str(np.min(result)))
+print('max = '+str(np.max(result)))
+print('best match '+str(np.unravel_index(result.argmax(), result.shape)))
 scipy.misc.imsave('matching.png', result)
     #template = template.data.data[~template.data.mask]
     #print(clouds[2].data.data)
