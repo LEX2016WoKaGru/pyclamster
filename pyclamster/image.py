@@ -260,7 +260,7 @@ class Image(object):
             self.coordinates  = copy.deepcopy(image.coordinates)
             self.zenith_pixel = copy.deepcopy(image.zenith_pixel)
             self.path         = copy.deepcopy(image.path)
-            self.image        = copy.copy(image.image) # deepcopy not possible?
+            self.data         = copy.deepcopy(image.data) 
 
             success = True
 
