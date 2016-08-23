@@ -162,7 +162,7 @@ class MaskStore(object):
             cloud_image (Cloud): Cloud instance, with only the mask based on
                 the selected labels.
         """
-        data = self.applyMask(image, labels)
+        data = self.cutMask(image, labels)
         return Cloud(data)
 
 
