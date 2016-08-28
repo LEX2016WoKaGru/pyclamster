@@ -33,8 +33,8 @@ import numpy as np
 import scipy.misc
 import scipy.ndimage
 
-from sklearn.cluster import MiniBatchKMeans
-from sklearn.preprocessing import StandardScaler
+#from sklearn.cluster import MiniBatchKMeans
+#from sklearn.preprocessing import StandardScaler
 
 from skimage.feature import match_template
 from skimage.segmentation import random_walker
@@ -57,7 +57,7 @@ warnings.filterwarnings('ignore')
 
 __version__ = ""
 
-base_folder = "/home/tfinn/Projects/pyclamster/"
+base_folder = "../../"
 image_directory = os.path.join(base_folder, "examples", "images", "wolf")
 trained_models = os.path.join(base_folder, "trained_models")
 
@@ -78,7 +78,7 @@ kmeans = pickle.load(open(os.path.join(trained_models, "kmeans.pk"), "rb"))
 image = Image(all_images[0])
 image.data = scipy.misc.imresize(image.data, 0.25, interp='bicubic')
 cutted_image = image.cut([120, 120, 360, 360])
-cutted_image.save("original.png")
+#cutted_image.save("original.png")
 image.data = LCN(size=(13,13,3), scale=False).fit_transform(image.data)
 image = image.cut([120, 120, 360, 360])
 w, h, _ = original_shape = image.data.shape
@@ -86,14 +86,17 @@ raw_image = rbDetection(image.data).reshape((w*h, -1))
 #raw_image = image.data.reshape((w*h, -1))
 label = kmeans.predict(raw_image)
 label.reshape((w, h), replace=True)
-scipy.misc.imsave("cloud.png", label.labels)
+scipy.misc.imsave("clouds_noised.png", label.labels)
 masks = label.getMaskStore()
 masks.denoise([1], 1000)
-cloud_labels, _ = masks.labelMask([1,])
-scipy.misc.imsave("labels.png", cloud_labels.labels)
-cloud_store = cloud_labels.getMaskStore()
-clouds = [cloud_store.getCloud(cutted_image, [k,]) for k in cloud_store.masks.keys()]
-template = cloud_store.cutMask(cutted_image, [1,])
+
+cloud_labels = [1,] #NOTE: list might has to be adjusted and appended to match clouds (1 label == 1 cloud)
+cloud_labels_object, _ = masks.labelMask(cloud_labels) # NOTE: there will be cloud-lables as well as 0 !!!
+scipy.misc.imsave("used_labels.png", cloud_labels_object.labels)
+cloud_store = cloud_labels_object.getMaskStore()
+clouds = [cloud_store.getCloud(cutted_image, [k,]) for k in cloud_labels] 
+template = clouds[0].data
+scipy.misc.imsave('template_cloud.png', template)
 
 image = Image(all_images[1])
 image.data = scipy.misc.imresize(image.data, 0.25, interp='bicubic')
@@ -101,9 +104,12 @@ image = image.cut([120, 120, 360, 360])
 start = time.time()
 result = match_template(image.data, template.data, pad_input=True, mode='reflect', constant_values=0)
 result = result.mean(axis=2)
-print(time.time()-start)
-print(np.min(result), np.max(result))
-print(np.unravel_index(result.argmax(), result.shape))
-scipy.misc.imsave('matching.png', result)
+print('------ results ----')
+print('time  '+str(time.time()-start))
+print('min = '+str(np.min(result)))
+print('max = '+str(np.max(result)))
+print('best match '+str(np.unravel_index(result.argmax(), result.shape)))
+image.save('original_image.png')
+scipy.misc.imsave('matching_result.png', result)
     #template = template.data.data[~template.data.mask]
     #print(clouds[2].data.data)

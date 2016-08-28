@@ -23,6 +23,7 @@ Created for pyclamster
 
 # External modules
 import numpy as np
+from skimage.feature import match_template
 
 #from skimage
 
@@ -38,21 +39,60 @@ class Matching(object):
 
     def matching(self, clouds1, clouds2, temporal=False):
         maps = [[], []]
-        best_maps = []
+        best_probs = [[], []]
         for k, c in enumerate(clouds1):
             maps[0, k] = c.merge(clouds2)[2]
+            best_probs[0,k] = maps[0,k].get_best()
         for k, c in enumerate(clouds2):
             maps[1, k] = c.merge(clouds1)[2]
+            best_probs[1,k] = [m.get_best() for m in maps[1,k]]
         # TODO Algorithm for best maps needs to be implemented
-        best_clouds = None
-        return best_clouds
+        # find best match from cloud1 clouds to cloud2 clouds
+        best_matches1 = [ np.argmax(c1) for c1 in best_probs[0]]
+        best_matches2 = [ np.argmax(c2) for c2 in best_probs[1]]
+
+        #check if every cloud got unique match
+        seen = []
+        for c in range(len(best_matches1)):
+            m = best_matches1[c]
+            if not m in seen:
+                seen.append(m)
+            else: 
+                raise('matching error: clouds not uniquely matched')
+
+        seen = []
+        for c in range(len(best_matches2)):
+            m = best_matches2[c]
+            if not m in seen:
+                seen.append(m)
+            else:
+                raise('matching error: clouds not uniquely matched')
+
+        best_clouds1 = [[ci,cmatch] for ci,cmatch in enumerate(best_matches1)]
+        best_clouds2 = [[cmatch,ci] for ci,cmatch in enumerate(best_matches2)]
+        if not sorted(best_clouds1) == sorted(best_clouds2):
+            #check if only different number of clouds
+            if len(best_clouds1) > len(best_clouds2):
+                long_list = best_clouds1
+                best_clouds = best_clouds2
+            elif len(best_clouds1) < len(best_clouds2):
+                long_list = best_clouds2
+                best_clouds = best_clouds1
+            else:
+                raise('matching error: cloud number is the same but no unique matching')
+            for m in enumerate(best_clouds):
+                if not m in long_list:
+                    raise('matching error: cloud match failed. no bijective match')
+        else: 
+            best_clouds = best_clouds1
+
+        return best_clouds # returns the indices of best matches as list of [cloud1,cloud2]
 
 
 
 class ProbabilityMapping(object):
     def __init__(self, w=None):
         self.w = w
-
     def _normalize_weights(weights):
         normalized_weights = [w/np.sum(weights) for w in weights]
         return normalized_weights
@@ -75,7 +115,7 @@ class ProbabilityMap(object):
     def __init__(self, cloud1, cloud2, w):
         self.clouds = [cloud1, cloud2]
         self.w = w
-        self.map = self._calc_map()
+        self.prop_map = self._calc_map()
 
     def __call__(self):
         return self.map
@@ -94,14 +134,27 @@ class ProbabilityMap(object):
                 possible matching point. Should have the same data shape like
                 the second cloud.
         """
-        probability_map = None
-        """
-        TODO
-        template = cloud_store.cutMask(cutted_image, [1,])
-        result = match_template(cutted_image.data, template.data, pad_input=True, mode='reflect', constant_values=0)
-        Second cloud cut has to have the same size as the first cloud cut
-        """
-        return probability_map
+        probability_map = []
+
+        main_img = np.array(self.clouds[0].data) # if mask array the mask will be dismissed
+        template = np.array(self.clouds[1].data)
+        
+        #make sure that the main_img is the bigger-cloud #NOTE assuming that the cloud img is cut as small as possible
+        if main_img.shape[0] <= template.shape[0] and main_img.shape[1] <= template.shape[1]:
+            temp = template
+            template = main_img
+            main_img = temp
+        elif (main_img.shape[0] >  template.shape[0] and main_img.shape[1] <= template.shape[1]) or\
+             (main_img.shape[0] <= template.shape[0] and main_img.shape[1] >  template.shape[1]):
+            raise('cloud propability-map error: cloud dimension missmatch (no cloud is smaller in every dimension)')
+            # TODO need algorithm to fix that 
+
+        for i in range(main_img.shape[2]):
+            propability_map.append(match_template(main_img[:,:,i], template[:,:,i],
+                                   pad_input=True, mode='reflect', constant_values=0)
+                                   *self.w[i])
+        
+        return np.sum(probability_map,0)
 
     def get_best(self):
         """
@@ -110,6 +163,7 @@ class ProbabilityMap(object):
             best (dict[float]): A dict with information about the best point
                 within the map.
         """
-        # TODO here is a method to get the best point needed
-        best = {'prob': None, 'x': None, 'y': None}
+        idx = self.prop_map.argmax()
+        xy = np.unravel_index(idx,self.prop_map.shape)
+        best = {'prob': self.prop_map[xy[0],xy[1]], 'x': xy[0], 'y': xy[1]}
         return best
