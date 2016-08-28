@@ -99,7 +99,7 @@ params_firstguess = pyclamster.CameraCalibrationParameters(
     960, # center_col
     0, # north_angle
     600 # r0
-    ,100, 50, 10 # r1, r2, r3
+    #,100, 50, 10 # r1, r2, r3
     )
 # for equidistant projection: only positive r0 is sensible
 params_firstguess.bounds[3]=(0,np.Inf)
@@ -107,8 +107,9 @@ params_firstguess.bounds[3]=(0,np.Inf)
 # create a lossfunction
 lossfunction = pyclamster.calibration.CameraCalibrationLossFunction(
     sun_img = sun_img, sun_real = sun_real,
-    #radial = pyclamster.FisheyePolynomialRadialFunction(params_firstguess,n=4)
-    radial = pyclamster.FisheyeEquidistantRadialFunction(params_firstguess)
+    #radial = pyclamster.FisheyePolynomialRadialFunction(params_firstguess,n=4),
+    radial = pyclamster.FisheyeEquidistantRadialFunction(params_firstguess),
+    optimize_projection=True
     )
 
 # create calibrator

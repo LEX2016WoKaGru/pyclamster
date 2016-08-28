@@ -288,7 +288,7 @@ class CameraCalibrationLossFunction(object):
     """
     Class to hold a lossfunction for calibration optimization
     """
-    def __init__(self, sun_img, sun_real, radial):
+    def __init__(self, sun_img, sun_real, radial, optimize_projection=True):
         """
         class constructor.
         args:
@@ -302,6 +302,9 @@ class CameraCalibrationLossFunction(object):
             radial (CameraCalibrationRadialFunction): radial distortion 
                 funciton. With the parameter estimate set and the elevation as
                 argument, return the image radius in pixel units.
+            optimize_projection (boolean): allow modification of radial
+                projection function parameters during optimization? Defaults
+                to True.
         returns:
             calibration(CameraCalibrationLossFunction)
         """
@@ -309,6 +312,7 @@ class CameraCalibrationLossFunction(object):
         self.sun_img  = sun_img
         self.sun_real = sun_real
         self.radial   = radial
+        self.optimize_projection = optimize_projection
 
     def __call__(self, estimate):
         """
@@ -320,7 +324,7 @@ class CameraCalibrationLossFunction(object):
         """
         # Development switches
         PLOT    = False # Plot coordinate transformation steps
-        VERBOSE = False # Print steps
+        VERBOSE = True # Print steps
 
         if VERBOSE: logger.debug("Estimate of parameters {}".format(estimate))
         try:    estimate = estimate.parameters
@@ -357,7 +361,8 @@ class CameraCalibrationLossFunction(object):
         #########################################################
         # approximate the horizontal radius on the image by the elevation
         # with the given radial distortion model
-        self.radial.parameters = estimate # set parameters for the radial model
+        if self.optimize_projection:
+            self.radial.parameters = estimate # set parameters for the radial model
         sun_real.radiush = self.radial.radiush(sun_real.elevation) 
 
         # print real sun coordinates before projection
@@ -455,7 +460,7 @@ class CameraCalibrator(object):
         self.method = method
         self.shape  = shape
 
-    def estimate(self, lossfunc, first_guess):
+    def estimate(self, lossfunc, first_guess, optimize_projection=True):
         """
         fit calibration parameters with respect to a lossfunction given a 
         first guess of parameters.
