@@ -41,9 +41,9 @@ warnings.filterwarnings('ignore')
 
 __version__ = "0.1"
 
-base_folder = "../../"
-image_directory = os.path.join(base_folder, "examples", "images", "wettermast")
-trained_models = os.path.join(base_folder, "trained_models")
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+image_directory = os.path.join(BASE_DIR, "examples", "images", "wettermast")
+trained_models = os.path.join(BASE_DIR, "data")
 batch_dir = None # Folder for the batch mode
 
 k_cluster = 2
@@ -103,5 +103,4 @@ if not batch_dir is None:
         print('{0:d}/{1:d}, eta {2:.1f} s'.format(
             n_batch, nb_batches, (nb_batches-n_batch)*np.mean(eta_time)))
 
-print(kmeans.algorithm.cluster_centers_)
 pickle.dump(kmeans, open(os.path.join(trained_models, "kmeans.pk"), "wb"))
