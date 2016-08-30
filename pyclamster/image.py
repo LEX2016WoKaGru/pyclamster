@@ -32,7 +32,7 @@ import numpy as np
 import scipy
 
 # Internal modules
-from . import coordinates
+from . import coordinates as coords
 from . import fisheye
 
 
@@ -65,28 +65,22 @@ class Image(object):
     def __init__(self,
                  image=None,
                  time=None,
-                 projection=None,
-                 azimuth=None,
-                 elevation=None,
-                 zenith_pixel=None
-                 ):  # TODO: fill with arguments
+                 coordinates=None
+                 ):  
         """
         args:
             image(optional[PIL.Image.Image,str/path,Image]) something to read the image from
             time(optional[datetime.datetime]) time for image
-            projection(optional[str]) projection used for image
-            azimuth(optional[numpy array]): azimuth for each pixel - shape(width,height)
-            elevation(optional[numpy array]): elevation for each pixel - shape(width,height)
-            zenith_pixel(optional[numpy array]): pixel with 0 elevation and center point for azimuth - shape(2)
+            coordinates(optional[pyclamster.coordinates.Coordinates3d]) coordinates on the image pixels
         """
 
         # set metadata
         self.time = time
-        self.projection = projection
-        self.coordinates = coordinates.Coordinates3d(
-            azimuth = azimuth, elevation = elevation
-            )
-        self.zenith_pixel = zenith_pixel
+        if isinstance(coordinates,coords.Coordinates3d):
+            self.coordinates = coordinates
+        else:
+            self.coordinates = coords.Coordinates3d()
+
         self.path = None
 
         # load the image
@@ -109,14 +103,6 @@ class Image(object):
         return getattr(self._image, key)
 
     @property
-    def projection(self):
-        return self._projection
-
-    @projection.setter
-    def projection(self, newprojection):
-        self._projection = newprojection
-
-    @property
     def time(self):
         return self._time
 
@@ -126,14 +112,6 @@ class Image(object):
             self._time = newtime
         else:
             raise ValueError("time has to be a datetime.datetime object.")
-
-    @property
-    def zenith_pixel(self):
-        return self._zenith_pixel
-
-    @zenith_pixel.setter
-    def zenith_pixel(self, newzenith_pixel):
-        self._zenith_pixel = newzenith_pixel
 
     # the image property is a wrapper around _image
     @property
@@ -210,7 +188,7 @@ class Image(object):
                 image = self
             exif = image._getexif()  # read EXIF data
             t = exif[0x9003]  # get exif ctime value
-            logger.info("EXIF ctime of image is '{}'".format(t))
+            logger.debug("EXIF ctime of image is '{}'".format(t))
             try:  # try to convert to datetime object
                 t = datetime.datetime.strptime(str(t), "%Y:%m:%d %H:%M:%S")
                 logger.debug(
@@ -256,7 +234,6 @@ class Image(object):
             self.__dict__.update(image.__dict__)
             ### copy everything by hand ###
             self.time         = copy.deepcopy(image.time)
-            self.projection   = copy.deepcopy(image.projection)
             self.coordinates  = copy.deepcopy(image.coordinates)
             self.zenith_pixel = copy.deepcopy(image.zenith_pixel)
             self.path         = copy.deepcopy(image.path)
@@ -324,28 +301,6 @@ class Image(object):
             logger.warning(
                 "time is not a datetime object. Ignoring time setting.")
 
-    def setMissingParameters(self):
-        ### set zenith pixel ###
-        if not isinstance(self.zenith_pixel, np.ndarray) \
-                and isinstance(self.data, np.ndarray):
-            self.zenith_pixel = self._calcCenter()
-
-        ### set elevation-angle per pixel ###
-        if not (isinstance(self.elevation_angle_per_pixel, float) or \
-                        isinstance(self.elevation_angle_per_pixel, int)) and \
-                isinstance(self.data, np.ndarray):
-            self.elevation_angle_per_pixel = np.pi / self.data.shape[0]
-
-    def _calcCenter(self):
-        """
-        calculates the center pixel of the image
-        
-        returns:
-            center (numpy array): center pixel of the image - shape(2)
-        """
-        center = (np.array(self.data.shape) * 0.5).astype(int)
-        return center
-
     ##########################
     ### Image manipulation ###
     ##########################
@@ -389,51 +344,6 @@ class Image(object):
 
         return cutimage
 
-    # ###################
-    # Not needed anymore!
-    # ###################
-    # def cutNeighbour(self, center, nh_size=10, offset=(0, 0)):
-    #     """
-    #     Cut out a mini image around a center with given neighbourhood size.
-    #     Args:
-    #         center (tuple[int]): The position of the center (x, y).
-    #         nh_size (int): The neighbourhood size.
-    #         offset (optional[tuple[int]]): The possible offset of the center,
-    #             due to cropped image (x,y).
-    #
-    #     Returns:
-    #         mini_image (numpy.ndarray): The cutted mini image data.
-    #     """
-    #     box = [
-    #         center[0] - nh_size + offset[0],
-    #         center[1] - nh_size + offset[1],
-    #         center[0] + nh_size + offset[0],
-    #         center[1] + nh_size + offset[1]
-    #         ]
-    #     return self.cut(box).data
-
-    def cropDegree(self, deg=45. * np.pi / 180.):
-        """
-        cut a circle around the 'center' pixel of the image
-        
-        args:
-            deg (optional[float]): max degrees of view the image should be cut to (max = 90.0 degree)
-        returns:
-            cropped_image (Image): image with circle cut out of data - data.shape(px_x * 2, px_y * 2)
-        """
-        # TODO check if given values are in bounds
-        # TODO if deg used calc px
-        # TODO check if px > self.data.shape * 0.5:  cut not possible
-        # TODO set border-values to NaN -> mask np.array
-        #     x, y = np.mgrid[:cropped_data.shape[0],:cropped_data.shape[1]]
-        #     r    = deg / 90.0 * self.data.shape[0] # if deg used
-        #  OR r    = px                              # if px  used 
-        #     mask = x**2 + y**2 < r**2
-        # TODO crop elevation
-        # TODO crop azimuth
-        # TODO add Image init variables
-        cropped_image = Image()
-        return cropped_image
 
     def applyMask(self, mask):
         """
@@ -489,15 +399,3 @@ class Image(object):
         if not inplace: # return new image if not inplace
             return image
 
-
-
-
-
-
-if __name__ == '__main__':
-    import matplotlib.pyplot as plt
-
-    img = Image(data=np.zeros((50, 50)))
-    plt.imshow(img.getAzimuth(), interpolation='none')
-    plt.colorbar()
-    plt.show()
