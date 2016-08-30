@@ -37,7 +37,7 @@ import pyclamster.image
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 r_thres = 240
-image_dir = ''
+image_dir = '/home/tfinn/Data/Cloud_camera/lex/cam3/'
 
 image_path_list = sorted(glob.glob(os.path.join(image_dir, '*.jpg')))
 print(image_path_list)
@@ -53,5 +53,6 @@ for img_path in image_path_list:
     sun_filter = skimage.morphology.remove_small_objects(sun_filter, 7)
     sun_position = scipy.ndimage.center_of_mass(sun_filter)
     sun_positions[img.time] = sun_position
+    print('{0:s} finished'.format(os.path.basename(img_path)))
 
 pickle.dump(sun_positions, open('sun_positions_cam_3.pk', mode='wb'))
