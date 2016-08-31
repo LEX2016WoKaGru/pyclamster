@@ -54,8 +54,7 @@ for img_path in image_path_list:
     sun_filter = r_ch > r_thres
     sun_filter = skimage.morphology.remove_small_objects(sun_filter, 7)
     sun_position = scipy.ndimage.center_of_mass(sun_filter)
-    sun_position = list(reversed(sun_position))
+    sun_position = [sun_position[1], sun_position[0]]
     print('{0:s} finished'.format(os.path.basename(img_path)))
 
 pickle.dump(sun_positions, open('sun_positions_cam_3.pk', mode='wb'))
-
