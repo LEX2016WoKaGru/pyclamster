@@ -25,6 +25,7 @@ import os
 import glob
 import pickle
 import time
+import warnings
 from copy import deepcopy
 
 # External modules
@@ -53,11 +54,15 @@ algorithm with an unsupervised approach.
 # TODO if it is working, check with big data and memory!
 Possible new version of k-means necessary.
 """
+warnings.catch_warnings()
+warnings.filterwarnings('ignore')
 
-directory = "./images"
+
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+img_dir = os.path.join(BASE_DIR, 'examples', 'images')
 k_cluster = 2
-patches_per_image = 1000
-hdf5_save_path = "./training.hdf5"
+patches_per_image = 5000
+hdf5_dir = os.path.join(BASE_DIR, 'data', 'training.hdf5')
 patch_size = (21, 21)
 
 concated_images = None
@@ -67,18 +72,19 @@ all_images = []
 temp_images = []
 cluster = sklearn.cluster.MiniBatchKMeans(n_clusters=k_cluster, random_state=0)
 compression_filter = tables.Filters(complevel=5, complib='blosc')
-hdf5_file = tables.open_file(hdf5_save_path, filters=compression_filter,
+hdf5_file = tables.open_file(hdf5_dir, filters=compression_filter,
                              mode="w", title="Trainings data")
 used_labels = 0
 
-all_images += glob.glob(os.path.join(directory, "wettermast", "*.jpg"))
+all_images += glob.glob(os.path.join(img_dir, "wettermast", "Image_*.jpg"))
 # print(all_images)
 
-for subdir, dirs, files in os.walk(directory):
-    temp_images += glob.glob(os.path.join(subdir, "*.jpg"))
-
-temp_images = listShuffleSplit(temp_images, 10)
-all_images = [all_images] + temp_images
+# Changed due to unnecessary images!
+# for subdir, dirs, files in os.walk(img_dir):
+#     temp_images += glob.glob(os.path.join(subdir, "*.jpg"))
+#
+# temp_images = listShuffleSplit(temp_images, 10)
+all_images = [all_images]
 
 # all_images.append(temp_images)
 for image_list in all_images:
