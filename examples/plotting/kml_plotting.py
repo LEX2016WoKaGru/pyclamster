@@ -42,7 +42,6 @@ def cloud2kml(cloud, file_path=None):
         kml_file = file_path
     else:
         kml_file = simplekml.Kml()
-    print(type(kml_file))
     multipnt = kml_file.newmultigeometry(name='Cloud 0')
     for (x, y), value in np.ndenumerate(cloud[:,:,0]):
         if value != np.NaN and x<cloud.shape[0]-1 and y<cloud.shape[1]-1:
@@ -64,28 +63,32 @@ def cloud2kml(cloud, file_path=None):
         return kml_file
 
 
-base_height = 1000
+def main(file_path):
+    base_height = 1000
 
-kml_file = simplekml.Kml()
+    kml_file = simplekml.Kml()
 
-input = np.empty((10,10,7))
-input[:,:,0] = np.linspace(11, 11.2, 10).reshape((1,10))
-input[:,:,1] = np.linspace(54.4, 54.6, 10).reshape((10,1))
-input[:,:,2] = base_height+np.random.normal(0,100,(10,10))
-input[:,:,3] = np.random.normal(128,50,(10,10))
-input[:,:,4] = np.random.normal(65,10,(10,10))
-input[:,:,5] = np.random.normal(70,10,(10,10))
-input[:,:,6] = np.random.normal(254,0.001,(10,10))
-cloud2kml(input, kml_file)
+    input = np.empty((10,10,7))
+    input[:,:,0] = np.linspace(11, 11.2, 10).reshape((1,10))
+    input[:,:,1] = np.linspace(54.4, 54.6, 10).reshape((10,1))
+    input[:,:,2] = base_height+np.random.normal(0,100,(10,10))
+    input[:,:,3] = np.random.normal(128,50,(10,10))
+    input[:,:,4] = np.random.normal(65,10,(10,10))
+    input[:,:,5] = np.random.normal(70,10,(10,10))
+    input[:,:,6] = np.random.normal(254,0.001,(10,10))
+    cloud2kml(input, kml_file)
 
-input = np.empty((10,10,7))
-input[:,:,0] = np.linspace(11.3, 11.45, 10).reshape((1,10))
-input[:,:,1] = np.linspace(54.8, 54.9, 10).reshape((10,1))
-input[:,:,2] = base_height+500+np.random.normal(0,100,(10,10))
-input[:,:,3] = np.random.normal(128,50,(10,10))
-input[:,:,4] = np.random.normal(140,10,(10,10))
-input[:,:,5] = np.random.normal(110,20,(10,10))
-input[:,:,6] = np.random.normal(128,50,(10,10))
-cloud2kml(input, kml_file)
+    input = np.empty((10,10,7))
+    input[:,:,0] = np.linspace(11.3, 11.45, 10).reshape((1,10))
+    input[:,:,1] = np.linspace(54.8, 54.9, 10).reshape((10,1))
+    input[:,:,2] = base_height+500+np.random.normal(0,100,(10,10))
+    input[:,:,3] = np.random.normal(128,50,(10,10))
+    input[:,:,4] = np.random.normal(140,10,(10,10))
+    input[:,:,5] = np.random.normal(110,20,(10,10))
+    input[:,:,6] = np.random.normal(128,50,(10,10))
+    cloud2kml(input, kml_file)
 
-kml_file.save('/home/tfinn/Desktop/test.kml')
+    kml_file.save(file_path)
+
+if __name__ == '__main__':
+    main('/home/tfinn/Desktop/test.kml')
