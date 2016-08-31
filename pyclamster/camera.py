@@ -42,13 +42,14 @@ class CameraSession(object):
     class that holds a series of images
     and camera properties
     """
-    def __init__(self, images=None):
+    def __init__(self, images=None, longitude=None, latitude=None):
         """
         class constructor
 
         args:
             images (optional[list of filepaths or glob expression]): Specification of image files to use.
                 Either a list of full filepaths or a glob expression. User directory is expanded. Defaults to None.
+            latitude,longitude (float): gps position of image in degrees
         """
         # regex to check if filename seems to be an image file
         self.imagefile_regex = re.compile("\.(jpe?g)|(gif)|(png)", re.IGNORECASE)
@@ -61,6 +62,9 @@ class CameraSession(object):
 
         # Every camera session needs a calibration
         self.calibration = None
+
+        self.longitude = longitude
+        self.latitude  = latitude
 
     def add_images(self, images ):
         """
@@ -161,7 +165,11 @@ class CameraSession(object):
         
     # make it indexable
     def __getitem__(self,key):
-        return image.Image(self.image_series[key])
+        return image.Image(
+            image = self.image_series[key],
+            longitude = self.longitude,
+            latitude  = self.latitude
+            )
 
 
 ###############

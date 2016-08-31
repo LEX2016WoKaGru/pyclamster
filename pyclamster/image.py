@@ -30,10 +30,14 @@ import copy
 import PIL.Image
 import numpy as np
 import scipy
+import scipy.ndimage
+import skimage.morphology
+import pysolar
 
 # Internal modules
 from . import coordinates as coords
 from . import fisheye
+from . import utils
 
 
 __version__ = "0.1"
@@ -65,21 +69,27 @@ class Image(object):
     def __init__(self,
                  image=None,
                  time=None,
-                 coordinates=None
+                 coordinates=None,
+                 longitude=None,
+                 latitude=None
                  ):  
         """
         args:
             image(optional[PIL.Image.Image,str/path,Image]) something to read the image from
             time(optional[datetime.datetime]) time for image
             coordinates(optional[pyclamster.coordinates.Coordinates3d]) coordinates on the image pixels
+            latitude,longitude (float): gps position of image in degrees
         """
 
         # set metadata
-        self.time = time
         if isinstance(coordinates,coords.Coordinates3d):
             self.coordinates = coordinates
         else:
             self.coordinates = coords.Coordinates3d()
+
+        self.longitude = longitude
+        self.latitude  = latitude
+        self.time      = time
 
         self.path = None
 
@@ -301,6 +311,52 @@ class Image(object):
             logger.warning(
                 "time is not a datetime object. Ignoring time setting.")
 
+    ##############################
+    ### Information extraction ###
+    ##############################
+    def getImageSunPosition(self, threshold=240, sun_greater_than=7):
+        """
+        attempt to find the sun on the image
+        args:
+            threshold (integer): threshold of red channel value to interpret 
+                as bright enough
+            sun_greater_than (integer): approx min. number of sun pixels
+            returns:
+                2-tuple of floats: (row, col)
+        """
+        data = self.data.copy()
+        data[:100, :, :]  = 0
+        data[-100:, :, :] = 0
+        data = scipy.ndimage.filters.gaussian_filter(data, 3)
+        sun_filter = data[:,:,0] > threshold
+        sun_filter = skimage.morphology.remove_small_objects(sun_filter, 7)
+        sun_position = scipy.ndimage.center_of_mass(sun_filter)
+        return sun_position
+
+    # get real-world sun elevation
+    def getRealSunElevation(self):
+        try:
+            return np.pi/2 - utils.deg2rad(pysolar.solar.get_altitude(
+            self.latitude, self.longitude, self.time))
+        except:
+            logger.error("Are latitude, longitude and time defined?")
+            raise
+        
+    # get real-world sun azimuth
+    def getRealSunAzimuth(self):
+        try:
+            azimuth = abs(pysolar.solar.get_azimuth(
+            self.latitude, self.longitude, self.time))
+            azimuth = utils.deg2rad(np.asarray(azimuth))
+            azimuth = azimuth + np.pi
+            azimuth = (azimuth + 2*np.pi) % (2*np.pi)
+            return azimuth
+        except:
+            logger.error("Are latitude, longitude and time defined?")
+            raise
+        
+        
+
     ##########################
     ### Image manipulation ###
     ##########################
@@ -343,16 +399,6 @@ class Image(object):
         cutimage.crop(box)
 
         return cutimage
-
-
-    def applyMask(self, mask):
-        """
-        args:
-            mask (numpy mask): mask to be applied
-        returns:
-            maskedimage (Image): new instance of Image class with applied mask
-        """
-        pass
 
     ######################
     ### Transformation ###
