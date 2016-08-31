@@ -22,30 +22,17 @@ Created for pyclamster
 # System modules
 import os
 import pickle
+import logging
 
 # External modules
 
 # Internal modules
-import pyclamster.calibration as pyclcalib
-import pyclamster.camera as pyclcam
+import pyclamster
 
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 
-cameras = {'cam3': pyclcam.Camera(),
-           'cam4': pyclcam.Camera()}
+logging.basicConfig(level=logging.DEBUG)
 
-with open(os.path.join(
-        BASE_DIR, 'examples', 'calibration',
-        'wolf-3-calibration.pickle'), 'rb') as fh:
-    cali = pickle.load(fh)
+session = pyclamster.CameraSession("/home/yann/Studium/LEX/LEX/cam/cam3/calibration/projection/FE3*.jpg")
 
-# Calibrate manual the two cameras
-# TODO needs a real implementation!
-calibrations = {'cam3': cali,
-                'cam4': cali}
-
-# Specific the camera calibrations and pickle the camera object.
-for cam in cameras:
-    cameras[cam].calibration = calibrations[cam]
-    with open(os.path.join(BASE_DIR, '{0:s}.pk'.format(cam)), 'wb') as fh:
-        pickle.dump(cameras[cam], fh)
+for image in session: # loop over all images
