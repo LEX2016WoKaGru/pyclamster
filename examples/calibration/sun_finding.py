@@ -36,8 +36,8 @@ import skimage.morphology
 import pyclamster.image
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
-r_thres = 240
-image_dir = '/home/tfinn/Data/Cloud_camera/lex/cam3/'
+r_thres = 220
+image_dir = '/home/tfinn/Data/Cloud_camera/lex/cam3/calibration/projection/'
 
 image_path_list = sorted(glob.glob(os.path.join(image_dir, '*.jpg')))
 print(image_path_list)
@@ -48,11 +48,14 @@ for img_path in image_path_list:
     img.loadTimefromfilename('FE3_Image_%Y%m%d_%H%M%S_UTCp1.jpg')
     img.time = img.time-datetime.timedelta(hours=1)
     img.data = scipy.ndimage.filters.gaussian_filter(img.data, 3)
+    img.data[:100, :, :] = 0
+    img.data[-100:, :, :] = 0
     r_ch = img.data[:,:,0]
     sun_filter = r_ch > r_thres
     sun_filter = skimage.morphology.remove_small_objects(sun_filter, 7)
     sun_position = scipy.ndimage.center_of_mass(sun_filter)
-    sun_positions[img.time] = sun_position
+    sun_position = list(reversed(sun_position))
     print('{0:s} finished'.format(os.path.basename(img_path)))
 
 pickle.dump(sun_positions, open('sun_positions_cam_3.pk', mode='wb'))
+
