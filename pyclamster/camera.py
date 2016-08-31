@@ -103,7 +103,6 @@ class CameraSession(object):
         # append found data to attribute
         self.image_series.extend( images )
 
-
     def _get_images_from_filelist(self, files):
         """
         get image and time series from a list of full filepaths
