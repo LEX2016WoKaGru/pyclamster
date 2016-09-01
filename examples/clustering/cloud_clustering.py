@@ -56,20 +56,21 @@ warnings.filterwarnings('ignore')
 
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
-image_directory = os.path.join(BASE_DIR, "examples", "images", "wolf")
+image_directory = os.path.join(BASE_DIR, "examples", "images", "lex", 'cam3')
 trained_models = os.path.join(BASE_DIR, "data")
 
 good_angle = 45
 center = int(1920/2)
 good_angle_dpi = int(np.round(1920 / 180 * good_angle))
 denoising_ratio = 10
-all_images = glob.glob(os.path.join(image_directory, "FE3_*.jpg"))
+all_images = glob.glob(os.path.join(image_directory, "FE3_*48*.jpg"))
 
 
 predictor = pickle.load(open(os.path.join(trained_models, "kmeans.pk"), "rb"))
 
 for image_path in all_images:
     image = Image(image_path)
+    image.cut([center - good_angle_dpi, center-good_angle_dpi, center+good_angle_dpi, center + good_angle_dpi]).save('test.jpg')
     image.data = LCN(size=(50,50,3), scale=False).fit_transform(image.data/256)
     image.data = image.data[center - good_angle_dpi:center + good_angle_dpi,
                             center - good_angle_dpi:center + good_angle_dpi]
