@@ -107,8 +107,8 @@ class CalculationMethodSet(object):
     # make it callable
     def __call__(self): # when this set is called
         for method in self.methods: # loop over all methods
-            #logger.debug("using {i} to calculate {o}".format(i=method.input,
-                #o=method.output))
+            logger.debug("using {i} to calculate {o}".format(i=method.input,
+                o=method.output))
             method() # call the method
 
 
@@ -621,7 +621,42 @@ class Coordinates3d(BaseCoordinates3d):
 
         # now fill the dependencies with all the information we have
         self.fill_dependencies(merged)
+
+    #################
+    ### operators ###
+    #################
+    def __add__(self, other):
+        if isinstance(other,type(self)):
+            newcoord = copy.deepcopy(self)
+            newcoord.fill(x=newcoord.x+other.x,y=newcoord.y-other.y,z=newcoord.z-other.z)
+            return newcoord
+        else:
+            raise TypeError('Can only add Coordinates3 class!')
         
+    def __sub__(self, other):
+        if isinstance(other,type(self)):
+            newcoord = copy.deepcopy(self)
+            newcoord.fill(x=newcoord.x-other.x,y=newcoord.y-other.y,z=newcoord.z-other.z)
+            return newcoord
+        else:
+            raise TypeError('Can only subtract Coordinates3 class!')
+
+    def __truediv__(self, other):
+        if isinstance(other,type(self)):
+            newcoord = copy.deepcopy(self)
+            newcoord.fill(x=newcoord.x/other.x,y=newcoord.y/other.y,z=newcoord.z/other.z)
+            return newcoord
+        else:
+            raise TypeError('Can only divide Coordinates3 class!')
+            
+    def __mul__(self, other):
+        if isinstance(other,type(self)):
+            newcoord = copy.deepcopy(self)
+            newcoord.fill(x=newcoord.x*other.x,y=newcoord.y*other.y,z=newcoord.z*other.z)
+            return newcoord
+        else:
+            raise TypeError('Can only multiply Coordinates3 class!')
+
     ###########################
     ### calculation methods ###
     ###########################
@@ -827,7 +862,8 @@ class Coordinates3d(BaseCoordinates3d):
 
         # plot the points
         plt.plot(self.x,self.y,'o')
-        for x,y,n in zip(self.x,self.y,np.arange(len(self.x))+1):
+        for x,y,n in zip(self.x.flatten(),self.y.flatten(),
+            np.arange(np.size(self.x))+1):
             plt.annotate(s='',xy=(x,y),xytext=(0,0),
                 arrowprops=dict(arrowstyle='->'))
             plt.annotate(str(n),xy=(x,y))
