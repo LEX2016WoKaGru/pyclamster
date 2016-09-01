@@ -72,8 +72,10 @@ m1[3,:] = azim[2][:maxlen]+nordcorr4
 m1[4,:] = elev[0][:maxlen]
 m1[5,:] = elev[2][:maxlen]
 
-m1_theo3 = Coordinates3d(azimuth=m1[2,],elevation=m1[4,])
-m1_theo4 = Coordinates3d(azimuth=m1[3,],elevation=m1[5,])
+m1_theo3 = Coordinates3d(azimuth=pyclamster.deg2rad(m1[2,]),
+    elevation=pyclamster.deg2rad(m1[4,]))
+m1_theo4 = Coordinates3d(azimuth=pyclamster.deg2rad(m1[3,]),
+    elevation=pyclamster.deg2rad(m1[5,]))
 
 maxlen = min([len(time[i]) for i in [1,3]])
 m2 = np.empty([6,maxlen])
@@ -84,5 +86,7 @@ m2[3,:] = azim[3][:maxlen]+nordcorr4
 m2[4,:] = elev[1][:maxlen]
 m2[5,:] = elev[3][:maxlen]
 
-m2_theo3 = Coordinates3d(azimuth=m2[2,],elevation=m2[4,])
-m2_theo4 = Coordinates3d(azimuth=m2[3,],elevation=m2[5,])
+m2_theo3 = Coordinates3d(azimuth=pyclamster.deg2rad(m2[2,]),
+    elevation=pyclamster.deg2rad(m2[4,]))
+m2_theo4 = Coordinates3d(azimuth=pyclamster.deg2rad(m2[5,]),
+    elevation=pyclamster.deg2rad(m2[3,]))

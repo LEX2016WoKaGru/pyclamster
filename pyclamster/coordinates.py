@@ -107,8 +107,8 @@ class CalculationMethodSet(object):
     # make it callable
     def __call__(self): # when this set is called
         for method in self.methods: # loop over all methods
-            logger.debug("using {i} to calculate {o}".format(i=method.input,
-                o=method.output))
+            #logger.debug("using {i} to calculate {o}".format(i=method.input,
+                #o=method.output))
             method() # call the method
 
 
