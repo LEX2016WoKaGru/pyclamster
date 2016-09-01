@@ -23,7 +23,6 @@ Created for pyClamster
 # External modules
 
 # Internal modules
-from .functions import *
 #from .kmeans import *
 from .preprocess import *
 

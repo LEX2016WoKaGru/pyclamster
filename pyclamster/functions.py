@@ -29,7 +29,7 @@ import scipy.ndimage
 import numpy as np
 
 # Internal modules
-from ..image import Image
+from .image import Image
 
 __version__ = "0.1"
 

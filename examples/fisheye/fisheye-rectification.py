@@ -1,14 +1,18 @@
 #!/usr/bin/env python3
+import os
 import time
 import pyclamster
 import logging
 import numpy as np
 
 logging.basicConfig(level=logging.DEBUG)
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+image_path = os.path.join(BASE_DIR, 'examples', 'images', 'wettermast',
+                          'Image_Wkm_Aktuell_2.jpg')
 
 start_time = time.time()
 # read an image
-img = pyclamster.image.Image("examples/images/wettermast/Image_Wkm_Aktuell_2.jpg")
+img = pyclamster.image.Image(image_path)
 # convert to grayscale
 img.image = img.convert("L")
 # resize image
