@@ -165,11 +165,12 @@ class CameraSession(object):
         
     # make it indexable
     def __getitem__(self,key):
-        return image.Image(
+        img = image.Image(
             image = self.image_series[key],
             longitude = self.longitude,
             latitude  = self.latitude
             )
+        return img
 
 
 ###############

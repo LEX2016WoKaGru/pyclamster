@@ -163,3 +163,4 @@ __pycache__
 *.ipynb_checkpoints/
 /examples/clustering/keras_nnet.py
 /examples/clustering/cloud_clustering_elm.py
+!/data/kmeans.pk
