@@ -27,6 +27,7 @@ import pickle
 # External modules
 import numpy as np
 import scipy.misc
+from skimage.feature import match_template
 
 # Internal modules
 import pyclamster
@@ -85,6 +86,7 @@ key_pair = [(k, times['4'].index(t)) for k, t in enumerate(times['3']) if t in t
 distmap = []
 for keys in key_pair:
     i = 0
+    clouds = []
     for k in keys:
         img = cams[i][k]
         img.resize((512, 512))
@@ -118,7 +120,7 @@ for keys in key_pair:
             img = img.applyDistortionMap(distmap[i])
         scipy.misc.imsave(
             os.path.join(plot_dir, "rectified_{0:d}_{1:d}.png".format(i, k)),
-            label.labels)
+            img.image)
         image_lcn = pyclamster.Image(img)
         image_lcn.data = LCN(size=(50, 50, 3), scale=False).fit_transform(
             image_lcn.data / 256)
@@ -129,9 +131,37 @@ for keys in key_pair:
         scipy.misc.imsave(
             os.path.join(plot_dir, "lables_kmean_{0:d}_{1:d}.png".format(i, k)),
             label.labels)
-
-
+        masks = label.getMaskStore()
+        cloud_mask_num = [0] # cloud - sky choose right number (0 or 1)
+        masks.denoise(cloud_mask_num,
+                      5000)
+        cloud_labels_object, numLabels = masks.labelMask(cloud_mask_num)
+        scipy.misc.imsave(
+            os.path.join(plot_dir, "lables_used_{0:d}_{1:d}.png".format(i, k)),
+            cloud_labels_object.labels)
+        cloud_store = cloud_labels_object.getMaskStore()
+        cloud_lables = [l + 1 for l in range(numLabels)]
+        clouds.append([cloud_store.getCloud(img, [k, ]) for k in cloud_lables])
+        j = 0
+        #print(clouds[i])
+        for cloud in clouds[i]:
+            scipy.misc.imsave(
+                os.path.join(plot_dir, 'template_cloud_{0:d}_{1:d}_{2:d}.png'.format(i, k, j)),
+                cloud.image.data)
+            j += 1
+        print('finished image {0:d} of camera {1:d}'.format(k, i))
         i += 1
+    i = 0
+    for c1 in clouds[0]:
+        j = 0
+        for c2 in clouds[1]:
+            result = match_template(c2.image.data, c1.image.data, pad_input=True,
+                                    mode='reflect', constant_values=0)
+            scipy.misc.imsave(os.path.join(plot_dir, 'cloud_matching_{0:d}_{1:d}_{2:d}.png'.format(keys[0], i, j)), result)
+            j += 1
+        i += 1
+    print('finished image pair {0:s}'.format(str(keys)))
+
 
 #
 #
@@ -140,7 +170,7 @@ for keys in key_pair:
 #     img.image = img.resize((512, 512))
 #
 #     image.data = LCN(size=(50,50,3), scale=False).fit_transform(image.data/256)
-#     raw_image = rbDetection(image.data)
+#     raw_image = rbDetection(image.data):d}
 #     w, h = original_shape = tuple(raw_image[:, :].shape)
 #     raw_image = np.reshape(raw_image, (w * h, 1))
 #     label = predictor.predict(raw_image)
