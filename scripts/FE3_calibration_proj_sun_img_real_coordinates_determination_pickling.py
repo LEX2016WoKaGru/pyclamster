@@ -27,6 +27,7 @@ import pytz,datetime
 
 # External modules
 import matplotlib.pyplot as plt
+import numpy as np
 
 # Internal modules
 import pyclamster
@@ -36,59 +37,59 @@ BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
-LON=54.4947
-LAT=11.2408
+LAT=54.4947
+LON=11.2408
 session = pyclamster.CameraSession(
     images="/home/yann/Studium/LEX/LEX/cam/cam3/calibration/projection/FE3*.jpg",
     longitude=LON,latitude=LAT
     )
 
-#imgsunxs = []
-#imgsunys = []
-#realsunazis = []
-#realsuneles = []
-#for image in session: # loop over all images
-#    # get time
-#    imgtime = image._get_time_from_filename(fmt="FE3_Image_%Y%m%d_%H%M%S_UTCp1.jpg")
-#    imgtime = pytz.utc.localize(imgtime)
-#    imgtime = imgtime - datetime.timedelta(hours=1)
-#    image.time = imgtime
-#
-#    # get sun position
-#    imgsunpos  = image.getImageSunPosition()
-#    imgsunx    = imgsunpos[1]
-#    imgsuny    = image.data.shape[0] - imgsunpos[0] # invert y axis
-#    realsunazi = image.getRealSunAzimuth()
-#    realsunele = image.getRealSunElevation()
-#
-#
-#    # print
-#    logger.debug("Path: {}".format(image.path))
-#    logger.debug("Time: {}".format(imgtime))
-#    logger.debug("ImageSunPos: {}".format(imgsunpos))
-#    logger.debug("RealSunAzi: {}".format(realsunazi))
-#    logger.debug("RealSunEle: {}".format(realsunele))
-#    
-#    #plt.imshow(image.data)
-#    #plt.scatter(x=imgsunpos[1],y=imgsunpos[0])
-#    #plt.show()
-#    #sys.stdin.read(1) # pause
-#
-#    # merge data
-#    imgsunxs.append(imgsunx)
-#    imgsunys.append(imgsuny)
-#    realsunazis.append(realsunazi)
-#    realsuneles.append(realsunele)
-#
-#    del image;gc.collect() # delete and free memory
+imgsunxs = []
+imgsunys = []
+realsunazis = []
+realsuneles = []
+for image in session: # loop over all images
+    # get time
+    imgtime = image._get_time_from_filename(fmt="FE3_Image_%Y%m%d_%H%M%S_UTCp1.jpg")
+    imgtime = pytz.utc.localize(imgtime)
+    imgtime = imgtime - datetime.timedelta(hours=1)
+    image.time = imgtime
+
+    # get sun position
+    imgsunpos  = image.getImageSunPosition()
+    imgsunx    = imgsunpos[1]
+    imgsuny    = image.data.shape[0] - imgsunpos[0] # invert y axis
+    realsunazi = image.getRealSunAzimuth()
+    realsunele = image.getRealSunElevation()
+
+
+    # print
+    logger.debug("Path: {}".format(image.path))
+    logger.debug("Time: {}".format(imgtime))
+    logger.debug("ImageSunPos: {}".format(imgsunpos))
+    logger.debug("RealSunAzi: {}".format(realsunazi))
+    logger.debug("RealSunEle: {}".format(realsunele))
+    
+    #plt.imshow(image.data)
+    #plt.scatter(x=imgsunpos[1],y=imgsunpos[0])
+    #plt.show()
+    #sys.stdin.read(1) # pause
+
+    # merge data
+    imgsunxs.append(imgsunx)
+    imgsunys.append(imgsuny)
+    realsunazis.append(realsunazi)
+    realsuneles.append(realsunele)
+
+    del image;gc.collect() # delete and free memory
 
 
 # merge information and save to files
 
 sun_img=pyclamster.Coordinates3d(x=imgsunxs,y=imgsunys,azimuth_offset=0,azimuth_clockwise=False)
 
-pickle.dump(sun_img,open("data/FE3_sun_img.pk","wb"))
+pickle.dump(sun_img,open("data/FE3_projcalib_sun_img.pk","wb"))
 
 sun_real=pyclamster.Coordinates3d(azimuth=realsunazis,elevation=realsuneles,azimuth_clockwise=True,azimuth_offset=3/2*np.pi)
 
-pickle.dump(sun_real,open("data/FE3_sun_real.pk","wb"))
+pickle.dump(sun_real,open("data/FE3_projcalib_sun_real.pk","wb"))

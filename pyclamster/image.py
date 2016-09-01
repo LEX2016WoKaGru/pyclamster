@@ -245,7 +245,6 @@ class Image(object):
             ### copy everything by hand ###
             self.time         = copy.deepcopy(image.time)
             self.coordinates  = copy.deepcopy(image.coordinates)
-            self.zenith_pixel = copy.deepcopy(image.zenith_pixel)
             self.path         = copy.deepcopy(image.path)
             self.data         = copy.deepcopy(image.data) 
 

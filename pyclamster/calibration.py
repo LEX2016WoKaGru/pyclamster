@@ -288,7 +288,8 @@ class CameraCalibrationLossFunction(object):
     """
     Class to hold a lossfunction for calibration optimization
     """
-    def __init__(self, sun_img, sun_real, radial, optimize_projection=True):
+    def __init__(self, sun_img, sun_real, radial, shape, 
+                 optimize_projection=True):
         """
         class constructor.
         args:
@@ -302,6 +303,7 @@ class CameraCalibrationLossFunction(object):
             radial (CameraCalibrationRadialFunction): radial distortion 
                 funciton. With the parameter estimate set and the elevation as
                 argument, return the image radius in pixel units.
+            shape (2-tuple of ints): shape (row,col) of image
             optimize_projection (boolean): allow modification of radial
                 projection function parameters during optimization? Defaults
                 to True.
@@ -312,6 +314,7 @@ class CameraCalibrationLossFunction(object):
         self.sun_img  = sun_img
         self.sun_real = sun_real
         self.radial   = radial
+        self.shape    = shape
         self.optimize_projection = optimize_projection
 
     def __call__(self, estimate):
@@ -329,7 +332,7 @@ class CameraCalibrationLossFunction(object):
         if VERBOSE: logger.debug("Estimate of parameters {}".format(estimate))
         try:    estimate = estimate.parameters
         except: pass
-        est_row_c, est_col_c, est_north,*radialp = estimate
+        est_thetalon, est_thetalat, est_north,*radialp = estimate
 
         # local copy of coordinates
         sun_img    = copy.deepcopy(self.sun_img) # a copy
@@ -343,8 +346,8 @@ class CameraCalibrationLossFunction(object):
         ##########################################
         # set the estimated center of the measured pixel coordinates
         sun_img.fill( 
-            x=sun_img.x-est_col_c,
-            y=sun_img.y-est_row_c
+            x=sun_img.x-self.shape[1]/2,
+            y=sun_img.y-self.shape[0]/2
             )
 
         # print sun on image coordinates
@@ -363,6 +366,7 @@ class CameraCalibrationLossFunction(object):
         # with the given radial distortion model
         if self.optimize_projection:
             self.radial.parameters = estimate # set parameters for the radial model
+        sun_real.elevation = sun_real.elevation + est_thetalat + est_thetalon
         sun_real.radiush = self.radial.radiush(sun_real.elevation) 
 
         # print real sun coordinates before projection
