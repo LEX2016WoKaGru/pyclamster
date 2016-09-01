@@ -127,6 +127,13 @@ class SpatialCloud(Cloud):
 
    # def _preprocess(self, data):
    #     return [super()._preprocess(c) for c in data]
+    def write2kml(self, kml_path):
+        """
+        Method to write the cloud data to a kml file.
+        Returns:
+
+        """
+        pass
 
     def _calc_position(self, d=100):
         """
