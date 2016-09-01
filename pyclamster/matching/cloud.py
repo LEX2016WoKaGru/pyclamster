@@ -27,7 +27,7 @@ import numpy as np
 import scipy.ndimage
 
 # Internal modules
-from .matching import ProbabilityMapping, ProbabilityMap
+from .matching import ProbabilityMap
 from ..image import Image
 from ..clustering import preprocess
 
@@ -40,7 +40,7 @@ class BaseCloud(object):
 
 
 class Cloud(BaseCloud):
-    def __init__(self, data, preprocess=[]):
+    def __init__(self, image, preprocess=[]):
         """
         This is a clustered cloud from one camera.
         Args:
@@ -55,7 +55,8 @@ class Cloud(BaseCloud):
                 Default is an empty list.
         """
         self.preprocessing = preprocess
-        self.data = data
+        self.image = image
+        self.data = self.image.data
         self.__merge_cloud_type = SpatialCloud
 
     def _preprocess(self, data):
@@ -72,7 +73,7 @@ class Cloud(BaseCloud):
         Returns:
             center (tuple[int]): The center of the cloud with (x, y) position.
         """
-        erosed_array = ~self.data.data.mask[:, :, 0]
+        erosed_array = ~self.image.data.mask[:, :, 0]
         while erosed_array.sum() != 0:
             old_array = erosed_array
             erosed_array = scipy.ndimage.binary_erosion(erosed_array)
@@ -81,59 +82,41 @@ class Cloud(BaseCloud):
                   int((np.max(ind[0]) + np.min(ind[0])) / 2))
         return center
 
-    def match(self, clouds, mapping=None, w=None):
+    def match(self, clouds, w=None):
         """
-        Method to get the matching correlation with given clouds.
-        Args:
-            clouds (list[Cloud]): The clouds to be matched with this cloud.
-            mapping (optional[Class]): The matching algorithm.
-                Default is None, so this is set in the initialization to the
-                ProbabilityMapping algorithm.
-            w (optional[list[float]]): Weights to weight the channels for the
-                matching differently.
-                Default is None, so the weights are set all to 1.
-
-        Returns:
-            prob_clouds (list[numpy array]): The probability map between this
-                and the given clouds, created.
         """
-        if mapping is None:
-            mapping = ProbabilityMapping(w=w)
-        prob_clouds = []
-        for c in clouds:
-            prob_map = mapping.calc_map(self.data, c.data)
-            prob_clouds.append(prob_map)
-        return prob_clouds
+        #TODO       
 
-    def merge(self, cloud, mapping=None, w=None):
+    def merge(self, clouds, w=None):
         """
         Method to merge cloud spatially. This method is based on a template
         matching algorithm.
         Args:
-            cloud (list[Cloud]): The clouds to be matched with this cloud.
-            mapping (optional[Class]): The matching algorithm.
-                Default is None, so this is set in the initialization to the
-                ProbabilityMapping algorithm.
+            clouds (list[Cloud]): The clouds to be matched with this cloud.
             w (optional[list[float]]): Weights to weight the channels for the
                 matching differently.
                 Default is None, so the weights are set all to 1.
 
         Returns:
+            merged_result (list[list]): list of [prob_map,matched_cloud] for every given cloud
             matched_cloud (SpatialCloud): The matched cloud with the
                 given cloud.
             prob_map (ProbabilityMap): The probability map between the two
                 clouds.
         """
-        if mapping is None:
-            mapping = ProbabilityMapping(w=w)
-        prob_map = mapping.calc_map(self.data, cloud.data)
-        #matched_cloud = self.__merge_cloud_type(*prob_map.clouds, prob_map)
-        return matched_cloud, prob_map
+        if not isinstance(clouds,list):
+            clouds = [clouds]
+        merged_result = []
+        for c in clouds:
+            prob_map = ProbabilityMap(self, c, w)
+            matched_cloud = SpatialCloud(cloud1=self, cloud2=c)
+            merged_result.append([prob_map, matched_cloud])
+        return merged_result
 
 
 class SpatialCloud(Cloud):
-    def __init__(self, cloud1, cloud2, mapping=None, preprocess=[]):
-        super().__init__([cloud1, cloud2], preprocess)
+    def __init__(self, cloud1, cloud2, preprocess=[]):
+        #super().__init__([cloud1, cloud2], preprocess)
         # if map is None:
         #     prob_map = self.data[0].merge(self.data[1])[1]
         # else:
@@ -142,8 +125,8 @@ class SpatialCloud(Cloud):
         #     self.map = map
         self.position = None
 
-    def _preprocess(self, data):
-        return [super()._preprocess(c) for c in data]
+   # def _preprocess(self, data):
+   #     return [super()._preprocess(c) for c in data]
 
     def _calc_position(self, d=100):
         """
