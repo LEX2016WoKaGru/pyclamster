@@ -140,6 +140,7 @@ class CameraSession(object):
 
         # start with empty series
         image_series = []
+        files.sort()
 
         # counters
         count_images = 0
