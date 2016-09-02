@@ -141,15 +141,15 @@ class ProbabilityMap(object):
             #print("margins dim 1 reset "+str(margins))
 
         ### useing this with weights to do every channel on it's own
-        #probability_map = []
-        #for i in range(main_img.shape[2]):
-        #    probability_map.append(match_template(main_img[:,:,i], template[:,:,i],
-        #                           pad_input=True, mode='reflect', constant_values=0)
-        #                           *self.w[i])       
-        #return np.sum(probability_map,0)
+        probability_map = []
+        for i in range(main_img.shape[2]):
+            probability_map.append(match_template(main_img[:,:,i], template[:,:,i],
+                                   pad_input=True, mode='reflect', constant_values=0)
+                                   *self.w[i])       
+        return np.sum(probability_map,0)
 
-        probability_map = match_template(main_img,template,pad_input=True,mode='reflect',constant_values=0)
-        return probability_map
+#        probability_map = match_template(main_img,template,pad_input=True,mode='reflect',constant_values=0)
+#        return probability_map
 
     def get_best(self):
         """
