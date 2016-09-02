@@ -23,13 +23,18 @@ Created for pyclamster
 # System modules
 import os, glob, re
 import datetime
-import gc
+import logging
+import pickle
 
 # External modules
-import logging
+import numpy as np
 
 # Internal modules
 from . import image
+from . import utils
+from . import calibration
+from . import fisheye
+from . import coordinates
 
 
 __version__ = "0.1"
@@ -42,7 +47,8 @@ class CameraSession(object):
     class that holds a series of images
     and camera properties
     """
-    def __init__(self, images=None, longitude=None, latitude=None):
+    def __init__(self, longitude, latitude, imgshape, smallshape, rectshape,
+        calibration=None, images=None, distmap=None):
         """
         class constructor
 
@@ -50,6 +56,13 @@ class CameraSession(object):
             images (optional[list of filepaths or glob expression]): Specification of image files to use.
                 Either a list of full filepaths or a glob expression. User directory is expanded. Defaults to None.
             latitude,longitude (float): gps position of image in degrees
+            imgshape (tuple of int): shape of images
+            smallshape (tuple of int): shape of smaller resized images
+            rectshape (tuple of int): shape of rectified images
+            calibration (optional[pyclamster.calibration.CameraCalibration]): 
+                Calibration of camera session
+            distmap (optional[pyclamster.fisheye.DistortionMap]): Distortion 
+                map
         """
         # regex to check if filename seems to be an image file
         self.imagefile_regex = re.compile("\.(jpe?g)|(gif)|(png)", re.IGNORECASE)
@@ -60,9 +73,15 @@ class CameraSession(object):
         # add images to internal series
         self.add_images( images )
 
-        # Every camera session needs a calibration
-        self.calibration = None
+        # image meta data
+        self.imgshape = imgshape
+        self.smallshape = smallshape
+        self.rectshape = rectshape
 
+        # Every camera session needs a calibration
+        self.calibration = calibration
+
+        # camera session position
         self.longitude = longitude
         self.latitude  = latitude
 
@@ -148,21 +167,6 @@ class CameraSession(object):
     ###################################################################
     ### make the CameraSession behave correct in certain situations ###
     ###################################################################
-#    # make it iterable
-#    def __iter__(self):
-#        try: del self.current # reset counter
-#        except: pass
-#        return self
-#
-#    def __next__(self):
-#        try:    self.current += 1 # try to count up
-#        except: self.current  = 0 # if that didn't work, start with 0
-#        if self.current >= len(self.methods):
-#            del self.current # reset counter
-#            raise StopIteration # stop the iteration
-#        else:
-#            return self.image_series[self.current]
-        
     # make it indexable
     def __getitem__(self,key):
         img = image.Image(
@@ -172,17 +176,77 @@ class CameraSession(object):
             )
         return img
 
+    ##############################
+    ### DistortionMap creation ###
+    ##############################
+    def createDistortionMap(self, rectshape=None, max_angle=utils.deg2rad(45)):
+        """
+        create a distortion map for rectification, set it as property and
+        return it as well.
+        
+        args:
+            rectshape (optional[tuple of int]): shape of rectified image
+            max_angle (float): maximum angle (radians) from optical axis to be
+                rectified (measured to SIDE of image, not corner)
+        returns:
+            distmap = pyclamster.fisheye.DistortionMap
+        """
+        if rectshape is None:
+            if self.rectshape is None:
+                raise TypeError("rect_shape has to be defined somehow.")
+            else:
+                rect_shape = self.rectshape
 
-###############
-### Example ###
-###############
-if __name__ == "__main__":
-    # logging setup
-    logging.basicConfig(level = logging.INFO)
+        ### Create rectified coordinates ###
+        rect_x,rect_y=np.meshgrid(
+            np.linspace(-1,1,num=rect_shape[1]),# image x coordinate goes right
+            np.linspace(1,-1,num=rect_shape[0]) # image y coordinate goes up
+            )
+        # set virtual height of layer to get azimuth and elevation
+        rect_z = 1 / np.tan(max_angle)
+        
+        rect_coord = coordinates.Coordinates3d(
+            x = rect_x, y = rect_y, z = rect_z,
+            azimuth_offset = 3/2 * np.pi,
+            azimuth_clockwise = True,
+            shape=rect_shape
+            )
 
-    # get list of images
-    #images = os.path.expanduser("~/Bilder/*.jpg")
-    images = "~/Bilder/2011-02-06-002.JPG"
+        ### create image coordinates ###
+        if isinstance(self.calibration, calibration.CameraCalibration):
+            img_coord = self.calibration.create_coordinates(self.smallshape)
+        else:
+            raise Exception("No calibration given for CameraSession.")
 
-    # create camera object
-    c = Camera( images, times = [1] ) 
+        ### calculate recfication map ###
+        logger.debug("calculating rectification map...")
+        distmap = fisheye.FisheyeProjection.distortionMap(
+            in_coord=img_coord, out_coord=rect_coord, method="nearest"
+            ,basedon="spherical")
+        logger.debug("done calculating rectification map!")
+
+        self.distmap = distmap
+        return distmap
+
+    # iterate_over_rectified_images
+    def iterate_over_rectified_images(self):
+        """
+        yield one rectified image after another
+        """
+        for imgpath in self.image_series:
+            # load image
+            img = image.Image(imgpath)
+            # resize image to smaller size
+            img.image = img.resize(self.smallshape)
+            # rectify
+            img.applyDistortionMap(self.distmap, inplace=True)
+            logger.debug("yielding rectified image '{}'".format(imgpath))
+            yield img
+        
+    # save this object to file
+    def save(self, file):
+        fh = open(file,"wb")
+        logging.debug("pickling myself to file '{}'".format(file))
+        pickle.dump(self, fh)
+        fh.close()
+            
