@@ -28,6 +28,7 @@ import pickle
 import numpy as np
 import scipy.misc
 from skimage.feature import match_template
+import matplotlib.pyplot as plt
 
 # Internal modules
 import pyclamster
@@ -46,8 +47,8 @@ plot_dir = os.path.join(BASE_DIR, 'plots')
 predictor = pickle.load(open(os.path.join(trained_models, "kmeans.pk"), "rb"))
 
 cams = []
-cams.append(pyclamster.CameraSession(images=os.path.join(image_directory, 'cam3', 'FE3*.jpg'), longitude=11.240817, latitude=54.4947))
-cams.append(pyclamster.CameraSession(images=os.path.join(image_directory, 'cam4', 'FE4*.jpg'), longitude=11.237684, latitude=54.49587))
+cams.append(pickle.load(open(os.path.join(trained_models, 'sessions', 'FE3_session.pk'), mode='rb')))
+cams.append(pickle.load(open(os.path.join(trained_models, 'sessions', 'FE4_session.pk'), mode='rb')))
 matching = pyclamster.matching.Matching()
 
 times = {'3': [], '4': []}
@@ -61,6 +62,7 @@ for img4 in cams[1]:
     times['4'].append(img4.time)
 
 key_pair = [(k, times['4'].index(t)) for k, t in enumerate(times['3']) if t in times['4']]
+t = 0
 for keys in key_pair:
     i = 0
     clouds = []
@@ -107,13 +109,25 @@ for keys in key_pair:
         pickle.dump(distmap, open(os.path.join(trained_models, 'distmap.pk'), mode='wb'))
     print(clouds)
     matching_result, _ = matching.matching(clouds[0], clouds[1])
+    t = 0
     for result in matching_result:
+        fig = plt.figure()
+        ax = plt.subplots(1,3,1)
+        ax.axis('off')
+        ax.imshow(result[1].clouds[0].image.data)
+        ax = plt.subplots(1,3,2)
+        ax.axis('off')
+        ax.imshow(result[0], cmap='BrBG')
+        ax.colorbar()
+        ax = plt.subplots(1,3,3)
+        ax.axis('off')
+        ax.imshow(result[1].clouds[1].image.data)
+        plt.tight_layout()
+        plt.savefig(os.path.join(plot_dir, 'matching_{0:s}_{1:d}.png'.format(str(keys), t)))
         spatial_cloud = result[1]
         spatial_cloud.calc_overlapping()
         spatial_cloud.calc_position(240)
-        print(spatial_cloud.position[0][0].data)
-    break
-
+        t+=1
     # i = 0
     # for c1 in clouds[0]:
     #     j = 0
