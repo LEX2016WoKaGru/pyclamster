@@ -34,7 +34,7 @@ import scipy.ndimage
 from pyclamster import Image
 from pyclamster.clustering.preprocess import LCN
 from pyclamster.clustering.kmeans import KMeans
-from pyclamster.clustering.functions import rbDetection
+from pyclamster.functions import rbDetection
 
 warnings.catch_warnings()
 warnings.filterwarnings('ignore')
