@@ -438,6 +438,9 @@ class Image(object):
                 coordinates = map.T, # map has to be transposed somehow
                 order = order
                 )
+
+        # set coordinates from DistortionMap
+        image.coordinates = map.out_coord
             
         logger.debug("done applying distortion map.")
 

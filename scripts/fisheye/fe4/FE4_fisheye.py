@@ -10,11 +10,11 @@ logging.basicConfig(level=logging.DEBUG)
 
 start_time = time.time()
 # read an image
-img = pyclamster.image.Image(os.path.join("/home/yann/Studium/LEX/LEX/cam/cam3/FE3_Image_20160829_130100_UTCp1.jpg"))
+img = pyclamster.image.Image(os.path.join("/home/yann/Studium/LEX/LEX/cam/cam4/20160901/FE4_Image_20160901_103100_UTCp1.jpg"))
 # convert to grayscale
 img.image = img.convert("L")
 # resize image
-img.image = img.resize((200,200))
+img.image = img.resize((300,300))
 
 
 ### create rectified coordinates ###
@@ -25,7 +25,7 @@ rect_x,rect_y=np.meshgrid(
     np.linspace(-20,20,num=outshape[1]),# image x coordinate goes right
     np.linspace(20,-20,num=outshape[0]) # image y coordinate goes up
     )
-rect_z = 4 # rectify for height rect_z
+rect_z = 6 # rectify for height rect_z
 
 rect_coord = pyclamster.coordinates.Coordinates3d(
     x = rect_x,
@@ -38,7 +38,7 @@ rect_coord = pyclamster.coordinates.Coordinates3d(
 
 ### create spherical coordinates of original image ###
 # read calibration of wolf-3-camera
-calibrationfile = "data/FE3-straightcal.pk"
+calibrationfile = "data/fe4/FE4_straightcal.pk"
 calibration = pickle.load(open(calibrationfile,"rb"))
 
 # get calibrated coordinates
@@ -47,7 +47,7 @@ img.coordinates.z = rect_z
 
 
 ### create rectification map ###
-distmapfile = "data/FE3-projcalib-distmap.pk"
+distmapfile = "data/fe4/FE4_projcalib_distmap.pk"
 if True and os.path.exists(distmapfile): # use distmap from file
     logging.debug("read rectifiation map from file")
     distmap = pickle.load(open(distmapfile,"rb"))
@@ -57,10 +57,12 @@ else: # calculate distmap
     distmap = pyclamster.fisheye.FisheyeProjection.distortionMap(
         in_coord=img.coordinates, out_coord=rect_coord, method="nearest"
         ,basedon="spherical")
-    distmap = pickle.dump(distmap,open(distmapfile,"wb"))
+    pickle.dump(distmap,open(distmapfile,"wb"))
 
 ### rectify image ##
 rectimage = img.applyDistortionMap(distmap)
+
+logging.debug("Time elapsed: {0:.3f} s".format(time.time()-start_time))
 
 ### plot results ###
 import matplotlib.pyplot as plt
@@ -73,7 +75,7 @@ plt.imshow(img.coordinates.radiush, interpolation="nearest")
 plt.colorbar()
 plt.subplot(3,4,3)
 plt.title("rectified r (calculated)")
-plt.imshow(rect_coord.radiush,interpolation="nearest")
+plt.imshow(rectimage.coordinates.radiush,interpolation="nearest")
 plt.colorbar()
 plt.subplot(3,4,4)
 plt.title("rectified image (calculated)")
@@ -96,19 +98,18 @@ plt.imshow(img.coordinates.y,interpolation="nearest")
 plt.colorbar()
 plt.subplot(3,4,7)
 plt.title("rectified x (fix)")
-plt.imshow(rect_coord.x,interpolation="nearest")
+plt.imshow(rectimage.coordinates.x,interpolation="nearest")
 plt.colorbar()
 plt.subplot(3,4,11)
 plt.title("rectified y (fix)")
-plt.imshow(rect_coord.y,interpolation="nearest")
+plt.imshow(rectimage.coordinates.y,interpolation="nearest")
 plt.colorbar()
 plt.subplot(3,4,8)
 plt.title("rectified elevation (calculated)")
-plt.imshow(rect_coord.elevation,interpolation="nearest")
+plt.imshow(rectimage.coordinates.elevation,interpolation="nearest")
 plt.colorbar()
 plt.subplot(3,4,12)
 plt.title("rectified azimuth (calculated)")
-plt.imshow(rect_coord.azimuth,interpolation="nearest")
+plt.imshow(rectimage.coordinates.azimuth,interpolation="nearest")
 plt.colorbar()
-logging.debug("Time elapsed: {0:.3f} s".format(time.time()-start_time))
 plt.show()

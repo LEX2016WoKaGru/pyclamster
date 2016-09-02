@@ -66,14 +66,14 @@ for image in session: # loop over all images
     # print
     logger.debug("Path: {}".format(image.path))
     logger.debug("Time: {}".format(imgtime))
-    #logger.debug("ImageSunPos: {}".format(imgsunpos))
+    logger.debug("ImageSunPos: {}".format(imgsunpos))
     logger.debug("RealSunAzi: {}".format(realsunazi))
     logger.debug("RealSunEle: {}".format(realsunele))
     
-    #plt.imshow(image.data)
-    #plt.scatter(x=imgsunpos[1],y=imgsunpos[0])
-    #plt.show()
-    #sys.stdin.read(1) # pause
+    plt.imshow(image.data)
+    plt.scatter(x=imgsunpos[1],y=imgsunpos[0])
+    plt.show()
+    sys.stdin.read(1) # pause
 
     # merge data
     imgsunxs.append(imgsunx)
