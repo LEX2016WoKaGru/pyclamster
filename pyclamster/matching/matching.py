@@ -160,7 +160,7 @@ class ProbabilityMap(object):
         """
         idx = self.prop_map.argmax()
         xy = np.unravel_index(idx,self.prop_map.shape)
-        best = {'prob': self.prop_map[xy[0],xy[1]], 'x': xy[0], 'y': xy[1]}
+        best = {'prob': self.prop_map[xy[0],xy[1]], 'point': xy}
         return best
 
     def _calc_max_boundary(self,main,temp,fact):

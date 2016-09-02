@@ -76,3 +76,28 @@ def pos_rad(x):
         radianangle = numeric
     """
     return (x%(2*np.pi)+2*np.pi)%(2*np.pi)
+
+def shift_matrix(dimbase, dimshift, rowshift, colshift):
+    NROWSHIFT = dimshift[0]
+    NROWBASE = dimbase[0]
+    NCOLSHIFT = dimshift[1]
+    NCOLBASE = dimbase[1]
+    ROWDIFF = (NROWBASE - NROWSHIFT) / 2
+    COLDIFF = (NCOLBASE - NCOLSHIFT) / 2
+    MAXROW = (NROWBASE + NROWSHIFT) / 2
+    MAXCOL = (NCOLBASE + NCOLSHIFT) / 2
+
+    if (rowshift <= -np.floor(MAXROW) or rowshift >= np.ceil(MAXROW) or
+            colshift <= -np.floor(MAXCOL) or colshift >= np.ceil(MAXCOL)):
+        return ([np.NaN]*8)  # Nur NA zurückgeben
+
+    bounds = [
+        max(0, - (rowshift + np.floor(ROWDIFF))),
+        min(NROWSHIFT, NROWSHIFT - (rowshift - np.ceil(ROWDIFF))),
+        max(0, - (colshift + np.floor(COLDIFF))),
+        min(NCOLSHIFT, NCOLSHIFT - (colshift - np.ceil(COLDIFF))),
+        max(0, (rowshift + np.floor(ROWDIFF))),
+        min(NROWBASE, NROWBASE + (rowshift - np.ceil(ROWDIFF))),
+        max(0, (colshift + np.floor(COLDIFF))),
+        min(NCOLBASE, NCOLBASE + (colshift - np.ceil(COLDIFF)))]
+    return bounds

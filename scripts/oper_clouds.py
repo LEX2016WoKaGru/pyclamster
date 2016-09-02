@@ -44,34 +44,11 @@ trained_models = os.path.join(BASE_DIR, "data")
 plot_dir = os.path.join(BASE_DIR, 'plots')
 
 predictor = pickle.load(open(os.path.join(trained_models, "kmeans.pk"), "rb"))
-fisheye = pyclamster.fisheye.FisheyeProjection("equidistant")
-### create rectified coordinates ###
-outshape=(256,256)
-rect_azimuth_offset = np.pi / 2 # north angle of rectified image
-rect_clockwise = False
-rect_x,rect_y=np.meshgrid(
-    np.linspace(-20,20,num=outshape[1]),# image x coordinate goes right
-    np.linspace(20,-20,num=outshape[0]) # image y coordinate goes up
-    )
-rect_z = 15 # rectify for height rect_z
-
-rect_coord = pyclamster.coordinates.Coordinates3d(
-    x = rect_x,
-    y = rect_y,
-    z = rect_z,
-    azimuth_offset = rect_azimuth_offset,
-    azimuth_clockwise = rect_clockwise,
-    shape=outshape
-    )
-
-
-### create spherical coordinates of original image ###
-
-
 
 cams = []
 cams.append(pyclamster.CameraSession(images=os.path.join(image_directory, 'cam3', 'FE3*.jpg'), longitude=11.240817, latitude=54.4947))
 cams.append(pyclamster.CameraSession(images=os.path.join(image_directory, 'cam4', 'FE4*.jpg'), longitude=11.237684, latitude=54.49587))
+matching = pyclamster.matching.Matching()
 
 times = {'3': [], '4': []}
 # load times
@@ -84,44 +61,11 @@ for img4 in cams[1]:
     times['4'].append(img4.time)
 
 key_pair = [(k, times['4'].index(t)) for k, t in enumerate(times['3']) if t in times['4']]
-distmap = []
 for keys in key_pair:
     i = 0
     clouds = []
     for k in keys:
         img = cams[i][k]
-        img.resize((512, 512))
-        shape = np.shape(img.data)[:2]  # shape of image
-        if i==0:
-            image_north_angle = np.pi*1/3  # north angle ON the original image
-        else:
-            image_north_angle = -np.pi/4
-        orig_azimuth_offset = np.pi / 2  # "north angle" on image coordinates
-        center = None  # center of elevation/azimuth in the image
-        maxelepos = (
-        0, int(shape[1] / 2))  # (one) position of maxium elevation
-        maxele = np.pi / 2.2  # maximum elevation on the image border, < 90° here
-        img.coordinates.azimuth_offset = orig_azimuth_offset
-        img.coordinates.azimuth_clockwise = False
-        img.coordinates.elevation = fisheye.createFisheyeElevation(
-            shape,
-            maxelepos=maxelepos,
-            maxele=maxele,
-            center=center)
-        img.coordinates.azimuth = fisheye.createAzimuth(
-            shape,
-            maxelepos=maxelepos,
-            center=center,
-            north_angle=image_north_angle,
-            clockwise=False
-        )
-        img.coordinates.z = rect_z
-        try:
-            img = img.applyDistortionMap(distmap[i])
-        except:
-            distmap.append(fisheye.distortionMap(in_coord=img.coordinates,
-                                      out_coord=rect_coord, method="nearest"))
-            img = img.applyDistortionMap(distmap[i])
         scipy.misc.imsave(
             os.path.join(plot_dir, "rectified_{0:d}_{1:d}.png".format(i, k)),
             img.image)
@@ -136,12 +80,13 @@ for keys in key_pair:
             os.path.join(plot_dir, "lables_kmean_{0:d}_{1:d}.png".format(i, k)),
             label.labels)
         masks = label.getMaskStore()
-        cloud_mask_num = [0] # cloud - sky choose right number (0 or 1)
+        cloud_mask_num = [1] # cloud - sky choose right number (0 or 1)
         masks.denoise(cloud_mask_num,
                       5000)
         cloud_labels_object, numLabels = masks.labelMask(cloud_mask_num)
         scipy.misc.imsave(
-            os.path.join(plot_dir, "lables_used_{0:d}_{1:d}.png".format(i, k)),
+            os.path.join(plot_dir, "labl"
+                                   "es_used_{0:d}_{1:d}.png".format(i, k)),
             cloud_labels_object.labels)
         cloud_store = cloud_labels_object.getMaskStore()
         cloud_lables = [l + 1 for l in range(numLabels)]
@@ -155,6 +100,20 @@ for keys in key_pair:
             j += 1
         print('finished image {0:d} of camera {1:d}'.format(k, i))
         i += 1
+    try:
+        distmap = pickle.load(
+            open(os.path.join(trained_models, 'distmap.pk'), mode='rb'))
+    except:
+        pickle.dump(distmap, open(os.path.join(trained_models, 'distmap.pk'), mode='wb'))
+    print(clouds)
+    matching_result, _ = matching.matching(clouds[0], clouds[1])
+    for result in matching_result:
+        spatial_cloud = result[1]
+        spatial_cloud.calc_overlapping()
+        spatial_cloud.calc_position(240)
+        print(spatial_cloud.position[0][0].data)
+    break
+
     # i = 0
     # for c1 in clouds[0]:
     #     j = 0
