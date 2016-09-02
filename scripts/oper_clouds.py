@@ -23,6 +23,7 @@ Created for pyclamster
 import os
 import warnings
 import pickle
+import glob
 
 # External modules
 import numpy as np
@@ -49,6 +50,10 @@ predictor = pickle.load(open(os.path.join(trained_models, "kmeans.pk"), "rb"))
 cams = []
 cams.append(pickle.load(open(os.path.join(trained_models, 'sessions', 'FE3_session.pk'), mode='rb')))
 cams.append(pickle.load(open(os.path.join(trained_models, 'sessions', 'FE4_session.pk'), mode='rb')))
+cams[0].image_series = []
+cams[1].image_series = []
+cams[0].add_images(os.path.join(image_directory, 'cam3'))
+cams[1].add_images(os.path.join(image_directory, 'cam4'))
 matching = pyclamster.matching.Matching()
 
 times = {'3': [], '4': []}
