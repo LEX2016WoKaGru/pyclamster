@@ -12,35 +12,29 @@ imgshape = (1920,1920)
 ###################################################
 ### Read times and sun positions from filenames ###
 ###################################################
-sun_real = pickle.load(open("data/FE3_straightcalib_sun_real.pk","rb"))
-sun_img  = pickle.load(open("data/FE3_straightcalib_sun_img.pk","rb"))
-
-proj_calib = pickle.load(open("data/FE3-projcal.pk","rb"))
+sun_real = pickle.load(open("data/FE3_projcalib_sun_real.pk","rb"))
+sun_img  = pickle.load(open("data/FE3_projcalib_sun_img.pk","rb"))
 
 #######################################
 ### Prepare and do the optimization ###
 #######################################
 # first guess for parameters
-#params_firstguess = pyclamster.CameraCalibrationParameters(
-#    960, # center_row
-#    960, # center_col
-#    0, # north_angle
-#    600 # r0
-#    ,100,50, 10 # r1, r2, r3
-#    )
-params_firstguess = proj_calib.parameters
-params_firstguess.center_col=960
-params_firstguess.center_row=960
-params_firstguess.north_angle=0
+params_firstguess = pyclamster.CameraCalibrationParameters(
+    0, # elevation correction
+    0, # north_angle
+    600 # r0
+    #,100,50, 10 # r1, r2, r3
+    )
 # for equidistant projection: only positive r0 is sensible
-#params_firstguess.bounds[3]=(0,np.Inf)
+params_firstguess.bounds[2]=(0,np.Inf)
 
 # create a lossfunction
 lossfunction = pyclamster.calibration.CameraCalibrationLossFunction(
     sun_img = sun_img, sun_real = sun_real,
-    radial = pyclamster.FisheyePolynomialRadialFunction(params_firstguess,n=4),
-    #radial = pyclamster.FisheyeEquidistantRadialFunction(params_firstguess),
-    optimize_projection=False
+    #radial = pyclamster.FisheyePolynomialRadialFunction(params_firstguess,n=4),
+    shape  = imgshape,
+    radial = pyclamster.FisheyeEquidistantRadialFunction(params_firstguess),
+    optimize_projection=True
     )
 
 # create calibrator
@@ -56,7 +50,7 @@ logging.debug("The optimal parameters: {}".format(calibration.parameters))
 logging.debug("The optimal residual: {}".format(calibration.lossfunc(
     calibration.parameters)))
 
-filename = "data/FE3-straightcal.pk"
+filename = "data/FE3-projcal.pk"
 logging.debug("pickling calibration to file '{}'".format(filename))
 fh = open(filename,'wb')
 pickle.dump(calibration,fh)
@@ -68,10 +62,10 @@ cal_coords.z = 1 # assume a height to see x and y
 import matplotlib.pyplot as plt
 plt.subplot(121)
 plt.title("[calibrated]\nelevation on the image [deg]")
-plt.imshow(cal_coords.elevation*360/(2*np.pi))
+plt.imshow(cal_coords.elevation*360/(2*np.pi),interpolation="nearest")
 plt.colorbar()
 plt.subplot(122)
 plt.title("[calibrated]\nazimuth on the image [deg]")
-plt.imshow(cal_coords.azimuth*360/(2*np.pi))
+plt.imshow(cal_coords.azimuth*360/(2*np.pi),interpolation="nearest")
 plt.colorbar()
 plt.show()
