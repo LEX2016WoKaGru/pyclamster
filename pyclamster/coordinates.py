@@ -805,7 +805,7 @@ class Coordinates3d(BaseCoordinates3d):
     ####################
     ### Plot methods ###
     ####################
-    def plot(self):
+    def plot(self, arrows = False, numbers=True):
         """
         create a matplotlib plot of the coordinates.
         The plot has then to be shown.
@@ -862,11 +862,15 @@ class Coordinates3d(BaseCoordinates3d):
 
         # plot the points
         plt.plot(self.x,self.y,'o')
+
+        # draw arrows
         for x,y,n in zip(self.x.flatten(),self.y.flatten(),
             np.arange(np.size(self.x))+1):
-            plt.annotate(s='',xy=(x,y),xytext=(0,0),
-                arrowprops=dict(arrowstyle='->'))
-            plt.annotate(str(n),xy=(x,y))
+            if arrows:
+                plt.annotate(s='',xy=(x,y),xytext=(0,0),
+                    arrowprops=dict(arrowstyle='->'))
+            if numbers:
+                plt.annotate(str(n),xy=(x,y))
 
         return p
 
