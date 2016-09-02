@@ -64,6 +64,7 @@ rect_coord = pyclamster.coordinates.Coordinates3d(
     shape=outshape
     )
 
+
 ### create spherical coordinates of original image ###
 
 
@@ -91,7 +92,10 @@ for keys in key_pair:
         img = cams[i][k]
         img.resize((512, 512))
         shape = np.shape(img.data)[:2]  # shape of image
-        image_north_angle = 6 * np.pi / 5  # north angle ON the original image
+        if i==0:
+            image_north_angle = np.pi*1/3  # north angle ON the original image
+        else:
+            image_north_angle = -np.pi/4
         orig_azimuth_offset = np.pi / 2  # "north angle" on image coordinates
         center = None  # center of elevation/azimuth in the image
         maxelepos = (
@@ -151,15 +155,15 @@ for keys in key_pair:
             j += 1
         print('finished image {0:d} of camera {1:d}'.format(k, i))
         i += 1
-    i = 0
-    for c1 in clouds[0]:
-        j = 0
-        for c2 in clouds[1]:
-            result = match_template(c2.image.data, c1.image.data, pad_input=True,
-                                    mode='reflect', constant_values=0)
-            scipy.misc.imsave(os.path.join(plot_dir, 'cloud_matching_{0:d}_{1:d}_{2:d}.png'.format(keys[0], i, j)), result)
-            j += 1
-        i += 1
+    # i = 0
+    # for c1 in clouds[0]:
+    #     j = 0
+    #     for c2 in clouds[1]:
+    #         result = match_template(c2.image.data, c1.image.data, pad_input=True,
+    #                                 mode='reflect', constant_values=0)
+    #         scipy.misc.imsave(os.path.join(plot_dir, 'cloud_matching_{0:d}_{1:d}_{2:d}.png'.format(keys[0], i, j)), result)
+    #         j += 1
+    #     i += 1
     print('finished image pair {0:s}'.format(str(keys)))
 
 
