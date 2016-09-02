@@ -175,6 +175,10 @@ class CameraSession(object):
             longitude = self.longitude,
             latitude  = self.latitude
             )
+        # resize image to smaller size
+        img.image = img.resize(self.smallshape)
+        # rectify
+        img.applyDistortionMap(self.distmap, inplace=True)
         return img
 
     ##############################
