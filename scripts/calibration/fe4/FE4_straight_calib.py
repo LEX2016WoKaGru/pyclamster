@@ -22,20 +22,19 @@ sun_img  = pickle.load(open("data/fe4/FE4_straightcalib_sun_img.pk","rb"))
 #######################################
 # first guess for parameters
 params_firstguess = pyclamster.CameraCalibrationParameters(
-    0, # elevation correction
-    0, # north_angle
+    960,960,
+    np.pi, # north_angle
     600 # r0
-    #,100,50, 10 # r1, r2, r3
+    ,0,0,0 # r1, r2, r3
     )
 # for equidistant projection: only positive r0 is sensible
-params_firstguess.bounds[2]=(0,np.Inf)
+params_firstguess.bounds[3]=(0,np.Inf)
 
 # create a lossfunction
 lossfunction = pyclamster.calibration.CameraCalibrationLossFunction(
     sun_img = sun_img, sun_real = sun_real,
-    #radial = pyclamster.FisheyePolynomialRadialFunction(params_firstguess,n=4),
-    radial = pyclamster.FisheyeEquidistantRadialFunction(params_firstguess),
-    shape = imgshape,
+    radial = pyclamster.FisheyePolynomialRadialFunction(params_firstguess,n=4),
+    #radial = pyclamster.FisheyeEquidistantRadialFunction(params_firstguess),
     optimize_projection=True
     )
 
@@ -59,7 +58,7 @@ pickle.dump(calibration,fh)
 fh.close()
 
 cal_coords=calibration.create_coordinates()
-cal_coords.z = 1 # assume a height to see x and y
+#cal_coords.z = 1 # assume a height to see x and y
 
 import matplotlib.pyplot as plt
 plt.subplot(121)

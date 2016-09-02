@@ -12,30 +12,29 @@ imgshape = (1920,1920)
 ###################################################
 ### Read times and sun positions from filenames ###
 ###################################################
-sun_real = pickle.load(open("data/FE3_straightcalib_sun_real.pk","rb"))
-sun_img  = pickle.load(open("data/FE3_straightcalib_sun_img.pk","rb"))
+sun_real = pickle.load(open("data/fe3/FE3_straightcalib_sun_real.pk","rb"))
+sun_img  = pickle.load(open("data/fe3/FE3_straightcalib_sun_img.pk","rb"))
 
-proj_calib = pickle.load(open("data/FE3-projcal.pk","rb"))
+#proj_calib = pickle.load(open("data/FE3-projcal.pk","rb"))
 
 #######################################
 ### Prepare and do the optimization ###
 #######################################
 # first guess for parameters
 params_firstguess = pyclamster.CameraCalibrationParameters(
-    0, # elevation correction
+    960,960,
     0, # north_angle
     600 # r0
-    #,100,50, 10 # r1, r2, r3
+    ,100,50, 10 # r1, r2, r3
     )
 # for equidistant projection: only positive r0 is sensible
-params_firstguess.bounds[2]=(0,np.Inf)
+params_firstguess.bounds[3]=(0,np.Inf)
 
 # create a lossfunction
 lossfunction = pyclamster.calibration.CameraCalibrationLossFunction(
     sun_img = sun_img, sun_real = sun_real,
-    #radial = pyclamster.FisheyePolynomialRadialFunction(params_firstguess,n=4),
-    radial = pyclamster.FisheyeEquidistantRadialFunction(params_firstguess),
-    shape = imgshape,
+    radial = pyclamster.FisheyePolynomialRadialFunction(params_firstguess,n=4),
+    #radial = pyclamster.FisheyeEquidistantRadialFunction(params_firstguess),
     optimize_projection=True
     )
 
@@ -52,14 +51,14 @@ logging.debug("The optimal parameters: {}".format(calibration.parameters))
 logging.debug("The optimal residual: {}".format(calibration.lossfunc(
     calibration.parameters)))
 
-filename = "data/FE3-straightcal.pk"
+filename = "data/fe3/FE3_straightcal.pk"
 logging.debug("pickling calibration to file '{}'".format(filename))
 fh = open(filename,'wb')
 pickle.dump(calibration,fh)
 fh.close()
 
 cal_coords=calibration.create_coordinates()
-cal_coords.z = 1 # assume a height to see x and y
+#cal_coords.z = 1 # assume a height to see x and y
 
 import matplotlib.pyplot as plt
 plt.subplot(121)

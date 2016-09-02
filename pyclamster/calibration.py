@@ -324,7 +324,12 @@ class CameraCalibrationLossFunction(object):
         """
         # Development switches
         PLOT    = False # Plot coordinate transformation steps
+        SKIPPLOT = 100  # how many steps to skip between plots
         VERBOSE = True # Print steps
+
+        # counter
+        try: self.count += 1
+        except: self.count = 1
 
         if VERBOSE: logger.debug("Estimate of parameters {}".format(estimate))
         try:    estimate = estimate.parameters
@@ -336,7 +341,7 @@ class CameraCalibrationLossFunction(object):
         sun_real   = copy.deepcopy(self.sun_real) # a copy
 
         if VERBOSE: logger.debug(
-            "================== begin iteration ====================")
+            "================== begin iteration nr {} ====================".format(self.count))
 
         ##########################################
         ### set up the image coordinate system ###
@@ -353,9 +358,14 @@ class CameraCalibrationLossFunction(object):
 
         # plot sun on image coordinates
         if VERBOSE: logger.debug("plotting sun on image coordinates")
-        if PLOT: sun_img.plot()
-        if PLOT: plt.gcf().canvas.set_window_title("sun on image coordinates")
-            
+        if PLOT and self.count % SKIPPLOT == 0: sun_img.plot()
+        if PLOT and self.count % SKIPPLOT == 0: plt.gcf().canvas.set_window_title("sun on image coordinates")
+
+        # print real sun coordinates before projection
+        if VERBOSE: logger.debug(
+        "sun_real: real sun coodinates BEFORE projection\n{}".format(sun_real))
+        # plot real sun coordinates
+
         #########################################################
         ### project real-world sun coordinates onto the image ###
         #########################################################
@@ -365,15 +375,12 @@ class CameraCalibrationLossFunction(object):
             self.radial.parameters = estimate # set parameters for the radial model
         sun_real.radiush = self.radial.radiush(sun_real.elevation) 
 
-        # print real sun coordinates before projection
-        if VERBOSE: logger.debug(
-        "sun_img: real sun coodinates BEFORE projection\n{}".format(sun_real))
+        if VERBOSE: logger.debug("plotting real sun coordinates AFTER projection but BEFORE turning")
+        if PLOT and self.count % SKIPPLOT == 0: sun_real.plot()
+        if PLOT and self.count % SKIPPLOT == 0: plt.gcf().canvas.set_window_title(
+            "real sun coordinates AFTER projection but BEFORE turning")
+            
 
-        # plot real sun coordinates
-        if VERBOSE: logger.debug("plotting real sun coordinates BEFORE projection")
-        if PLOT: sun_real.plot()
-        if PLOT: plt.gcf().canvas.set_window_title(
-            "real sun coordinates BEFORE projection")
 
         # now transform/turn the real sun coordinates to the image system
         # --> e.g. image azimuth may turn the other way round (cam looking up)
@@ -405,13 +412,14 @@ class CameraCalibrationLossFunction(object):
 
         # print real sun coordinates before projection after projection
         if VERBOSE: logger.debug(
-          "sun_img: real sun coodinates AFTER projection\n{}".format(sun_real))
+          "sun_img: real sun coodinates AFTER projection and turning\n{}".format(sun_real))
 
         # plot real sun coordinates after projection onto image
-        if VERBOSE: logger.debug("plot real sun coordinates AFTER projection")
-        if PLOT: sun_real.plot()
-        if PLOT: plt.gcf().canvas.set_window_title(
-            "real sun AFTER projection (flip+turning by {} radians)".format(
+        if VERBOSE: logger.debug("plot real sun coordinates AFTER projection and turning")
+        if PLOT and self.count % SKIPPLOT == 0: sun_real.plot()
+        if PLOT and self.count % SKIPPLOT == 0: 
+            plt.gcf().canvas.set_window_title(
+            "real sun AFTER projection and turning (flip+turning by {} radians)".format(
             est_north))
 
 
@@ -436,9 +444,9 @@ class CameraCalibrationLossFunction(object):
         if VERBOSE: logger.debug("Estimate of parameters {}".format(estimate))
         if VERBOSE: logger.debug("residual: {res}".format(res=res))
         if VERBOSE: logger.debug(
-            "================== end iteration =====================")
+            "================== end iteration nr {} =====================".format(self.count))
 
-        if PLOT: plt.show() # show all plots
+        if PLOT and self.count % SKIPPLOT == 0: plt.show() # show all plots
         return(res)
 
 

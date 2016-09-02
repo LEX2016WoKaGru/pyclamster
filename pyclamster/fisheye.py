@@ -332,7 +332,8 @@ class FisheyeProjection(object):
         logger.debug("interpolation ended!")
 
         # return the distortion map
-        return DistortionMap(map=distmap, src_shape=in_shape) 
+        return DistortionMap(map=distmap, src_shape=in_shape, 
+            out_coord=out_coord) 
 
 
 
@@ -346,18 +347,20 @@ class DistortionMap(object):
         map (array): the distortion map. If you set this, src_shape will be reset.
         src_shape (int tuple): shape of the input image used initially for the map
         out_shape (int tuple): shape of the output image when applying the map
+        out_coord (Coordinates3d): coordinates of output
     """
-    def __init__(self, map, src_shape=None):
+    def __init__(self, map, out_coord, src_shape):
         """
         constructor
 
         args:
             map (array): distortion map, shape (shape(output),dim(input)) 
-            src_shape (optional[int tuple]): shape of input image. If not
-                specified, no tests can be performed if map is applied
+            out_coord (Coordinates3d): output coordinates
+            src_shape (int tuple): shape of input image.
         """
         self.map = map
         self.src_shape = src_shape
+        self.out_coord = out_coord
 
     ##################
     ### properties ###
@@ -380,21 +383,4 @@ class DistortionMap(object):
         self._map = newmap
         self.src_shape = None
         self.out_shape = np.shape(self.map)
-
-    @property
-    def out_shape(self):
-        return self._out_shape
-
-    @out_shape.setter
-    def out_shape(self, newshape):
-        self._out_shape = newshape
-
-    @property
-    def src_shape(self):
-        return self._src_shape
-
-    @src_shape.setter
-    def src_shape(self, newshape):
-        self._src_shape = newshape
-
 
