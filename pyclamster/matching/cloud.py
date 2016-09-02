@@ -24,10 +24,12 @@ import warnings
 
 # External modules
 import numpy as np
+import scipy.misc
 import scipy.ndimage
 
 # Internal modules
 from .matching import ProbabilityMap
+from ..utils import shift_matrix
 from ..image import Image
 from ..clustering import preprocess
 
@@ -35,7 +37,7 @@ __version__ = ""
 
 
 class BaseCloud(object):
-    def __init__(self, data):
+    def __init__(self):
         pass
 
 
@@ -58,6 +60,7 @@ class Cloud(BaseCloud):
         self.image = image
         self.data = self.image.data
         self.__merge_cloud_type = SpatialCloud
+        super().__init__()
 
     def _preprocess(self, data):
         output = Image(data)
@@ -109,13 +112,13 @@ class Cloud(BaseCloud):
         merged_result = []
         for c in clouds:
             prob_map = ProbabilityMap(self, c, w)
-            matched_cloud = SpatialCloud(cloud1=self, cloud2=c)
+            matched_cloud = SpatialCloud(cloud1=self, cloud2=c, prob_map=prob_map)
             merged_result.append([prob_map, matched_cloud])
         return merged_result
 
 
 class SpatialCloud(Cloud):
-    def __init__(self, cloud1, cloud2, preprocess=[]):
+    def __init__(self, cloud1, cloud2, prob_map):
         #super().__init__([cloud1, cloud2], preprocess)
         # if map is None:
         #     prob_map = self.data[0].merge(self.data[1])[1]
@@ -123,7 +126,30 @@ class SpatialCloud(Cloud):
         #     assert isinstance(map, ProbabilityMap),\
         #         'The map is not an available map for this version.'
         #     self.map = map
+        self.clouds = [cloud1, cloud2]
+        self.prob_map = prob_map
         self.position = None
+
+    def calc_overlapping(self):
+        """
+        Method to get information of the overlapping array slices
+        Args:
+            cloud1:
+            cloud2:
+            prop_map:
+
+        Returns:
+
+        """
+        c1_data = self.clouds[0].image.data
+        c2_data = self.clouds[1].image.data
+        best_point = self.prob_map.get_best()
+        shift = [best_point['point'][0] - int(c1_data.shape[0]/2),
+                 best_point['point'][1] - int(c1_data.shape[1]/2)]
+        bounds = shift_matrix(c1_data.shape, c2_data.shape, shift[0], shift[1])
+        self.clouds[0].image = self.clouds[0].image.cut([bounds[4], bounds[6], bounds[5], bounds[7]])
+        self.clouds[1].image = self.clouds[1].image.cut([bounds[0], bounds[2], bounds[1], bounds[3]])
+        return self
 
    # def _preprocess(self, data):
    #     return [super()._preprocess(c) for c in data]
@@ -135,7 +161,7 @@ class SpatialCloud(Cloud):
         """
         pass
 
-    def _calc_position(self, d=100):
+    def calc_position(self, d=100):
         """
         Method to calculate the x, y, z position of the spatial matched cloud.
         Args:
@@ -158,14 +184,14 @@ class SpatialCloud(Cloud):
             return r*np.cos(np.pi/2-azi)
         def calc_h(Ds, ele1, ele2):
             return np.cos(ele1)*np.cos(ele2)*Ds/np.sin(ele1+ele2)
-        azi = [self.data[0].data.coordinates.azimuth, self.data[1].data.coordinates.azimuth]
-        ele = [self.data[0].data.coordinates.elevation, self.data[1].data.coordinates.elevation]
+        azi = [self.clouds[0].image.coordinates.azimuth, self.clouds[1].image.coordinates.azimuth]
+        ele = [self.clouds[0].image.coordinates.elevation, self.clouds[1].image.coordinates.elevation]
         R = [calc_radius(azi[0], azi[1]), calc_radius(azi[1], azi[0])]
         X = [calc_x(R[0], azi[0]), calc_x(R[1], azi[1])]
         Y = [calc_y(R[0], azi[0]), calc_y(R[1], azi[1])]
         H = calc_h(R[0]+R[1], ele[0], ele[1])
         # TODO check if the formulas are right.
-        return X, Y, H
+        self.position = (X, Y, H)
 
 
 class TemporalCloud(Cloud):

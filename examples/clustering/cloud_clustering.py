@@ -49,21 +49,21 @@ from pyclamster import Image, Labels
 from pyclamster.matching.cloud import Cloud, SpatialCloud
 from pyclamster.clustering.preprocess import LCN, ZCA
 from pyclamster.clustering.kmeans import KMeans
-from pyclamster.clustering.functions import localBrightness, rbDetection
+from pyclamster.functions import localBrightness, rbDetection
 
 warnings.catch_warnings()
 warnings.filterwarnings('ignore')
 
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
-image_directory = os.path.join(BASE_DIR, "examples", "images", "lex", 'cam3')
+image_directory = os.path.join(BASE_DIR, "examples", "images", 'wettermast')
 trained_models = os.path.join(BASE_DIR, "data")
 
 good_angle = 45
 center = int(1920/2)
 good_angle_dpi = int(np.round(1920 / 180 * good_angle))
 denoising_ratio = 10
-all_images = glob.glob(os.path.join(image_directory, "FE3_*48*.jpg"))
+all_images = glob.glob(os.path.join(image_directory, "Image_*.jpg"))
 
 
 predictor = pickle.load(open(os.path.join(trained_models, "kmeans.pk"), "rb"))
@@ -81,8 +81,8 @@ for image_path in all_images:
     label.reshape((960, 960), replace=True)
     scipy.misc.imsave("cloud.png", label.labels)
     masks = label.getMaskStore()
-    masks.denoise([0], 960)
-    cloud_labels, _ = masks.labelMask([0,])
+    masks.denoise([1], 960)
+    cloud_labels, _ = masks.labelMask([1,])
     scipy.misc.imsave("labels.png", cloud_labels.labels)
     scipy.misc.imshow(cloud_labels.labels)
     cloud_store = cloud_labels.getMaskStore()
