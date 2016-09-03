@@ -1,0 +1,279 @@
+% Dokumenttyp
+\documentclass[a4paper,11pt,twoside,german]{article}
+
+% Befehle für Seitenränder
+\newcommand{\largeborder}{3cm}
+\newcommand{\smallborder}{2cm}
+\newcommand{\topborder}{1cm}
+\newcommand{\bottomborder}{1cm}
+
+\usepackage[
+    left=\largeborder,
+    right=\largeborder,
+    top=\topborder,
+    bottom=\bottomborder,
+    includeheadfoot,
+    ]{geometry}
+    
+% \textwidth 16cm
+% \textheight 24cm
+%  \topmargin -15mm
+% \setlength{\oddsidemargin}{-5mm}
+% \setlength{\evensidemargin}{5mm}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Benötigte Packages %%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%% Sprache %%%
+\usepackage[ngerman]{babel}    	% damit man deutsche Dinge tun kann
+\usepackage{ziffer} % Deutsche Zahlen (kein Abstand hinterm Komma, Punkt als Tausendertrennzeichen, etc...)
+\usepackage[utf8]{inputenc}   % damit Umlaute funktionieren
+\usepackage[autostyle=true,german=quotes]{csquotes} % Anführungszeichen richtig machen
+\usepackage{blindtext} % damit man sinnlosen Text produzieren kann
+
+%%% Grafiken %%%
+\usepackage{graphicx}    % damit man Bilder einbinden kann
+\usepackage{float}    	% damit Floats da sind, wo sie hingehören
+\usepackage[font=footnotesize,labelfont=bf,skip=0pt]{caption} % Captions anpassen
+\addtolength{\intextsep}{5mm} % mehr Platz um figures und tables
+\usepackage{subcaption}
+
+
+\usepackage{amsmath}    	% damit abgefahrene mathematische Dinge in equations gehen
+\usepackage{enumitem}   % Damit Aufzählungen hübscher sind
+\usepackage{ifthen}     % Damit an if-else-Strukturen machen kann
+
+\setlength{\parindent}{0pt} % Keine Absatzeinrückung
+\usepackage{setspace} % Zeilenabstände machen können
+\linespread{1.1} % Zeilenabstand definieren
+\newcommand{\lb}{\smallbreak} % Standardmäßig \lb zur Trennung von Absätzen verwendet und hier das Kommando anpassen
+%\renewcommand{\familydefault}{\sfdefault} % Serifenlose Schrift
+
+%%% Links und Verweise %%%
+\usepackage[breaklinks]{hyperref} % Damit Links funktionieren
+\hypersetup{colorlinks=false,pdfborder={0 0 0}} % Damit die hässlichen Kästen um Links weg sind
+
+
+%%% Bibliographie %%%
+\usepackage[authoryear,round]{natbib} % Der Stil der LiteraturVERWEISE im Text
+\bibliographystyle{dcu-german-spec} % Der Stil des LiteraturVERZEICHNISSES
+%\bibliographystyle{dcu} % Der Stil des LiteraturVERZEICHNISSES
+
+
+% Makro für Bibliographie
+\newcommand{\literaturverzeichnis}[1]{
+    \renewcommand{\harvardand}{und} % ein UND statt AND bei mehreren Autoren
+    \bibliography{#1}
+    }
+
+\usepackage[nottoc,notlot,notlof]{tocbibind} % damit das Literaturverzeichnis im Inhaltsverzeichnis auftaucht, aber NICHT nummeriert wird
+% \usepackage[nottoc,numbib]{tocbibind} % damit das Literaturverzeichnis nummeriert wird und im Inhaltsverzeichnis auftaucht
+
+
+% Commands to place things on a left or right side
+% Put this before something you want to place either right (onto the NEXT EVEN page) or left (onto the NEXT ODD page)
+\newcommand{\emptypage}{\newpage\leavevmode\thispagestyle{empty}\newpage}
+\newcommand{\fillwithemptypagestillevenside}{\ifthenelse{\isodd{\thepage}}{\emptypage}{}}
+\newcommand{\fillwithemptypagestilloddside}{\ifthenelse{\isodd{\thepage}}{}{\emptypage}}
+
+\newcommand{\breaktoevenside}{\ifthenelse{\isodd{\thepage}}{\newpage}{}}
+\newcommand{\breaktooddside}{\ifthenelse{\isodd{\thepage}}{}{\newpage}}
+
+% Metadaten
+\usepackage{titling}
+\title{LEX extended abstract}
+\author{
+    Büchau, Yann Georg \\
+    \small{\texttt{64\,36\,211}}
+    \and
+    Finn, Tobias Sebastian \\
+    \small{\texttt{00\,00\,000}}
+    \and 
+    Schaper, Maximilian \\
+    \small{\texttt{00\,00\,000}}
+    }
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{document}
+\raggedbottom
+
+
+%%%%%%%%%%%%%%%%%%
+%%% Titelseite %%%
+%%%%%%%%%%%%%%%%%%
+
+\makeatletter
+\begin{titlepage}
+
+%\newgeometry{
+%    left=\smallborder,
+%    right=\smallborder,
+%    top=\topborder,
+%    bottom=\bottomborder,
+%    includeheadfoot,
+%    }
+
+
+\vspace*{\fill}
+\begin{center}
+\Large{\textbf{Lehrexkursion Fehmarn}}\\
+\large{29.08.2016 - 09.09.2016}\\
+\vspace{5mm}
+\Large{\textbf{Arbeitsgruppe\\Wolkenkamera Stereo}}\\
+\vspace{1cm}
+
+% authors
+\begin{large}
+\begin{tabular}{ccc}
+Büchau, Yann Georg & Finn, Tobias Sebastian & Schaper, Maximilian \\
+\small{\texttt{64\,36\,211}} & \small{\texttt{00\,00\,000}} & \small{\texttt{00\,00\,000}}
+\end{tabular}
+\end{large}
+
+\vspace{1cm}
+\large{Meteorologisches Institut}\\
+\large{Universität Hamburg}\\
+\vspace{1cm}
+\large{{\today}}
+\end{center}
+\vspace*{\fill}
+
+\clearpage
+% \restoregeometry
+
+
+\end{titlepage}
+\makeatother
+
+\newpage
+
+
+%%%%%%%%%%%%%%%%%%%
+%%% Kurzfassung %%%
+%%%%%%%%%%%%%%%%%%%
+\thispagestyle{empty} % Don't show page number this page
+
+\section*{Kurzfassung}
+
+Das ist der Abstract.
+\blindtext[3]
+
+\newpage
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Inhaltsverzeichnis %%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+\setcounter{page}{1} % Page counting begins here!
+
+\tableofcontents % Inhaltsverzeichnis
+\vspace*{\fill}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Abbildungsverzeichnis %%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\listoffigures % Abbildungsverzeichnis
+
+\newpage
+
+
+%%%%%%%%%%%%%%%%%%
+%%% Motivation %%%
+%%%%%%%%%%%%%%%%%%
+\section{Motivation}
+
+Stimmung, Stimmung!!!
+\blindtext[3]
+
+%\newpage
+
+%%%%%%%%%%%%%%
+%%% Geräte %%%
+%%%%%%%%%%%%%%
+\section{Geräte}
+
+Geräte. Lies \cite{abook}.
+\blindtext
+
+%\newpage % Neue Seite 
+
+%%%%%%%%%%%%%%%%%%%
+%%% Kalibration %%%
+%%%%%%%%%%%%%%%%%%%
+\section{Kalibration}
+
+Kalibration.
+\blindtext[3]
+
+%\newpage
+
+%%%%%%%%%%%%%%%%%%%%%%%
+%%% Wolkenerkennung %%%
+%%%%%%%%%%%%%%%%%%%%%%%
+\section{Wolkenerkennung}
+
+Wolkenerkennung allgemein
+\blindtext
+
+%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Wolkenklustering %%%
+%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Wolkenklusterung}
+
+\blindtext[3]
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%
+%%% Wolkenmatching %%%
+%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Wolkenwiedererkennung}
+
+Wolkenwiedererkennung.
+\blindtext[3]
+
+
+%\newpage
+
+
+%%%%%%%%%%%%%%%%%%%%%%%
+%%% Höhenbestimmung %%%
+%%%%%%%%%%%%%%%%%%%%%%%
+\section{Wolkenpositionierung}
+
+Doppelanschnitt.
+\blindtext[2]
+
+%\newpage
+
+%%%%%%%%%%%%%%%%%%%
+%%% Validierung %%%
+%%%%%%%%%%%%%%%%%%%
+\section{Validierung}
+
+Drachen und Ceilometer.
+\blindtext[3]
+
+
+%\newpage
+
+
+%%%%%%%%%%%%%
+%%% Fazit %%%
+%%%%%%%%%%%%%
+\section{Fazit}
+
+Zusammenfassung.
+\blindtext[3]
+
+%\newpage % Neue Seite
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Literaturverzeichnis %%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\literaturverzeichnis{bibliography.bib} % 
+
+
+
+\end{document}
