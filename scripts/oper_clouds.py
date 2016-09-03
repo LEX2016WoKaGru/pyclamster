@@ -28,7 +28,6 @@ import glob
 # External modules
 import numpy as np
 import scipy.misc
-from skimage.feature import match_template
 import matplotlib.pyplot as plt
 
 # Internal modules
@@ -112,27 +111,26 @@ for keys in key_pair:
             open(os.path.join(trained_models, 'distmap.pk'), mode='rb'))
     except:
         pickle.dump(distmap, open(os.path.join(trained_models, 'distmap.pk'), mode='wb'))
-    print(clouds)
-    matching_result, _ = matching.matching(clouds[0], clouds[1])
-    t = 0
-    for result in matching_result:
-        fig = plt.figure()
-        ax = plt.subplots(1,3,1)
-        ax.axis('off')
-        ax.imshow(result[1].clouds[0].image.data)
-        ax = plt.subplots(1,3,2)
-        ax.axis('off')
-        ax.imshow(result[0], cmap='BrBG')
-        ax.colorbar()
-        ax = plt.subplots(1,3,3)
-        ax.axis('off')
-        ax.imshow(result[1].clouds[1].image.data)
-        plt.tight_layout()
-        plt.savefig(os.path.join(plot_dir, 'matching_{0:s}_{1:d}.png'.format(str(keys), t)))
-        spatial_cloud = result[1]
-        spatial_cloud.calc_overlapping()
-        spatial_cloud.calc_position(240)
-        t+=1
+    if not(not clouds[0] or not clouds[1]):
+        matching_result, _ = matching.matching(clouds[0], clouds[1], min_match_prob=0.5)
+        t = 0
+        for result in matching_result:
+            fig = plt.figure()
+            ax = plt.subplot(1,3,1)
+            ax.axis('off')
+            ax.imshow(result[1].clouds[0].image.data)
+            ax = plt.subplot(1,3,2)
+            ax.axis('off')
+            ax.imshow(result[0].prop_map, interpolation='nearest')
+            ax = plt.subplot(1,3,3)
+            ax.axis('off')
+            ax.imshow(result[1].clouds[1].image.data)
+            plt.tight_layout()
+            plt.savefig(os.path.join(plot_dir, 'matching_{0:s}_{1:d}.png'.format(str(keys), t)))
+            spatial_cloud = result[1]
+            spatial_cloud.calc_overlapping()
+            spatial_cloud.calc_position(240)
+            t+=1
     # i = 0
     # for c1 in clouds[0]:
     #     j = 0
