@@ -30,8 +30,9 @@ from .coordinates import *
 from .calibration import *
 from .camera import *
 from .utils import *
+from .positioning import *
 
 __version__ = "0.1"
 
-__all__ = ["Image", "Camera", "FisheyeProjection","MaskStore"]
+__all__ = ["Image", "CameraSession", "FisheyeProjection","MaskStore"]
 
