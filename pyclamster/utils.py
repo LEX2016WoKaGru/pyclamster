@@ -172,7 +172,7 @@ class Projection(object):
         """
         pos = self.p(lon, lat)
         if coordinates:
-            pos = pyclamster.coordinates.Coordinates3d(
+            pos = coordinates.Coordinates3d(
                 x=pos[0],
                 y=pos[1],
                 azimuth_offset=3 / 2 * np.pi,
