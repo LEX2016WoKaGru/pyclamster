@@ -190,12 +190,11 @@ class SpatialCloud(Cloud):
         Method to calculate the x, y, z position of the spatial matched cloud.
         """
         self.positions = positioning.doppelanschnitt_Coordinates3d(
-            aziele1 = self.clouds[0].coordinates,
-            aziele2 = self.clouds[1].coordinates,
-            pos1    = self.clouds[0].position,
-            pos2    = self.clouds[1].position,
+            aziele1 = self.clouds[0].image.coordinates,
+            aziele2 = self.clouds[1].image.coordinates,
+            pos1    = self.clouds[0].image.position,
+            pos2    = self.clouds[1].image.position,
             )
-
 
 
 class TemporalCloud(Cloud):
