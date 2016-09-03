@@ -273,6 +273,7 @@ class CameraSession(object):
             # set coordinates
             img.coordinates = self.calibration.create_coordinates(
                 (img.data.shape[:2]))
+            img.position = self.position # set carthesian position
             logger.debug("yielding image '{}'".format(imgpath))
             yield img
         
