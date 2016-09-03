@@ -120,7 +120,7 @@ doppel2 = pyclamster.doppelanschnitt_Coordinates3d(
 
 # plot results
 ax = doppel1.plot3d(method="line")
-ax.set_zlim(0,200)
+ax.set_zlim(0,300)
 ax = doppel2.plot3d(method="line")
-ax.set_zlim(0,200)
+ax.set_zlim(0,300)
 plt.show()

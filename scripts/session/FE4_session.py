@@ -18,6 +18,8 @@ except: # if not
     session = pyclamster.CameraSession(
         longitude  = 54.49587,
         latitude   = 11.237683,
+        heightNN   = 1,
+        zone       = 32,
         imgshape   = (1920,1920),
         smallshape = (500,500),
         rectshape  = (300,300),
@@ -33,6 +35,6 @@ except: # if not
     session.save(sessionfile)
 
 # loop over all images
-for image in session.iterate_over_rectified_images():
-    filename = image._get_time_from_filename("FE4_Image_%Y%m%d_%H%M%S_UTCp1.jpg")
-    image.image.save("plots/images/fe4/{}-rect.jpg".format(filename))
+#for image in session.iterate_over_rectified_images():
+    #filename = image._get_time_from_filename("FE4_Image_%Y%m%d_%H%M%S_UTCp1.jpg")
+    #image.image.save("plots/images/fe4/{}-rect.jpg".format(filename))
