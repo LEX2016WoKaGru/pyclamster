@@ -34,6 +34,7 @@ import matplotlib.pyplot as plt
 import pyclamster
 from pyclamster.clustering.preprocess import LCN
 from pyclamster.functions import rbDetection
+import pyclamster.matching
 
 warnings.catch_warnings()
 warnings.filterwarnings('ignore')
@@ -106,11 +107,6 @@ for keys in key_pair:
             j += 1
         print('finished image {0:d} of camera {1:d}'.format(k, i))
         i += 1
-    try:
-        distmap = pickle.load(
-            open(os.path.join(trained_models, 'distmap.pk'), mode='rb'))
-    except:
-        pickle.dump(distmap, open(os.path.join(trained_models, 'distmap.pk'), mode='wb'))
     if not(not clouds[0] or not clouds[1]):
         matching_result, _ = matching.matching(clouds[0], clouds[1], min_match_prob=0.5)
         t = 0
