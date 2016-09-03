@@ -19,3 +19,7 @@ c.shape = None
 c.azimuth = np.arange(0,2*np.pi,2*np.pi/8)
 c.radiush = 1
 print(c)
+
+print("\nCoordinates after parameter changing")
+c.change_parameters(elevation_type="ground",keep={'elevation','azimuth','radiush'})
+print(c)
