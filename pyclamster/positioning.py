@@ -133,18 +133,18 @@ class Projection(object):
         # WGS84 ellipsoid
         self.p = pyproj.Proj(proj='utm', zone=zone, ellps='WGS84')
 
-    def lonlat2xy(self, lon, lat, coordinates=False):
+    def lonlat2xy(self, lon, lat, return_coordinates=False):
         """
         Method to calculate x, y coordinates from latitudes and longitudes.
         Args:
             lon (float/numpy array): Longitudes in decimal degree as array or as float.
             lat (float/numpy array): Latitudes in decimal degree as array or as float.
-            coordinates (optional[bool]): If the output coordinates should be a Coordinates3d instance. Default is False.
+            return_coordinates (optional[bool]): If the output coordinates should be a Coordinates3d instance. Default is False.
         Returns:
             pos (tuple/Coordinates3d): The x, y position as tuple or as Coordinates3d instance, depending on the coordinates argument.
         """
         pos = self.p(lon, lat)
-        if coordinates:
+        if return_coordinates:
             pos = coordinates.Coordinates3d(
                 x=pos[0],
                 y=pos[1],

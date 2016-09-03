@@ -20,6 +20,7 @@ except: # if not
         longitude  = 54.4947,
         latitude   = 11.24768,
         heightNN   = 6.0,
+        zone       = 32,
         imgshape   = (1920,1920),
         smallshape = (500,500),
         rectshape  = (300,300),

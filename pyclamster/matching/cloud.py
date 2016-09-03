@@ -33,6 +33,7 @@ from ..positioning import Projection
 from ..utils import shift_matrix, cloud2kml
 from ..image import Image
 from ..clustering import preprocess
+from .. import positioning
 
 __version__ = ""
 
@@ -174,50 +175,26 @@ class SpatialCloud(Cloud):
         pos = np.append(pos, lon, axis=2)
         pos = np.append(pos, self.positions.z, axis=2)
         colors = c1_data
-        colors[c1_label and c2_label] = (c1_data+c2_data)/2
-        colors[~c1_label and c2_label] = c2_data[c2_label]
-        colors[~c1_label and ~c2_label] = np.NaN
+        colors[np.logical_and(c1_label, c2_label)] = (c1_data[np.logical_and(c1_label, c2_label)]+c2_data[np.logical_and(c1_label, c2_label)])/2
+        colors[np.logical_and(~c1_label, c2_label)] = c2_data[np.logical_and(~c1_label, c2_label)]
+        colors[np.logical_and(~c1_label, ~c2_label)] = np.NaN
         pos = np.append(pos, colors, axis=2)
-        alpha = np.zeros_like(c1_label)
-        alpha[c1_label and c2_label] = 1
-        alpha[(c1_label or c2_label) and ~(c1_label and c2_label)] = 0.5
+        alpha = (c1_label+c2_label)/2
         pos = np.append(pos, alpha, axis=2)
         kml_file = cloud2kml(pos, self.clouds[0].time, kml_path)
         if not isinstance(kml_path, str):
             return kml_file
 
-
-    def calc_position(self, d):
+    def calc_position(self):
         """
         Method to calculate the x, y, z position of the spatial matched cloud.
-        Args:
-            d (float): Distance of the cameras in metres.
-        Returns:
-            positions (masked numpy array): The position for every matched
-                pixel of the two clouds. The mask is applied where the clouds
-                are disagreed. The position is relative to the first cloud.
-                Shape of the array: [width of c1, height of c1, 3].
-                The first channel is for the x position, the second for the y
-                and the third for the cloud height.
         """
-        def calc_radius(azi1, azi2):
-            return d*np.sin(azi1)/np.sin(np.pi-azi1-azi2)
-
-        def calc_x(r, azi):
-            return r*np.sin(np.pi/2-azi)
-
-        def calc_y(r, azi):
-            return r*np.cos(np.pi/2-azi)
-        def calc_h(Ds, ele1, ele2):
-            return np.cos(ele1)*np.cos(ele2)*Ds/np.sin(ele1+ele2)
-        azi = [self.clouds[0].image.coordinates.azimuth, self.clouds[1].image.coordinates.azimuth]
-        ele = [self.clouds[0].image.coordinates.elevation, self.clouds[1].image.coordinates.elevation]
-        R = [calc_radius(azi[0], azi[1]), calc_radius(azi[1], azi[0])]
-        X = [calc_x(R[0], azi[0]), calc_x(R[1], azi[1])]
-        Y = [calc_y(R[0], azi[0]), calc_y(R[1], azi[1])]
-        H = calc_h(R[0]+R[1], ele[0], ele[1])
-        # TODO check if the formulas are right.
-        self.positions = (X, Y, H)
+        self.positions = positioning.doppelanschnitt_Coordinates3d(
+            aziele1 = self.clouds[0].image.coordinates,
+            aziele2 = self.clouds[1].image.coordinates,
+            pos1    = self.clouds[0].image.position,
+            pos2    = self.clouds[1].image.position,
+            )
 
 
 class TemporalCloud(Cloud):
