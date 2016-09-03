@@ -68,7 +68,7 @@ class CameraSession(object):
         self.imagefile_regex = re.compile("\.(jpe?g)|(gif)|(png)", re.IGNORECASE)
 
         # start with empty image and time series
-        self.image_series = []
+        self.reset_images()
 
         # add images to internal series
         self.add_images( images )
@@ -84,6 +84,12 @@ class CameraSession(object):
         # camera session position
         self.longitude = longitude
         self.latitude  = latitude
+
+    def reset_images(self):
+        """
+        empty the list of used files
+        """
+        self.image_series = []
 
     def add_images(self, images ):
         """
