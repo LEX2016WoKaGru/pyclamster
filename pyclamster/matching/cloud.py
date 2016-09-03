@@ -29,7 +29,8 @@ import scipy.ndimage
 
 # Internal modules
 from .matching import ProbabilityMap
-from ..utils import shift_matrix, Projection, cloud2kml
+from ..positioning import Projection
+from ..utils import shift_matrix, cloud2kml
 from ..image import Image
 from ..clustering import preprocess
 
