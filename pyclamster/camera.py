@@ -35,6 +35,7 @@ from . import utils
 from . import calibration
 from . import fisheye
 from . import coordinates
+from . import positioning
 
 
 __version__ = "0.1"
@@ -48,7 +49,7 @@ class CameraSession(object):
     and camera properties
     """
     def __init__(self, longitude, latitude, heightNN, imgshape, smallshape, 
-        rectshape, calibration=None, images=None, distmap=None):
+        rectshape, zone, calibration=None, images=None, distmap=None):
         """
         class constructor
 
@@ -62,6 +63,7 @@ class CameraSession(object):
             imgshape (tuple of int): shape of images
             smallshape (tuple of int): shape of smaller resized images
             rectshape (tuple of int): shape of rectified images
+            zone (int): zone for UTM
             calibration (optional[pyclamster.calibration.CameraCalibration]): 
                 Calibration of camera session
             distmap (optional[pyclamster.fisheye.DistortionMap]): Distortion 
@@ -89,7 +91,9 @@ class CameraSession(object):
         self.latitude  = latitude
         self.heightNN  = heightNN
 
-        self.position = coordinates.Coordinates3d(z=self.heightNN,shape=1)
+        # calculate position
+        self.position = self.calculate_carthesian_coordinates(zone=zone)
+        self.position.z = heightNN
 
 
     def reset_images(self):
@@ -188,9 +192,10 @@ class CameraSession(object):
         return image_series
 
     ### projection to carthesian coordinates
-    def calculate_carthesian_coordinates(self):
-        self.position = utils.lonlat2xy(self.longitude, self.latitude
-            ,coordinates = True)
+    def calculate_carthesian_coordinates(self,zone):
+        proj = positioning.Projection(zone=zone) 
+        return proj.lonlat2xy(self.longitude, self.latitude
+            ,return_coordinates = True)
 
 
     ###################################################################
