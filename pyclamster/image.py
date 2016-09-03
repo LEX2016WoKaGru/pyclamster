@@ -71,7 +71,8 @@ class Image(object):
                  time=None,
                  coordinates=None,
                  longitude=None,
-                 latitude=None
+                 latitude=None,
+                 heightNN=None
                  ):  
         """
         args:
@@ -79,6 +80,7 @@ class Image(object):
             time(optional[datetime.datetime]) time for image
             coordinates(optional[pyclamster.coordinates.Coordinates3d]) coordinates on the image pixels
             latitude,longitude (float): gps position of image in degrees
+            heightNN (float): height in metres of NN
         """
 
         # set metadata
@@ -89,6 +91,7 @@ class Image(object):
 
         self.longitude = longitude
         self.latitude  = latitude
+        self.heightNN  = heightNN
         self.time      = time
 
         self.path = None

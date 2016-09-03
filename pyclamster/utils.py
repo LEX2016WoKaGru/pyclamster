@@ -26,7 +26,7 @@ import logging
 import numpy as np
 
 # Internal modules
-import pyclamster.coordinates
+from . import coordinates
 
 __version__ = "0.1"
 
@@ -108,15 +108,15 @@ def shift_matrix(dimbase, dimshift, rowshift, colshift):
 
 
 class Projection(object):
-    def __init__(self):
+    def __init__(self,zone):
         try:
             import pyproj
         except:
             raise ImportError('pyproj isn\'t installed yet')
 
-        # set the projection to utm within zone 32 (Hamburg, Fehmarn) and a
+        # set the projection to utm 
         # WGS84 ellipsoid
-        self.p = pyproj.Proj(proj='utm', zone=32, ellps='WGS84')
+        self.p = pyproj.Proj(proj='utm', zone=zone, ellps='WGS84')
 
     def lonlat2xy(self, lon, lat, coordinates=False):
         """
@@ -147,7 +147,7 @@ class Projection(object):
         Returns:
             pos (tuple[float/numpy array]): The longitudes and latitudes as tuple of floats or as tuple of numpy arrays if the input arguments are also a numpy array.
         """
-        if isinstance(x, pyclamster.coordinates.Coordinates3d):
+        if isinstance(x, coordinates.Coordinates3d):
             coords = x
             x = coords.x
             y = coords.y
