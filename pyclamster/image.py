@@ -80,7 +80,7 @@ class Image(object):
             time(optional[datetime.datetime]) time for image
             coordinates(optional[pyclamster.coordinates.Coordinates3d]) coordinates on the image pixels
             latitude,longitude (float): gps position of image in degrees
-            heightNN (float): height in metres of NN
+            heightNN (float): height in metres over NN
         """
 
         # set metadata
@@ -358,6 +358,10 @@ class Image(object):
             raise
         
         
+    ### projection to carthesian coordinates
+    def calculate_carthesian_coordinates(self):
+        self.position = utils.lonlat2xy(self.longitude, self.latitude
+            ,coordinates = True)
 
     ##########################
     ### Image manipulation ###

@@ -26,7 +26,7 @@ import logging
 import numpy as np
 
 # Internal modules
-import pyclamster.coordinates
+from . import coordinates
 
 __version__ = "0.1"
 
