@@ -460,7 +460,8 @@ class Coordinates3d(BaseCoordinates3d):
         self.change_parameters(
             azimuth_clockwise = azimuth_clockwise,
             azimuth_offset    = azimuth_offset,
-            elevation_type    = elevation_type )
+            elevation_type    = elevation_type
+            )
 
         # fill with given dimensions
         if dimensions:
@@ -539,7 +540,7 @@ class Coordinates3d(BaseCoordinates3d):
         for param,val in parameters.items(): # loop over new parameters
             # check value
             if param == "elevation_type":
-                elevation_types = {'zenith'}
+                elevation_types = {'zenith','ground'}
                 if not val in elevation_types:
                     raise ValueError(
                     "wrong elevation type '{e}', has to be one of {t}".format(
@@ -670,7 +671,13 @@ class Coordinates3d(BaseCoordinates3d):
         self._radius = np.sqrt(self.radiush**2 + self.z**2)
 
     def radius_from_elevation_radiush(self):
-        self._radius = self.radiush / np.sin( self.elevation )
+        if self.elevation_type == "zenith":
+            self._radius = self.radiush / np.sin( self.elevation )
+        elif self.elevation_type == "ground":
+            self._radius = self.radiush / np.cos( self.elevation )
+        else:
+            raise Exception("unknown elevation type '{}'".format(
+                self.elevation_type))
 
     def azimuth_from_xy(self):
         north = self.azimuth_offset
@@ -703,17 +710,37 @@ class Coordinates3d(BaseCoordinates3d):
         self._azimuth = azimuth
 
     def elevation_from_radiush_z(self):
-        self._elevation = np.arctan(self.radiush / self.z)
+        if self.elevation_type == "zenith":
+            self._elevation = np.arctan(self.radiush / self.z)
+        elif self.elevation_type == "ground":
+            self._elevation = np.arctan(self.z / self.radiush)
+        else:
+            raise Exception("unknown elevation type '{}'".format(
+                self.elevation_type))
 
     def elevation_from_radius_z(self):
-        self._elevation = np.arccos(self.z / self.radius)
+        if self.elevation_type == "zenith":
+            self._elevation = np.arccos(self.z / self.radius)
+        elif self.elevation_type == "ground":
+            self._elevation = np.arccos(self.radius / self.z)
+        else:
+            raise Exception("unknown elevation type '{}'".format(
+                self.elevation_type))
 
     def x_from_spherical(self):
         azimuth = self.azimuth + self.azimuth_offset
         if self.azimuth_clockwise: azimuth = 2*np.pi - azimuth
-        self._x = self.radius                          \
-            * np.sin( self.elevation )              \
-            * np.cos( azimuth )
+        if self.elevation_type == "zenith":
+            self._x = self.radius                          \
+                * np.sin( self.elevation )              \
+                * np.cos( azimuth )
+        elif self.elevation_type == "ground":
+            self._x = self.radius                          \
+                * np.cos( self.elevation )              \
+                * np.cos( azimuth )
+        else:
+            raise Exception("unknown elevation type '{}'".format(
+                self.elevation_type))
 
     def x_from_azimuth_radiush(self):
         azimuth = self.azimuth + self.azimuth_offset
@@ -723,9 +750,17 @@ class Coordinates3d(BaseCoordinates3d):
     def y_from_spherical(self):
         azimuth = self.azimuth + self.azimuth_offset
         if self.azimuth_clockwise: azimuth = 2*np.pi - azimuth
-        self._y = self.radius                              \
-            * np.sin( self.elevation )                  \
-            * np.sin( azimuth )
+        if self.elevation_type == "zenith":
+            self._y = self.radius                              \
+                * np.sin( self.elevation )                  \
+                * np.sin( azimuth )
+        elif self.elevation_type == "ground":
+            self._y = self.radius                              \
+                * np.cos( self.elevation )                  \
+                * np.sin( azimuth )
+        else:
+            raise Exception("unknown elevation type '{}'".format(
+                self.elevation_type))
 
     def y_from_azimuth_radiush(self):
         azimuth = self.azimuth + self.azimuth_offset
@@ -733,7 +768,13 @@ class Coordinates3d(BaseCoordinates3d):
         self._y = self.radiush * np.sin( azimuth )
 
     def z_from_spherical(self):
-        self._z = self.radius * np.cos( self.elevation )
+        if self.elevation_type == "zenith":
+            self._z = self.radius * np.cos( self.elevation )
+        elif self.elevation_type == "ground":
+            self._z = self.radius * np.sin( self.elevation )
+        else:
+            raise Exception("unknown elevation type '{}'".format(
+                self.elevation_type))
 
     def x_from_radiush_y(self):
         self._x = np.sqrt(self.radiush**2 - self.y**2)
@@ -745,13 +786,32 @@ class Coordinates3d(BaseCoordinates3d):
         self._z = np.sqrt(self.radius**2 - self.radiush**2)
 
     def radiush_from_elevation_z(self):
-        self._radiush = self.z * np.tan( self.elevation )
+        if self.elevation_type == "zenith":
+            self._radiush = self.z * np.tan( self.elevation )
+        elif self.elevation_type == "ground":
+            self._radiush = np.tan( self.elevation ) / self.z
+        else:
+            raise Exception("unknown elevation type '{}'".format(
+                self.elevation_type))
 
     def radiush_from_elevation_radius(self):
-        self._radiush = self.radius * np.sin( self.elevation )
+        if self.elevation_type == "zenith":
+            self._radiush = self.radius * np.sin( self.elevation )
+        elif self.elevation_type == "ground":
+            self._radiush = np.sin( self.elevation ) / self.radius
+        else:
+            raise Exception("unknown elevation type '{}'".format(
+                self.elevation_type))
 
     def elevation_from_radiusses(self):
-        self._elevation = np.arcsin( self.radiush / self.radius )
+        if self.elevation_type == "zenith":
+            self._elevation = np.arcsin( self.radiush / self.radius )
+        elif self.elevation_type == "ground":
+            self._elevation = np.arcsin( self.radius / self.radiush )
+        else:
+            raise Exception("unknown elevation type '{}'".format(
+                self.elevation_type))
+
     ###############################
     ### end calculation methods ###
     ###############################
