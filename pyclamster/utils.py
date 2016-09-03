@@ -26,7 +26,6 @@ import logging
 import numpy as np
 
 # Internal modules
-from . import coordinates
 
 __version__ = "0.1"
 
