@@ -175,28 +175,25 @@ class SpatialCloud(Cloud):
         pos = np.append(pos, lon, axis=2)
         pos = np.append(pos, self.positions.z, axis=2)
         colors = c1_data
-        colors[c1_label and c2_label] = (c1_data+c2_data)/2
-        colors[~c1_label and c2_label] = c2_data[c2_label]
-        colors[~c1_label and ~c2_label] = np.NaN
+        colors[np.logical_and(c1_label, c2_label)] = (c1_data[np.logical_and(c1_label, c2_label)]+c2_data[np.logical_and(c1_label, c2_label)])/2
+        colors[np.logical_and(~c1_label, c2_label)] = c2_data[np.logical_and(~c1_label, c2_label)]
+        colors[np.logical_and(~c1_label, ~c2_label)] = np.NaN
         pos = np.append(pos, colors, axis=2)
-        alpha = np.zeros_like(c1_label)
-        alpha[c1_label and c2_label] = 1
-        alpha[(c1_label or c2_label) and ~(c1_label and c2_label)] = 0.5
+        alpha = (c1_label+c2_label)/2
         pos = np.append(pos, alpha, axis=2)
         kml_file = cloud2kml(pos, self.clouds[0].time, kml_path)
         if not isinstance(kml_path, str):
             return kml_file
-
 
     def calc_position(self):
         """
         Method to calculate the x, y, z position of the spatial matched cloud.
         """
         self.positions = positioning.doppelanschnitt_Coordinates3d(
-            aziele1 = clouds[0].coordinates,
-            aziele2 = clouds[1].coordinates,
-            pos1    = clouds[0].position,
-            pos2    = clouds[1].position,
+            aziele1 = self.clouds[0].coordinates,
+            aziele2 = self.clouds[1].coordinates,
+            pos1    = self.clouds[0].position,
+            pos2    = self.clouds[1].position,
             )
 
 
