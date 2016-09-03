@@ -163,7 +163,7 @@ class MaskStore(object):
                 the selected labels.
         """
         data = self.cutMask(image, labels)
-        return Cloud(data)
+        return Cloud(data, label=~self.getMask(labels))
 
 
     def applyMask(self, image, labels=None, fill_value=None, replace=True):

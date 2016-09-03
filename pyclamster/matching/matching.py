@@ -25,10 +25,10 @@ Created for pyclamster
 import numpy as np
 from skimage.feature import match_template
 
-#from skimage
+# from skimage
 
 # Internal modules
-#from pyclamster.matching.cloud import SpatialCloud, TemporalCloud
+# from pyclamster.matching.cloud import SpatialCloud, TemporalCloud
 
 __version__ = "0.1"
 
@@ -39,10 +39,11 @@ class Matching(object):
     Args:
         w(list[float]): weights used for the given channels (max value 1, dim = cloud.data.shape[2])
     """
+
     def __init__(self, w=None):
         self.w = w
 
-    def matching(self, clouds1, clouds2,min_match_prob=0.75):
+    def matching(self, clouds1, clouds2, min_match_prob=0.75):
         """
         matching to lists of clouds together by creating a ProbabilityMap to compare clouds
         Args:
@@ -53,47 +54,60 @@ class Matching(object):
             matched_clouds ():
             matched_idx (list[list[int,int]]): list of matched cloud indicees (clouds1_idx,clouds2_idx)
         """
-        mergedC    = [[],[]]
-        best_probs = [[],[]]
-        best_dicts = [[],[]]
-        best_match = [[],[]]
+        mergedC = [[], []]
+        best_probs = [[], []]
+        best_dicts = [[], []]
+        best_match = [[], []]
         matched_clouds = []
-        matched_idx = [[-1,-1]]
+        matched_idx = [[-1, -1]]
         for idx_c1, c in enumerate(clouds1):
             # merge one cloud1 with all clouds2(= PropabilityMap)
-            mergedC[0].append(c.merge(clouds2,self.w))
+            mergedC[0].append(c.merge(clouds2, self.w))
             # get best matching points out of matches(= dict)
-            best_dicts[0].append([mergedC[0][idx_c1][idx_c2][0].get_best() for idx_c2 in range(len(clouds2))])
+            best_dicts[0].append(
+                [mergedC[0][idx_c1][idx_c2][0].get_best() for idx_c2 in
+                 range(len(clouds2))])
             # get probabilities out of dicts (= float)
-            best_probs[0].append([best_dicts[0][idx_c1][idx_c2]['prob'] for idx_c2 in range(len(clouds2))])
+            best_probs[0].append(
+                [best_dicts[0][idx_c1][idx_c2]['prob'] for idx_c2 in
+                 range(len(clouds2))])
             # get cloud2 idx for highest percentage (= int)
             bm = np.argmax(best_probs[0][idx_c1])
             # store matched cloud1 -> cloud2 if probability higher than 'min_match_prob'
-            print(str(best_dicts[0][idx_c1][bm]['prob'])+' > '+str(min_match_prob)+' and not '+str([idx_c1, bm])+' in '+str(matched_idx)) 
-            if best_dicts[0][idx_c1][bm]['prob'] > min_match_prob and not [idx_c1, bm] in matched_idx:
+            # print(str(best_dicts[0][idx_c1][bm]['prob'])+' > '+str(min_match_prob)+' and not '+str([idx_c1, bm])+' in '+str(matched_idx))
+            if best_dicts[0][idx_c1][bm]['prob'] > min_match_prob and not [
+                idx_c1, bm] in matched_idx:
                 matched_clouds.append(mergedC[0][idx_c1][bm])
-                matched_idx.append([idx_c1, bm]) # care that there will be no double match
-            
-        for idx_c2, c in enumerate(clouds2):
-            mergedC[1].append(c.merge(clouds1,self.w))
-            best_dicts[1].append([mergedC[1][idx_c2][idx_c1][0].get_best() for idx_c1 in range(len(clouds1))])
-            best_probs[1].append([best_dicts[1][idx_c2][idx_c1]['prob'] for idx_c1 in range(len(clouds1))])
-            bm = np.argmax(best_probs[1][idx_c2])
-            if best_dicts[1][idx_c2][bm]['prob'] > min_match_prob and not [bm, idx_c2] in matched_idx:
-                matched_clouds.append(mergedC[1][idx_c2][bm])
-                matched_idx.append([bm, idx_c2]) # care that there will be no double match
+                matched_idx.append(
+                    [idx_c1, bm])  # care that there will be no double match
 
-        return matched_clouds, matched_idx # returns [ProbabilityMap, SpatialCloud]
+        for idx_c2, c in enumerate(clouds2):
+            mergedC[1].append(c.merge(clouds1, self.w))
+            best_dicts[1].append(
+                [mergedC[1][idx_c2][idx_c1][0].get_best() for idx_c1 in
+                 range(len(clouds1))])
+            best_probs[1].append(
+                [best_dicts[1][idx_c2][idx_c1]['prob'] for idx_c1 in
+                 range(len(clouds1))])
+            bm = np.argmax(best_probs[1][idx_c2])
+            if best_dicts[1][idx_c2][bm]['prob'] > min_match_prob and not [bm,
+                                                                           idx_c2] in matched_idx:
+                matched_clouds.append(mergedC[1][idx_c2][bm])
+                matched_idx.append(
+                    [bm, idx_c2])  # care that there will be no double match
+
+        return matched_clouds, matched_idx  # returns [ProbabilityMap, SpatialCloud]
+
 
 class ProbabilityMap(object):
     def __init__(self, cloud1, cloud2, w, template_size=0.75):
         if cloud1.data.shape[2] == cloud2.data.shape[2]:
             self.clouds = [cloud1, cloud2]
         else:
-            raise("error matching.PropabilityMap: cloud-dimension missmatch!")
+            raise ("error matching.PropabilityMap: cloud-dimension missmatch!")
 
-        self.w = [1]*cloud1.data.shape[2]
-        if isinstance(w,list):
+        self.w = [1] * cloud1.data.shape[2]
+        if isinstance(w, list):
             if len(w) == cloud1.data.shape[2]:
                 self.w = w
         self.w = self._normalize_weights(self.w)
@@ -106,7 +120,7 @@ class ProbabilityMap(object):
 
     @staticmethod
     def _normalize_weights(weights):
-        normalized_weights = [w/np.sum(weights) for w in weights]
+        normalized_weights = [w / np.sum(weights) for w in weights]
         return normalized_weights
 
     def _calc_map(self):
@@ -122,34 +136,41 @@ class ProbabilityMap(object):
                 possible matching point. Should have the same data shape like
                 the first cloud.
         """
-        main_img = np.array(self.clouds[0].data) # if mask array the mask will be dismissed
+        main_img = np.array(
+            self.clouds[0].data)  # if mask array the mask will be dismissed
         template = np.array(self.clouds[1].data)
-        
-        #make sure that the main_img is the bigger-cloud
-        #print("template.shape = "+str(template.shape))
-        if main_img.shape[0]*self.template_size < template.shape[0]:
-            margins = self._calc_max_boundary(main_img.shape[0],template.shape[0],self.template_size)
-            template = template[margins[0]:margins[1]+1,:]
-            #print("main_img.shape = "+str(main_img.shape))
-            #print("template.shape = "+str(template.shape))
-            #print("margins dim 0 reset "+str(margins))
-        if main_img.shape[1]*self.template_size < template.shape[1]:
-            margins = self._calc_max_boundary(main_img.shape[1],template.shape[1],self.template_size)
-            template = template[:,margins[0]:margins[1]+1]
-            #print("main_img.shape = "+str(main_img.shape))
-            #print("template.shape = "+str(template.shape))
-            #print("margins dim 1 reset "+str(margins))
+
+        # make sure that the main_img is the bigger-cloud
+        # print("template.shape = "+str(template.shape))
+        if main_img.shape[0] * self.template_size < template.shape[0]:
+            margins = self._calc_max_boundary(main_img.shape[0],
+                                              template.shape[0],
+                                              self.template_size)
+            template = template[margins[0]:margins[1] + 1, :]
+            # print("main_img.shape = "+str(main_img.shape))
+            # print("template.shape = "+str(template.shape))
+            # print("margins dim 0 reset "+str(margins))
+        if main_img.shape[1] * self.template_size < template.shape[1]:
+            margins = self._calc_max_boundary(main_img.shape[1],
+                                              template.shape[1],
+                                              self.template_size)
+            template = template[:, margins[0]:margins[1] + 1]
+            # print("main_img.shape = "+str(main_img.shape))
+            # print("template.shape = "+str(template.shape))
+            # print("margins dim 1 reset "+str(margins))
 
         ### useing this with weights to do every channel on it's own
         probability_map = []
         for i in range(main_img.shape[2]):
-            probability_map.append(match_template(main_img[:,:,i], template[:,:,i],
-                                   pad_input=True, mode='reflect', constant_values=0)
-                                   *self.w[i])       
-        return np.sum(probability_map,0)
+            probability_map.append(
+                match_template(main_img[:, :, i], template[:, :, i],
+                               pad_input=True, mode='reflect',
+                               constant_values=0)
+                * self.w[i])
+        return np.sum(probability_map, 0)
 
-#        probability_map = match_template(main_img,template,pad_input=True,mode='reflect',constant_values=0)
-#        return probability_map
+    #        probability_map = match_template(main_img,template,pad_input=True,mode='reflect',constant_values=0)
+    #        return probability_map
 
     def get_best(self):
         """
@@ -159,11 +180,11 @@ class ProbabilityMap(object):
                 within the map.
         """
         idx = self.prop_map.argmax()
-        xy = np.unravel_index(idx,self.prop_map.shape)
-        best = {'prob': self.prop_map[xy[0],xy[1]], 'point': xy}
+        xy = np.unravel_index(idx, self.prop_map.shape)
+        best = {'prob': self.prop_map[xy[0], xy[1]], 'point': xy}
         return best
 
-    def _calc_max_boundary(self,main,temp,fact):
+    def _calc_max_boundary(self, main, temp, fact):
         """
         Method to calculate the maximal possible boundary size of template.
         Args:
@@ -173,11 +194,11 @@ class ProbabilityMap(object):
         Returns:
             margins (list[int]): lower boundary and upper boundary (dim = 2)
         """
-        max_temp = main*fact
-        additional_size = temp-max_temp
+        max_temp = main * fact
+        additional_size = temp - max_temp
         if additional_size > 0:
-            margins = [round(additional_size*.5),round(temp-additional_size*.5)]
+            margins = [round(additional_size * .5),
+                       round(temp - additional_size * .5)]
         else:
-            margins = [0,temp]
+            margins = [0, temp]
         return margins
-

@@ -29,7 +29,7 @@ import scipy.ndimage
 
 # Internal modules
 from .matching import ProbabilityMap
-from ..utils import shift_matrix
+from ..utils import shift_matrix, Projection, cloud2kml
 from ..image import Image
 from ..clustering import preprocess
 
@@ -42,13 +42,15 @@ class BaseCloud(object):
 
 
 class Cloud(BaseCloud):
-    def __init__(self, image, preprocess=[]):
+    def __init__(self, image, label, preprocess=[]):
         """
         This is a clustered cloud from one camera.
         Args:
             data (Image): The cloud data as Image instance.
                 In the most cases the Image data is masked with the mask of the
                 cloud.
+            label (numpy array): The numpy array labels, where True are the
+                cloud pixels and False are the non cloud pixels.
             preprocess (list[Preprocessing layers]): List with layers to
                 preprocess the cloud before the matching of different clouds.
                 A layer is for example a layer, which normalize the channels,
@@ -58,6 +60,7 @@ class Cloud(BaseCloud):
         """
         self.preprocessing = preprocess
         self.image = image
+        self.label = label
         self.data = self.image.data
         self.__merge_cloud_type = SpatialCloud
         super().__init__()
@@ -84,11 +87,6 @@ class Cloud(BaseCloud):
         center = (int((np.max(ind[1]) + np.min(ind[1])) / 2),
                   int((np.max(ind[0]) + np.min(ind[0])) / 2))
         return center
-
-    def match(self, clouds, w=None):
-        """
-        """
-        #TODO       
 
     def merge(self, clouds, w=None):
         """
@@ -128,7 +126,7 @@ class SpatialCloud(Cloud):
         #     self.map = map
         self.clouds = [cloud1, cloud2]
         self.prob_map = prob_map
-        self.position = None
+        self.positions = None
 
     def calc_overlapping(self):
         """
@@ -147,8 +145,10 @@ class SpatialCloud(Cloud):
         shift = [best_point['point'][0] - int(c1_data.shape[0]/2),
                  best_point['point'][1] - int(c1_data.shape[1]/2)]
         bounds = shift_matrix(c1_data.shape, c2_data.shape, shift[0], shift[1])
-        self.clouds[0].image = self.clouds[0].image.cut([bounds[4], bounds[6], bounds[5], bounds[7]])
-        self.clouds[1].image = self.clouds[1].image.cut([bounds[0], bounds[2], bounds[1], bounds[3]])
+        self.clouds[0].image = self.clouds[0].image.cut([bounds[6], bounds[4], bounds[7], bounds[5]])
+        self.clouds[0].label = self.clouds[0].label[bounds[4]:bounds[5], bounds[6]: bounds[7]]
+        self.clouds[1].image = self.clouds[1].image.cut([bounds[2], bounds[0], bounds[3], bounds[1]])
+        self.clouds[1].label = self.clouds[1].label[bounds[0]:bounds[1], bounds[2]: bounds[3]]
         return self
 
    # def _preprocess(self, data):
@@ -156,12 +156,37 @@ class SpatialCloud(Cloud):
     def write2kml(self, kml_path):
         """
         Method to write the cloud data to a kml file.
+        file_path (str/simplekml.kml.Kml): The file path where the kml file
+            should be saved. If file_path is an instance of simplekml.kml.Kml
+            the cloud is written to this instance.
+
         Returns:
-
+            kml_file (simplekml.kml.Kml): If a kml file was the argument, this method returns this kml_file.
         """
-        pass
+        c1_data = self.clouds[0].image.data
+        c2_data = self.clouds[1].image.data
+        c1_label = self.clouds[0].label
+        c2_label = self.clouds[1].label
+        lon, lat = Projection().xy2lonlat(self.positions)
+        pos = np.expand_dims(np.empty_like(c1_label), axis=2)
+        pos = np.append(pos, lat, axis=2)
+        pos = np.append(pos, lon, axis=2)
+        pos = np.append(pos, self.positions.z, axis=2)
+        colors = c1_data
+        colors[c1_label and c2_label] = (c1_data+c2_data)/2
+        colors[~c1_label and c2_label] = c2_data[c2_label]
+        colors[~c1_label and ~c2_label] = np.NaN
+        pos = np.append(pos, colors, axis=2)
+        alpha = np.zeros_like(c1_label)
+        alpha[c1_label and c2_label] = 1
+        alpha[(c1_label or c2_label) and ~(c1_label and c2_label)] = 0.5
+        pos = np.append(pos, alpha, axis=2)
+        kml_file = cloud2kml(pos, self.clouds[0].time, kml_path)
+        if not isinstance(kml_path, str):
+            return kml_file
 
-    def calc_position(self, d=100):
+
+    def calc_position(self, d):
         """
         Method to calculate the x, y, z position of the spatial matched cloud.
         Args:
@@ -191,7 +216,7 @@ class SpatialCloud(Cloud):
         Y = [calc_y(R[0], azi[0]), calc_y(R[1], azi[1])]
         H = calc_h(R[0]+R[1], ele[0], ele[1])
         # TODO check if the formulas are right.
-        self.position = (X, Y, H)
+        self.positions = (X, Y, H)
 
 
 class TemporalCloud(Cloud):

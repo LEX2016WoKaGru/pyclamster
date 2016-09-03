@@ -107,8 +107,50 @@ def shift_matrix(dimbase, dimshift, rowshift, colshift):
     return bounds
 
 
+def cloud2kml(cloud, date, file_path=None):
+    """
+    Function to plot a cloud array into a kml file. Needs simplekml!
+    Args:
+        cloud (numpy array): The cloud informations the shape should be (nr_x, nr_y, 7).
+            The seven channels are: longitude, latitude, absolute altitude, red channel,
+            green channel, blue channel, alpha channel.
+
+        date (datetime.datetime): The date information for this cloud.
+
+        file_path (str/simplekml.kml.Kml): The file path where the kml file
+            should be saved. If file_path is an instance of simplekml.kml.Kml
+            the cloud is written to this instance.
+    """
+    import simplekml
+    if isinstance(file_path, simplekml.kml.Kml):
+        kml_file = file_path
+    else:
+        kml_file = simplekml.Kml()
+    multipnt = kml_file.newmultigeometry(name='Cloud 0')
+    multipnt.timestamp.when = date.isoformat()
+    for (x, y), value in np.ndenumerate(cloud[:,:,5]):
+        if value != np.NaN and x<cloud.shape[0]-1 and y<cloud.shape[1]-1:
+            pol = multipnt.newpolygon(name='segment {0} {1}'.format(
+                cloud[x,y,0], cloud[x,y,1]), altitudemode='absolute')
+            pol.outerboundaryis = [
+                (cloud[x,y,0], cloud[x,y,1], cloud[x,y,2]),
+                (cloud[x,y+1,0], cloud[x,y+1,1], cloud[x,y+1,2]),
+                (cloud[x+1,y+1,0], cloud[x+1,y+1,1], cloud[x+1,y+1,2]),
+                (cloud[x+1,y,0], cloud[x+1,y,1], cloud[x+1,y,2])]
+            pol.style.linestyle.width = 0
+            rgb = []
+            for i in range(3,7):
+                rgb.append(cloud[x,y,i].astype(int))
+            pol.style.polystyle.color = simplekml.Color.rgb(*rgb)
+    if isinstance(file_path, str):
+        kml_file.save(file_path)
+    elif not isinstance(file_path, simplekml.kml.Kml):
+        return kml_file
+
+
+
 class Projection(object):
-    def __init__(self):
+    def __init__(self, zone=32):
         try:
             import pyproj
         except:
@@ -116,7 +158,7 @@ class Projection(object):
 
         # set the projection to utm within zone 32 (Hamburg, Fehmarn) and a
         # WGS84 ellipsoid
-        self.p = pyproj.Proj(proj='utm', zone=32, ellps='WGS84')
+        self.p = pyproj.Proj(proj='utm', zone=zone, ellps='WGS84')
 
     def lonlat2xy(self, lon, lat, coordinates=False):
         """
