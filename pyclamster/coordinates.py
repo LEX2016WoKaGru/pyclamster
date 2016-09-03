@@ -934,12 +934,15 @@ class Coordinates3d(BaseCoordinates3d):
 
         return p
 
-    def plot3d(self):
+    def plot3d(self,method="scatter"):
         """
         create a matplotlib 3d scatterplot of the coordinates.
         The plot has then to be shown.
+        args:
+            method (string): scatter or line
+
         returns:
-            plot = (unshown) matplotlib plot
+            Axes3D
         """
         try: # try to import matplotlib
             import matplotlib.pyplot as plt
@@ -952,5 +955,10 @@ class Coordinates3d(BaseCoordinates3d):
         
         p = plt.figure()
         ax = Axes3D(p)
-        ax.scatter3D(self.x,self.y,self.z)
-        return p
+        if method == "scatter":
+            ax.scatter3D(self.x,self.y,self.z)
+        elif method == "line":
+            ax.plot(self.x,self.y,self.z)
+        else:
+            raise ValueError("unknown method '{}'".format(method))
+        return ax

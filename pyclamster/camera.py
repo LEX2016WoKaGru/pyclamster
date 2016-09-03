@@ -47,15 +47,18 @@ class CameraSession(object):
     class that holds a series of images
     and camera properties
     """
-    def __init__(self, longitude, latitude, imgshape, smallshape, rectshape,
-        calibration=None, images=None, distmap=None):
+    def __init__(self, longitude, latitude, heightNN, imgshape, smallshape, 
+        rectshape, calibration=None, images=None, distmap=None):
         """
         class constructor
 
         args:
-            images (optional[list of filepaths or glob expression]): Specification of image files to use.
-                Either a list of full filepaths or a glob expression. User directory is expanded. Defaults to None.
+            images (optional[list of filepaths or glob expression]): 
+                Specification of image files to use.  Either a list of full 
+                filepaths or a glob expression. User directory is expanded. 
+                Defaults to None.
             latitude,longitude (float): gps position of image in degrees
+            heightNN (float): height in metres over NN
             imgshape (tuple of int): shape of images
             smallshape (tuple of int): shape of smaller resized images
             rectshape (tuple of int): shape of rectified images
@@ -84,6 +87,10 @@ class CameraSession(object):
         # camera session position
         self.longitude = longitude
         self.latitude  = latitude
+        self.heightNN  = heightNN
+
+        self.position = coordinates.Coordinates3d(z=self.heightNN,shape=1)
+
 
     def reset_images(self):
         """
@@ -91,13 +98,21 @@ class CameraSession(object):
         """
         self.image_series = []
 
+    def set_images(self, images ):
+        """
+        use this as images
+        """
+        self.reset_images()
+        self.add_images(images)
+
     def add_images(self, images ):
         """
         add images to internal series
 
         args:
-            images (list of filepaths or glob expression): Specification of image files to use.
-                Either a list of full filepaths or a glob expression. User directory is expanded. Defaults to None.
+            images (list of filepaths or glob expression): Specification of 
+                image files to use.  Either a list of full filepaths or a glob 
+                expression. User directory is expanded. Defaults to None.
         """
         ### determine what kind the argument 'images' is ###
         # start with empty file list
@@ -135,11 +150,13 @@ class CameraSession(object):
     def _get_images_from_filelist(self, files):
         """
         get image and time series from a list of full filepaths
-        exclude files whose filename doesn't match the internal image regex self.imagefile_regex
+        exclude files whose filename doesn't match the internal image regex 
+        self.imagefile_regex
 
         args:
-            files (list of filepaths or glob expression): Specification of image files to use.
-                Either a list of full filepaths or a glob expression. User directory is expanded. Defaults to None.
+            files (list of filepaths or glob expression): Specification of 
+            image files to use.  Either a list of full filepaths or a glob 
+            expression. User directory is expanded. Defaults to None.
         returns:
             list of valid image paths
         """
@@ -169,6 +186,11 @@ class CameraSession(object):
             )
         # return list of images and time
         return image_series
+
+    ### projection to carthesian coordinates
+    def calculate_carthesian_coordinates(self):
+        self.position = utils.lonlat2xy(self.longitude, self.latitude
+            ,coordinates = True)
 
 
     ###################################################################
@@ -238,6 +260,22 @@ class CameraSession(object):
 
         self.distmap = distmap
         return distmap
+
+    def iterate_over_images(self,size=None):
+        """
+        yield one image after another
+        """
+        for imgpath in self.image_series:
+            # load image
+            img = image.Image(imgpath)
+            if not size is None:
+                img.image = img.resize(size)
+            # set coordinates
+            img.coordinates = self.calibration.create_coordinates(
+                (img.data.shape[:2]))
+            logger.debug("yielding image '{}'".format(imgpath))
+            yield img
+        
 
     # iterate_over_rectified_images
     def iterate_over_rectified_images(self):
