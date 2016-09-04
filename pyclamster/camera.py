@@ -210,7 +210,11 @@ class CameraSession(object):
             )
         # resize image to smaller size
         img.image = img.resize(self.smallshape)
+        img.image = img.resize(self.smallshape)
         # rectify
+        img.coordinates = self.calibration.create_coordinates(
+            (img.data.shape[:2]))
+        img.position = self.position  # set carthesian position
         img.applyDistortionMap(self.distmap, inplace=True)
         return img
 
@@ -297,6 +301,9 @@ class CameraSession(object):
             # resize image to smaller size
             img.image = img.resize(self.smallshape)
             # rectify
+            img.coordinates = self.calibration.create_coordinates(
+                (img.data.shape[:2]))
+            img.position = self.position # set carthesian position
             img.applyDistortionMap(self.distmap, inplace=True)
             logger.debug("yielding rectified image '{}'".format(imgpath))
             yield img
