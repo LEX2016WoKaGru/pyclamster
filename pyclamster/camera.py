@@ -270,14 +270,17 @@ class CameraSession(object):
         """
         yield one image after another
         """
+        if not size is None:
+            coords = self.calibration.create_coordinates(size)
+        else:
+            coords = self.calibration.create_coordinates(self.imgshape)
         for imgpath in self.image_series:
             # load image
             img = image.Image(imgpath)
             if not size is None:
                 img.image = img.resize(size)
             # set coordinates
-            img.coordinates = self.calibration.create_coordinates(
-                (img.data.shape[:2]))
+            img.coordinates = coords
             img.position = self.position # set carthesian position
             logger.debug("yielding image '{}'".format(imgpath))
             yield img

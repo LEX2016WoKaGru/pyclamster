@@ -15,7 +15,7 @@ imgshape = (1920,1920)
 sun_real = pickle.load(open("data/fe3/FE3_straightcalib_sun_real.pk","rb"))
 sun_img  = pickle.load(open("data/fe3/FE3_straightcalib_sun_img.pk","rb"))
 
-#proj_calib = pickle.load(open("data/FE3-projcal.pk","rb"))
+proj_calib = pickle.load(open("data/FE3-projcal.pk","rb"))
 
 #######################################
 ### Prepare and do the optimization ###

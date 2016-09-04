@@ -62,6 +62,8 @@ def doppelanschnitt(azi1,azi2,ele1,ele2,pos1,pos2):
     a,b,c = np.linalg.solve(np.array([e1,e2,n]).T,
         (np.array(pos1)-np.array(pos2)).T)
 
+    logger.debug("minimum distance: {} m".format(c))
+
     position = np.array(pos1 - a * e1 - n * 0.5 * c)
 
 

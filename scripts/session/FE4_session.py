@@ -7,12 +7,12 @@ import os,sys
 # set up logging
 logging.basicConfig(level=logging.DEBUG)
 
-sessionfile = "data/sessions/FE4_session.pk"
+sessionfile = "data/sessions/FE4_session_new.pk"
 try: # maybe there is already a session
     session = pickle.load(open(sessionfile,"rb"))
 except: # if not
     # read calibration
-    calib = pickle.load(open("data/fe4/FE4_straightcal.pk","rb"))
+    calib = pickle.load(open("data/fe4/FE4_straight+projcal.pk","rb"))
     
     # create session
     session = pyclamster.CameraSession(
