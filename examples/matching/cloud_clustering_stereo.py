@@ -52,7 +52,7 @@ from pyclamster import Image
 from pyclamster.matching.cloud import Cloud
 from pyclamster.clustering.preprocess import LCN, ZCA
 from pyclamster.clustering.kmeans import KMeans
-from pyclamster.clustering.functions import localBrightness, rbDetection
+from pyclamster.functions import localBrightness, rbDetection
 
 warnings.catch_warnings()
 warnings.filterwarnings('ignore')
@@ -60,9 +60,9 @@ warnings.filterwarnings('ignore')
 
 __version__ = ""
 
-base_folder = "../../"
+base_folder = "./"
 image_directory = os.path.join(base_folder, "examples", "images", "wolf")
-trained_models = os.path.join(base_folder, "trained_models")
+trained_models = os.path.join(base_folder, "data")
 
 good_angle = 45
 center = int(1920/2)
@@ -91,7 +91,7 @@ raw_image_lcn = rbDetection(image_lcn.data).reshape((w*h, -1))
 #raw_image = image.data.reshape((w*h, -1))
 label = kmeans.predict(raw_image_lcn)
 label.reshape((w, h), replace=True)
-scipy.misc.imsave("lables_kmean.png", label.labels)
+
 masks = label.getMaskStore()
 cloud_mask_num = [0]
 masks.denoise(cloud_mask_num, 1000) # cloud - sky choose right number (0 or 1)
@@ -99,39 +99,44 @@ masks.denoise(cloud_mask_num, 1000) # cloud - sky choose right number (0 or 1)
 cloud_labels_object, numLabels = masks.labelMask(cloud_mask_num) 
 # NOTE: there will be cloud-lables as well as 0 !!!
 print ("number of detected clouds = "+str(numLabels))
-scipy.misc.imsave("lables_used.png", cloud_labels_object.labels)
+
 cloud_store = cloud_labels_object.getMaskStore()
 cloud_lables = [l+1 for l in range(numLabels)]
 clouds = [cloud_store.getCloud(image, [k,]) for k in cloud_lables] 
 template = clouds[0].image
-scipy.misc.imsave('template_cloud.png', template.data)
+
 
 image2 = Image(all_images[0])
 image2 = image2.cut([480, 480, 1480, 1480])
 image2.data = scipy.misc.imresize(image2.data, (256,256), interp='bicubic')
-scipy.misc.imsave('main_image.png.png', image2)
 
 start = time.time()
-#plt.figure()
-#plt.imshow(image2.data)
-#plt.figure()
-#plt.imshow(template.data)
-
 result = match_template(image2.data, template.data, pad_input=True, mode='reflect', constant_values=0)
-plt.figure()
-for i in range(3):
-    plt.subplot(1,3,i+1)
-    plt.imshow(result[:,:,i])
-    plt.colorbar()
-    plt.axis('off')
+endtime = time.time()-start
+#plt.figure()
+#for i in range(3):
+#    plt.subplot(1,3,i+1)
+#    plt.imshow(result[:,:,i])
+#    plt.colorbar()
+#    plt.axis('off')
 
 #result = result.max(axis=2)
-endtime = time.time()-start
-scipy.misc.imsave('image2.png', image2.data.astype('int'))
+if 0: #save png's
+    scipy.misc.imsave('image2.png', image2.data)
+    scipy.misc.imsave('template_cloud.png', template.data)
+    scipy.misc.imsave("lables_kmean.png", label.labels)
+    scipy.misc.imsave("lables_used.png", cloud_labels_object.labels)
+
 plt.figure()
-plt.imshow((result-0.5)*2,cmap='BrBG')
+plt.subplot(131)
+plt.imshow(image2.data)
+plt.subplot(132)
+plt.imshow(np.mean(result,2),cmap='BrBG')
 plt.colorbar()
 plt.axis('off')
+plt.subplot(133)
+plt.imshow(template.data)
+plt.show()
 plt.savefig('matching_result.png')
 
 print('------ results ----')
@@ -142,6 +147,6 @@ print('best match '+str(np.unravel_index(result.argmax(), result.shape)))
     #template = template.data.data[~template.data.mask]
     #print(clouds[2].data.data)
 print("----starting cloud-cloud matching")
-m = pyclamster.matching.Matching()
-matching_result = m.matching(clouds,clouds)
-print("matching result ([cloud1_idx, cloud2_idx]): "+str(matching_result))
+#m = pyclamster.matching.Matching()
+#matching_result = m.matching(clouds,clouds)
+#print("matching result: "+str(matching_result))
