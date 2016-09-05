@@ -80,12 +80,29 @@ except:
 cal_coords=calibration.create_coordinates((300,300))
 
 import matplotlib.pyplot as plt
-plt.subplot(121)
+plt.style.use('fivethirtyeight')
+
+ax = plt.subplot(121)
 plt.title("[calibrated]\nelevation on the image [deg]")
-plt.imshow(cal_coords.elevation*360/(2*np.pi),cmap="Blues")
+plt.imshow(cal_coords.elevation*360/(2*np.pi),cmap="Blues",vmin=0,vmax=90
+    ,interpolation="nearest")
 plt.colorbar()
 plt.subplot(122)
 plt.title("[calibrated]\nazimuth on the image [deg]")
-plt.imshow(cal_coords.azimuth*360/(2*np.pi),cmap="Blues")
+plt.imshow(cal_coords.azimuth*360/(2*np.pi),cmap="Blues"
+    ,interpolation="nearest")
 plt.colorbar()
+
+
+fig = plt.figure()
+rh=np.linspace(0,960,100)
+ele=calibration.lossfunc.radial.elevation(rh)
+plt.plot([960,0],[0,np.pi/2])
+plt.plot(rh,np.pi/2-ele)
+plt.legend()
+
+plt.show()
+
+
+
 plt.show()

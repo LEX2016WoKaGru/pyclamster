@@ -500,7 +500,7 @@ class CameraCalibrationLossFunction(object):
         ### calculate the residual/difference between projected real and ###
         ### image sun coordinates                                        ###
         ####################################################################
-        i = 1
+        i = 3
         if i == 1: # optimize x/y matching (WORKS BEST)
             res = np.sqrt((sun_real.x-sun_img.x) ** 2 + \
                       (sun_real.y-sun_img.y) ** 2).mean()

@@ -4,8 +4,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 theo1 = pyclamster.Coordinates3d(
-    azimuth =   [0],
-    elevation = [pyclamster.deg2rad(45)],
+    azimuth =   [0,3],
+    elevation = [pyclamster.deg2rad(45),np.nan],
     azimuth_clockwise = False,
     azimuth_offset = 0,
     elevation_type = "zenith"
@@ -17,8 +17,8 @@ pos1 = pyclamster.Coordinates3d(
 
 
 theo2 = pyclamster.Coordinates3d(
-    azimuth =   [np.pi],
-    elevation = [pyclamster.deg2rad(45)],
+    azimuth =   [np.pi,np.nan],
+    elevation = [pyclamster.deg2rad(45),1],
     azimuth_clockwise = True,
     azimuth_offset = 0,
     elevation_type = "ground"

@@ -847,7 +847,7 @@ class Coordinates3d(BaseCoordinates3d):
             value = getattr(self, dim)
             isdefined = False
             if not value is None:
-                try: isdefined = not value.mask.all()
+                try: isdefined = not np.ma.masked_invalid(value).mask.all()
                 except AttributeError:
                     isdefined = True
             if isdefined:
