@@ -60,13 +60,13 @@ def doppelanschnitt(azi1,azi2,ele1,ele2,pos1,pos2,plot_info=False):
     n = np.cross(e1,e2,axis=0)
     n = n/np.linalg.norm(n)
 
-    a_s = np.array([e1,e2,n]).T
-    b_s = (np.array(pos1)-np.array(pos2)).T
+    a_s = np.array([e1,-e2,n]).T
+    b_s = (np.array(pos2)-np.array(pos1)).T
     a,b,c = np.linalg.solve(a_s, b_s)
 
     logger.debug("minimum distance: {} m".format(c))
 
-    position = np.array(pos1 - a * e1 - n * 0.5 * c)
+    position = np.array(pos1 + a * e1 + n * 0.5 * c)
     
     var_list = [e1 ,e2, n, a, c]
     if plot_info:
@@ -221,10 +221,10 @@ def doppelanschnitt_plot(title,position,var_list,pos1_in,pos2_in,col=['r','g','k
         ppp = ppp-zero_point
         p1p = pos1-zero_point
         p2p = pos2-zero_point
-        e1p = e1[i]*300+p1p
-        e2p = e2[i]*300+p2p
-        n1p = n[i]*10+ppp
-        n2p = -n[i]*10+ppp
+        e1p = e1[i]*a[i]+p1p
+        e2p = e2[i]*a[i]+p2p
+        n1p = n[i]*c[i]+ppp
+        n2p = n[i]*c[i]+ppp
         
         if plot_view:
             ax.plot([p1p[x],e1p[x]],[p1p[y],e1p[y]],[p1p[z],e1p[z]],col[0])
