@@ -58,7 +58,7 @@ logging.debug("The optimal parameters: {}".format(calibration.parameters))
 logging.debug("The optimal residual: {}".format(calibration.lossfunc(
     calibration.parameters)))
 
-filename = "data/fe3/FE3-projcal.pk"
+filename = "data/fe3/FE3_projcal.pk"
 logging.debug("pickling calibration to file '{}'".format(filename))
 try:
     fh = open(filename,'wb')
