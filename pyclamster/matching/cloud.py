@@ -131,6 +131,15 @@ class SpatialCloud(Cloud):
         self.prob_map = prob_map
         self.positions = None
 
+    def oper_mode(self):
+        successful = self.calc_overlapping()
+        if successful:
+            try:
+                self.calc_position()
+            except:
+                successful = False
+        return successful
+
     def calc_overlapping(self):
         """
         Method to get information of the overlapping array slices
@@ -148,15 +157,20 @@ class SpatialCloud(Cloud):
         shift = [best_point['point'][0] - int(c1_data.shape[0] / 2),
                  best_point['point'][1] - int(c1_data.shape[1] / 2)]
         bounds = shift_matrix(c1_data.shape, c2_data.shape, shift[0], shift[1])
-        self.clouds[0].image = self.clouds[0].image.cut(
-            [bounds[6], bounds[4], bounds[7], bounds[5]])
-        self.clouds[0].label = self.clouds[0].label[bounds[4]:bounds[5],
-                               bounds[6]: bounds[7]]
-        self.clouds[1].image = self.clouds[1].image.cut(
-            [bounds[2], bounds[0], bounds[3], bounds[1]])
-        self.clouds[1].label = self.clouds[1].label[bounds[0]:bounds[1],
-                               bounds[2]: bounds[3]]
-        return self
+        if not np.NaN in bounds:
+            bounds = [int(b) for b in bounds]
+            self.clouds[0].image = self.clouds[0].image.cut(
+                [bounds[6], bounds[4], bounds[7], bounds[5]])
+            self.clouds[0].label = self.clouds[0].label[bounds[4]:bounds[5],
+                                   bounds[6]: bounds[7]]
+            self.clouds[1].image = self.clouds[1].image.cut(
+                [bounds[2], bounds[0], bounds[3], bounds[1]])
+            self.clouds[1].label = self.clouds[1].label[bounds[0]:bounds[1],
+                                   bounds[2]: bounds[3]]
+            successful = True
+        else:
+            successful = False
+        return successful
 
         # def _preprocess(self, data):
         #     return [super()._preprocess(c) for c in data]
@@ -209,7 +223,9 @@ class SpatialCloud(Cloud):
 
     def get_height(self):
         if not self.positions is None:
-            return np.nanmean(self.positions.z)
+            c1_label = self.clouds[0].label
+            c2_label = self.clouds[1].label
+            return self.positions.z
         else:
             print('The positions aren\'t calculated yet!')
 
