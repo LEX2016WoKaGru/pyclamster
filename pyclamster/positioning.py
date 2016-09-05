@@ -163,6 +163,7 @@ def doppelanschnitt_Coordinates3d(aziele1,aziele2,pos1,pos2):
         # calculate 3d doppelanschnitt position
         xyz, var_list_doppel = doppelanschnitt(
             azi1=azi1,azi2=azi2,ele1=ele1,ele2=ele2,
+            pos1=position1,pos2=position2)
 
         x.append(xyz[0])
         y.append(xyz[1])
