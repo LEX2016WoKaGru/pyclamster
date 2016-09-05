@@ -146,7 +146,7 @@ class ProbabilityMap(object):
             margins = self._calc_max_boundary(main_img.shape[0],
                                               template.shape[0],
                                               self.template_size)
-            template = template[margins[0]:margins[1] + 1, :]
+            template = template[margins[0]:margins[1], :]
             # print("main_img.shape = "+str(main_img.shape))
             # print("template.shape = "+str(template.shape))
             # print("margins dim 0 reset "+str(margins))
@@ -154,7 +154,7 @@ class ProbabilityMap(object):
             margins = self._calc_max_boundary(main_img.shape[1],
                                               template.shape[1],
                                               self.template_size)
-            template = template[:, margins[0]:margins[1] + 1]
+            template = template[:, margins[0]:margins[1]]
             # print("main_img.shape = "+str(main_img.shape))
             # print("template.shape = "+str(template.shape))
             # print("margins dim 1 reset "+str(margins))
@@ -201,4 +201,7 @@ class ProbabilityMap(object):
                        round(temp - additional_size * .5)]
         else:
             margins = [0, temp]
+        if margins[0] < 0 or margins[1] > main:
+            margins = [0,main]
+        
         return margins
