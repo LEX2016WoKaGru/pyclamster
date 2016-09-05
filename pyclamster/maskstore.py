@@ -175,6 +175,19 @@ class MaskStore(object):
         nb_labels = len(np.unique(labels))-1
         return Labels(labels), nb_labels
 
+    def regionMask(self, labels=None, region_shp=(50,50)):
+        mask = ~self.getMask(labels)
+        labels = mask.astype(int)
+        msk_shp = labels.shape
+        label_cnt = 1
+        for i in range(0, msk_shp[0]+1, region_shp[0]):
+            for j in range(0, msk_shp[1]+1, region_shp[1]):
+                if 1 in labels[i:i+region_shp[0], j:j+region_shp[1]]:
+                    labels[i:i+region_shp[0], j:j+region_shp[1]] *= label_cnt
+                    label_cnt += 1
+        return Labels(labels), label_cnt
+
+
     def getCloud(self, image, labels=None):
         """
         Method to get a cloud instance with a given image for selected labels.

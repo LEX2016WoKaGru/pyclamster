@@ -71,6 +71,35 @@ def doppelanschnitt(azi1,azi2,ele1,ele2,pos1,pos2):
     var_list = [e1 ,e2, n, a, c]
     return position, var_list
 
+def tobi_anschnitt(azi1,azi2,ele1,ele2,pos1,pos2):
+    """
+    calculate the 3d position via simple"doppelanschnitt"
+
+    args:
+        azi1, azi2, ele1, ele2 (float): SINGLE values of azimuth and elevation
+            of different devices at positions 1 and 2 (radians)
+        pos1, pos2 (np.array) [x,y,z] of different devices at positions
+            1 and 2 (metres)
+
+    returns:
+
+    """
+    cam_dist = np.sqrt(np.sum(np.power((pos1+pos2),2)))
+
+    # Horizontal position
+    azi3 = np.pi-azi1-azi2
+    r1 = np.sin(azi2)/np.sin(azi3)*cam_dist
+    r2 = np.sin(azi1)/np.sin(azi3)*cam_dist
+
+    x_dis = np.sin(np.pi/2-azi1)*r1
+    y_dis = np.sin(azi1)*r1
+
+    # Height
+    height = np.mean(np.array([pos1[2], pos2[2]]+np.array([r1, r2])/np.tan(np.pi-np.array([ele1, ele2]))))
+
+    position = np.array([pos1[0]+x_dis, pos1[1]+y_dis, height])
+    return position
+
 
 # multiple values
 def doppelanschnitt_Coordinates3d(aziele1,aziele2,pos1,pos2):
@@ -134,7 +163,6 @@ def doppelanschnitt_Coordinates3d(aziele1,aziele2,pos1,pos2):
         # calculate 3d doppelanschnitt position
         xyz, var_list_doppel = doppelanschnitt(
             azi1=azi1,azi2=azi2,ele1=ele1,ele2=ele2,
-            pos1=position1,pos2=position2)
 
         x.append(xyz[0])
         y.append(xyz[1])
@@ -195,6 +223,84 @@ def doppelanschnitt_plot(title,position,var_list,pos1_in,pos2_in,col=['r','g','k
         if plot_position:
             ax.plot([ppp[x]]       ,[ppp[y]]       ,[ppp[z]]       ,col[3]+'x')
         
+
+
+# multiple values
+def tobianschnitt_Coordinates3d(aziele1,aziele2,pos1,pos2):
+    """
+    calculate 3d position based on Coordinates3d
+
+    args:
+        aziele1,aziele2 (Coordinates3d): coordinates (azimuth/elevation) of
+            devices 1 and 2. These have to be northed
+        pos1, pos2 (Coordinates3d): length 1 coordinates (x,y,z) of devices
+            1 and 2
+
+    returns:
+        positions (Coordinates3d): (x,y,z) positions taken from
+            Doppelanschnitt.
+    """
+    cam_dis = pos1-pos2
+    alpha = np.arctan(cam_dis[1]/cam_dis[0])
+
+    ae1 = copy.deepcopy(aziele1)
+    ae2 = copy.deepcopy(aziele2)
+    logger.debug("copied aziele1:\n{}".format(ae1))
+    logger.debug("copied aziele2:\n{}".format(ae2))
+    # turn to north
+    ae1.fill(
+        azimuth   = ae1.azimuth,
+        elevation = ae1.elevation,
+        radius    = 1
+        )
+    ae1.change_parameters(
+        azimuth_offset = alpha,
+        azimuth_clockwise = False,
+        elevation_type = "ground",
+        keep = {'x','y','z'}
+        )
+
+    ae2.fill(
+        azimuth   = ae2.azimuth,
+        elevation = ae2.elevation,
+        radius = 1
+        )
+    ae2.change_parameters(
+        azimuth_offset = np.pi+alpha,
+        azimuth_clockwise = True,
+        elevation_type = "ground",
+        keep = {'x','y','z'}
+        )
+    logger.debug("ae1 after turning: \n{}".format(ae1))
+    logger.debug("ae2 after turning: \n{}".format(ae2))
+
+    # convert given positions to numpy array
+    position1 = np.array([pos1.x,pos1.y,pos1.z])
+    logger.debug("position1: \n{}".format(position1))
+    position2 = np.array([pos2.x,pos2.y,pos2.z])
+    logger.debug("position2: \n{}".format(position2))
+
+    # loop over all azimuth/elevation values
+    x = [];y = [];z = [] # start with empty lists
+    for azi1,azi2,ele1,ele2 in zip(
+        ae1.azimuth.ravel(),   ae2.azimuth.ravel(),
+        ae1.elevation.ravel(), ae2.elevation.ravel()):
+        #print(azi1.shape, azi2.shape, ele1.shape, ele2.shape)
+        logger.debug("azi1: {}, azi2: {}, ele1: {}, ele2: {}".format(azi1, azi2, ele1, ele2))
+        # calculate 3d doppelanschnitt position
+        xnew, ynew, znew = tobi_anschnitt(
+            azi1=azi2,azi2=azi1,ele1=ele1,ele2=ele2,
+            pos1=position1,pos2=position2)
+
+        x.append(xnew)
+        y.append(ynew)
+        z.append(znew)
+
+    # merge new coordinates
+    out = coordinates.Coordinates3d(x=x,y=y,z=z,shape = ae1.shape)
+
+    return out
+
 
 class Projection(object):
     def __init__(self, zone=32):
