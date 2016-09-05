@@ -213,18 +213,36 @@ def doppelanschnitt_plot(title,position,var_list,pos1_in,pos2_in,col=['r','g','k
     pos2 = np.array([pos2_in.x,pos2_in.y,pos2_in.z])
     e1 ,e2, n, a, c = var_list
     zero_point = pos1
-
-    for i,pos_res in enumerate(zip(position.x,position.y,position.z)):
-        ppp  = np.array([pos_res[x],pos_res[y],pos_res[z]])
+    if isinstance(position,coordinates.Coordinates3d):
+        try:
+            zipped_pos = zip(position.x,position.y,position.z)
+        except TypeError:
+            zipped_pos = [[position.x,position.y,position.z]]
+    else:
+        try:
+            zipped_pos = zip(position[0],position[1],position[2])
+        except TypeError:
+            zipped_pos = [[position[0],position[1],position[2]]]
+    for i,pos_res in enumerate(zipped_pos):
+        try:
+            ppp  = np.array([pos_res[x],pos_res[y],pos_res[z]])
+        except IndexError:
+            ppp  = np.array(pos_res)
         zero_point = pos1
         
         ppp = ppp-zero_point
         p1p = pos1-zero_point
         p2p = pos2-zero_point
-        e1p = e1[i]*a[i]+p1p
-        e2p = e2[i]*a[i]+p2p
-        n1p = n[i]*c[i]+ppp
-        n2p = n[i]*c[i]+ppp
+        try:
+            e1p = e1[i]*a[i]+p1p
+            e2p = e2[i]*a[i]+p2p
+            n1p = n[i]*c[i]+ppp
+            n2p = n[i]*c[i]+ppp
+        except IndexError:
+            e1p = e1*a+p1p
+            e2p = e2*a+p2p
+            n1p = n*c+ppp
+            n2p = n*c+ppp
         
         if plot_view:
             ax.plot([p1p[x],e1p[x]],[p1p[y],e1p[y]],[p1p[z],e1p[z]],col[0])

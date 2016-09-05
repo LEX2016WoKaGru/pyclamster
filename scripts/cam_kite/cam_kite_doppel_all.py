@@ -148,17 +148,19 @@ doppel_cam_new,var_list_new = pyclamster.doppelanschnitt_Coordinates3d(
     pos1 = session3_new.position, pos2 = session4_new.position,plot_info=True
     )
 
-if 0:# plot results doppelanschnitt_plot function
+if 1:# plot results doppelanschnitt_plot function
     pyclamster.doppelanschnitt_plot('theo1',doppel1,var_list1,theo3_gk,theo4_gk,
                                     plot_view=1,plot_position=1,plot_n=1)
     pyclamster.doppelanschnitt_plot('theo2',doppel2,var_list2,theo3_gk,theo4_gk,
                                     plot_view=1,plot_position=1,plot_n=1)
-    pyclamster.doppelanschnitt_plot('cam_old',doppel_cam_old,var_list_old,session3_old.position,session4_old.position,
+    pyclamster.doppelanschnitt_plot('cam_old',doppel_cam_old,var_list_old,
+                                    session3_old.position,session4_old.position,
                                     plot_view=1,plot_position=1,plot_n=1)
-    pyclamster.doppelanschnitt_plot('cam_new',doppel_cam_new,var_list_new,session3_new.position,session4_new.position,
+    pyclamster.doppelanschnitt_plot('cam_new',doppel_cam_new,var_list_new,
+                                    session3_new.position,session4_new.position,
                                     plot_view=1,plot_position=1,plot_n=1)
 
-if 1:# plot results theo
+if 0:# plot results theo
     plt.style.use("fivethirtyeight")
     
     ax = doppel1.plot3d(method="line")
@@ -175,7 +177,7 @@ if 1:# plot results theo
     ax.set_zlim(0,200)
     plt.legend()
 
-if 1:# plot results cam
+if 0:# plot results cam
     ax = doppel_cam_old.plot3d(method="line")
     ax.scatter3D(session3_old.position.x,session3_old.position.y,
         session3_old.position.z,label="Cam 3",c='r')
