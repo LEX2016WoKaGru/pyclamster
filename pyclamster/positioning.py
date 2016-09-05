@@ -35,7 +35,7 @@ logger = logging.getLogger(__name__)
 __version__ = "0.1"
 
 
-def doppelanschnitt(azi1,azi2,ele1,ele2,pos1,pos2):
+def doppelanschnitt(azi1,azi2,ele1,ele2,pos1,pos2,plot_info=False):
     """
     calculate the 3d position via "doppelanschnitt"
 
@@ -69,7 +69,10 @@ def doppelanschnitt(azi1,azi2,ele1,ele2,pos1,pos2):
     position = np.array(pos1 - a * e1 - n * 0.5 * c)
     
     var_list = [e1 ,e2, n, a, c]
-    return position, var_list
+    if plot_info:
+        return position, var_list
+    else:
+        return position
 
 def tobi_anschnitt(azi1,azi2,ele1,ele2,pos1,pos2):
     """
@@ -102,7 +105,7 @@ def tobi_anschnitt(azi1,azi2,ele1,ele2,pos1,pos2):
 
 
 # multiple values
-def doppelanschnitt_Coordinates3d(aziele1,aziele2,pos1,pos2):
+def doppelanschnitt_Coordinates3d(aziele1,aziele2,pos1,pos2,plot_info=False):
     """
     calculate 3d position based on Coordinates3d
 
@@ -163,7 +166,7 @@ def doppelanschnitt_Coordinates3d(aziele1,aziele2,pos1,pos2):
         # calculate 3d doppelanschnitt position
         xyz, var_list_doppel = doppelanschnitt(
             azi1=azi1,azi2=azi2,ele1=ele1,ele2=ele2,
-            pos1=position1,pos2=position2)
+            pos1=position1,pos2=position2,plot_info=plot_info)
 
         x.append(xyz[0])
         y.append(xyz[1])
@@ -172,8 +175,10 @@ def doppelanschnitt_Coordinates3d(aziele1,aziele2,pos1,pos2):
 
     # merge new coordinates
     out = coordinates.Coordinates3d(x=x,y=y,z=z,shape = ae1.shape)
-
-    return out,np.array(var_list).T.tolist()
+    if plot_info:
+        return out,np.array(var_list).T.tolist()
+    else:
+        return out
 
 def doppelanschnitt_plot(title,position,var_list,pos1_in,pos2_in,col=['r','g','k','b'],
                          plot_view=False,plot_position=False,plot_n=False):
