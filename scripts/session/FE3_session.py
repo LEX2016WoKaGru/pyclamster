@@ -17,8 +17,8 @@ except: # if not
     
     # create session
     session = pyclamster.CameraSession(
-        longitude  = 54.4947,
-        latitude   = 11.240817,
+        latitude  = 54.4947,
+        longitude   = 11.240817,
         heightNN   = 9.0,
         zone       = 32,
         imgshape   = (1920,1920),
@@ -27,7 +27,7 @@ except: # if not
         calibration = calib
         )
     # add images to session
-    session.add_images("/home/yann/Studium/LEX/LEX/cam/cam3/FE3*.jpg")
+    #session.add_images("/home/yann/Studium/LEX/LEX/cam/cam3/FE3*.jpg")
     
     # create distortion map
     session.createDistortionMap(max_angle=pyclamster.deg2rad(75))

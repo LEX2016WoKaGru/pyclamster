@@ -193,9 +193,8 @@ class CameraSession(object):
 
     ### projection to carthesian coordinates
     def calculate_carthesian_coordinates(self,zone):
-        proj = positioning.Projection(zone=zone) 
-        return proj.lonlat2xy(self.longitude, self.latitude
-            ,return_coordinates = True)
+        proj = positioning.Projection()
+        return proj.lonlat2xy(self.longitude, self.latitude, return_coordinates = True)
 
 
     ###################################################################

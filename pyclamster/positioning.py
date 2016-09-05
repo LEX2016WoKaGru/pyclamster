@@ -152,11 +152,8 @@ class Projection(object):
         except:
             raise ImportError('pyproj isn\'t installed yet')
 
-        # set the projection to utm within zone 32 (Hamburg, Fehmarn) and a
-        # WGS84 ellipsoid
         proj = '+proj=tmerc +lat_0=0 +lon_0=9 +k=1 +x_0=3500000 +y_0=0 +ellps=bessel +datum=potsdam +units=m +no_defs'
         self.p = pyproj.Proj(proj)
-        #self.p = pyproj.Proj(proj='utm', zone=zone, ellps='WGS84')
 
     def lonlat2xy(self, lon, lat, return_coordinates=False):
         """
