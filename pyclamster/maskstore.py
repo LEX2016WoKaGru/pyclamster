@@ -29,6 +29,10 @@ import numpy as np
 import scipy.ndimage
 
 from skimage.morphology import remove_small_objects
+from scipy import ndimage as ndi
+
+from skimage.morphology import watershed
+from skimage.feature import peak_local_max
 
 # Internal modules
 from .image import Image as pyClImage
@@ -148,6 +152,27 @@ class MaskStore(object):
         """
         mask = self.getMask(labels)
         labels, nb_labels = scipy.ndimage.label(~mask)
+        return Labels(labels), nb_labels
+
+    def wsMask(self, labels=None, footprint=np.ones((21, 21))):
+        """
+        Label a given mask with the watershed algorithm.
+        Args:
+            labels (optional[list of int or str]): list of mask labels to be
+                labeled. Defaults to all masks.
+
+        Returns:
+            labels (Labels): Labels instance with the labels as data.
+            n_labels (int): Number of labels.
+        """
+        mask = ~self.getMask(labels)
+        distance = ndi.distance_transform_edt(mask)
+        local_maxi = peak_local_max(distance, indices=False,
+                                    footprint=footprint,
+                                    labels=mask)
+        markers = ndi.label(local_maxi)[0]
+        labels = watershed(-distance, markers, mask=mask)
+        nb_labels = len(np.unique(labels))-1
         return Labels(labels), nb_labels
 
     def getCloud(self, image, labels=None):
