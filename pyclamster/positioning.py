@@ -87,21 +87,21 @@ def doppelanschnitt_Coordinates3d(aziele1,aziele2,pos1,pos2):
             Doppelanschnitt.
     """
     # turn to north
-    if aziele1.elevation_type=="zenith":
-        aziele1.elevation = np.pi/2 - aziele1.elevation
+    aziele1.radius = 1
     aziele1.change_parameters(
-        azimuth_offset = 3/2 * np.pi, azimuth_clockwise = True,
+        azimuth_offset = 3/2 * np.pi,
+        azimuth_clockwise = True,
         elevation_type = "ground",
-        keep = {'azimuth','elevation'}
+        keep = {'x','y','z'}
         )
-
     logger.debug("aziele1: \n{}".format(aziele1))
-    if aziele2.elevation_type=="zenith":
-        aziele2.elevation = np.pi/2 - aziele2.elevation
+
+    aziele2.radius = 1
     aziele2.change_parameters(
-        azimuth_offset = 3/2 * np.pi, azimuth_clockwise = True,
+        azimuth_offset = 3/2 * np.pi, 
+        azimuth_clockwise = True,
         elevation_type = "ground",
-        keep = {'azimuth','elevation'}
+        keep = {'x','y','z'}
         )
     logger.debug("aziele2: \n{}".format(aziele2))
 
