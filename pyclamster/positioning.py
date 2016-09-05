@@ -34,6 +34,36 @@ logger = logging.getLogger(__name__)
 
 __version__ = "0.1"
 
+def tobi_anschnitt(azi1,azi2,ele1,ele2,pos1,pos2):
+    """
+    calculate the 3d position via simple"doppelanschnitt"
+
+    args:
+        azi1, azi2, ele1, ele2 (float): SINGLE values of azimuth and elevation
+            of different devices at positions 1 and 2 (radians)
+        pos1, pos2 (np.array) [x,y,z] of different devices at positions
+            1 and 2 (metres)
+
+    returns:
+
+    """
+    cam_dist = np.sqrt(np.sum(np.power((pos1+pos2),2)))
+
+    # Horizontal position
+    azi3 = np.pi-azi1-azi2
+    r1 = np.sin(azi2)/np.sin(azi3)*cam_dist
+    r2 = np.sin(azi1)/np.sin(azi3)*cam_dist
+
+    x_dis = np.sin(np.pi/2-azi1)*r1
+    y_dis = np.sin(azi1)*r1
+
+    # Height
+    height = np.mean(np.array([pos1[2], pos2[2]]+np.array([r1, r2])/np.tan(np.pi-np.array([ele1, ele2]))))
+
+    position = np.array([pos1[0]+x_dis, pos1[1]+y_dis, height])
+    return position
+
+
 
 def doppelanschnitt(azi1,azi2,ele1,ele2,pos1,pos2,plot_info=False):
     """
@@ -74,36 +104,6 @@ def doppelanschnitt(azi1,azi2,ele1,ele2,pos1,pos2,plot_info=False):
     else:
         return position
 
-def tobi_anschnitt(azi1,azi2,ele1,ele2,pos1,pos2):
-    """
-    calculate the 3d position via simple"doppelanschnitt"
-
-    args:
-        azi1, azi2, ele1, ele2 (float): SINGLE values of azimuth and elevation
-            of different devices at positions 1 and 2 (radians)
-        pos1, pos2 (np.array) [x,y,z] of different devices at positions
-            1 and 2 (metres)
-
-    returns:
-
-    """
-    cam_dist = np.sqrt(np.sum(np.power((pos1+pos2),2)))
-
-    # Horizontal position
-    azi3 = np.pi-azi1-azi2
-    r1 = np.sin(azi2)/np.sin(azi3)*cam_dist
-    r2 = np.sin(azi1)/np.sin(azi3)*cam_dist
-
-    x_dis = np.sin(np.pi/2-azi1)*r1
-    y_dis = np.sin(azi1)*r1
-
-    # Height
-    height = np.mean(np.array([pos1[2], pos2[2]]+np.array([r1, r2])/np.tan(np.pi-np.array([ele1, ele2]))))
-
-    position = np.array([pos1[0]+x_dis, pos1[1]+y_dis, height])
-    return position
-
-
 # multiple values
 def doppelanschnitt_Coordinates3d(aziele1,aziele2,pos1,pos2,plot_info=False):
     """
@@ -124,31 +124,22 @@ def doppelanschnitt_Coordinates3d(aziele1,aziele2,pos1,pos2,plot_info=False):
     logger.debug("copied aziele1:\n{}".format(ae1))
     logger.debug("copied aziele2:\n{}".format(ae2))
     # turn to north
-    ae1.fill(
-        azimuth   = ae1.azimuth,
-        elevation = ae1.elevation,
-        radius    = 1
-        )
     ae1.change_parameters(
-        azimuth_offset = 3/2 * np.pi,
+        azimuth_offset = 3/2*np.pi,
         azimuth_clockwise = True,
         elevation_type = "ground",
-        keep = {'x','y','z'}
+        keep = {'azimuth','elevation'}
         )
+    ae1.radius = 1
 
-    ae2.fill(
-        azimuth   = ae2.azimuth,
-        elevation = ae2.elevation,
-        radius = 1
-        )
     ae2.change_parameters(
-        azimuth_offset = 3/2 * np.pi, 
+        azimuth_offset = 3/2*np.pi,
         azimuth_clockwise = True,
         elevation_type = "ground",
-        keep = {'x','y','z'}
+        keep = {'azimuth','elevation'}
         )
-    logger.debug("ae1 after turning: \n{}".format(ae1))
-    logger.debug("ae2 after turning: \n{}".format(ae2))
+    ae2.radius = 1
+
 
     # convert given positions to numpy array
     position1 = np.array([pos1.x,pos1.y,pos1.z])
@@ -158,21 +149,26 @@ def doppelanschnitt_Coordinates3d(aziele1,aziele2,pos1,pos2,plot_info=False):
 
     # loop over all azimuth/elevation values
     x = [];y = [];z = [];var_list = [] # start with empty lists
-    for azi1,azi2,ele1,ele2 in zip(
-        ae1.azimuth.ravel(),   ae2.azimuth.ravel(), 
-        ae1.elevation.ravel(), ae2.elevation.ravel()):
-        #print(azi1.shape, azi2.shape, ele1.shape, ele2.shape)
-        logger.debug("azi1: {}, azi2: {}, ele1: {}, ele2: {}".format(azi1, azi2, ele1, ele2))
+    for x1,y1,z1,x2,y2,z2 in zip(
+        ae1.x.ravel(), ae1.y.ravel(), ae1.z.ravel(),
+        ae2.x.ravel(), ae2.y.ravel(), ae2.z.ravel()):
         # calculate 3d doppelanschnitt position
-        if plot_info:
-            xyz, var_list_doppel = doppelanschnitt(
-                azi1=azi1,azi2=azi2,ele1=ele1,ele2=ele2,
-                pos1=position1,pos2=position2,plot_info=plot_info)
-            var_list.append(var_list_doppel)
-        else:
-            xyz = doppelanschnitt(
-                azi1=azi1,azi2=azi2,ele1=ele1,ele2=ele2,
-                pos1=position1,pos2=position2)
+ 
+        e1 = np.array([x1,y1,z1])
+        e2 = np.array([x2,y2,z2])
+
+        n = np.cross(e1,e2,axis=0)
+        n = n/np.linalg.norm(n)
+
+        a_s = np.array([e1,-e2,n]).T
+        b_s = (np.array(position2)-np.array(position1)).T
+        a,b,c = np.linalg.solve(a_s, b_s)
+
+        logger.debug("minimum distance: {} m".format(c))
+
+        xyz = np.array(position1 + a * e1 + n * 0.5 * c)
+
+        var_list.append([e1 ,e2, n, a, c])
 
         x.append(xyz[0])
         y.append(xyz[1])
