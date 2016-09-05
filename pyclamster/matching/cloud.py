@@ -107,19 +107,20 @@ class Cloud(BaseCloud):
             prob_map (ProbabilityMap): The probability map between the two
                 clouds.
         """
-        if not isinstance(clouds,list):
+        if not isinstance(clouds, list):
             clouds = [clouds]
         merged_result = []
         for c in clouds:
             prob_map = ProbabilityMap(self, c, w)
-            matched_cloud = SpatialCloud(cloud1=self, cloud2=c, prob_map=prob_map)
+            matched_cloud = SpatialCloud(cloud1=self, cloud2=c,
+                                         prob_map=prob_map)
             merged_result.append([prob_map, matched_cloud])
         return merged_result
 
 
 class SpatialCloud(Cloud):
     def __init__(self, cloud1, cloud2, prob_map):
-        #super().__init__([cloud1, cloud2], preprocess)
+        # super().__init__([cloud1, cloud2], preprocess)
         # if map is None:
         #     prob_map = self.data[0].merge(self.data[1])[1]
         # else:
@@ -144,17 +145,22 @@ class SpatialCloud(Cloud):
         c1_data = self.clouds[0].image.data
         c2_data = self.clouds[1].image.data
         best_point = self.prob_map.get_best()
-        shift = [best_point['point'][0] - int(c1_data.shape[0]/2),
-                 best_point['point'][1] - int(c1_data.shape[1]/2)]
+        shift = [best_point['point'][0] - int(c1_data.shape[0] / 2),
+                 best_point['point'][1] - int(c1_data.shape[1] / 2)]
         bounds = shift_matrix(c1_data.shape, c2_data.shape, shift[0], shift[1])
-        self.clouds[0].image = self.clouds[0].image.cut([bounds[6], bounds[4], bounds[7], bounds[5]])
-        self.clouds[0].label = self.clouds[0].label[bounds[4]:bounds[5], bounds[6]: bounds[7]]
-        self.clouds[1].image = self.clouds[1].image.cut([bounds[2], bounds[0], bounds[3], bounds[1]])
-        self.clouds[1].label = self.clouds[1].label[bounds[0]:bounds[1], bounds[2]: bounds[3]]
+        self.clouds[0].image = self.clouds[0].image.cut(
+            [bounds[6], bounds[4], bounds[7], bounds[5]])
+        self.clouds[0].label = self.clouds[0].label[bounds[4]:bounds[5],
+                               bounds[6]: bounds[7]]
+        self.clouds[1].image = self.clouds[1].image.cut(
+            [bounds[2], bounds[0], bounds[3], bounds[1]])
+        self.clouds[1].label = self.clouds[1].label[bounds[0]:bounds[1],
+                               bounds[2]: bounds[3]]
         return self
 
-   # def _preprocess(self, data):
-   #     return [super()._preprocess(c) for c in data]
+        # def _preprocess(self, data):
+        #     return [super()._preprocess(c) for c in data]
+
     def write2kml(self, kml_path):
         """
         Method to write the cloud data to a kml file.
@@ -169,32 +175,54 @@ class SpatialCloud(Cloud):
         c2_data = self.clouds[1].image.data
         c1_label = self.clouds[0].label
         c2_label = self.clouds[1].label
-        lon, lat = Projection().xy2lonlat(self.positions)
+        lat, lon = self.latlon
         pos = np.expand_dims(np.empty_like(c1_label), axis=2)
-        pos = np.append(pos, lat, axis=2)
-        pos = np.append(pos, lon, axis=2)
-        pos = np.append(pos, self.positions.z, axis=2)
+        pos = np.append(pos, lat[..., np.newaxis], axis=2)
+        pos = np.append(pos, lon[..., np.newaxis], axis=2)
+        pos = np.append(pos, self.positions.z[..., np.newaxis], axis=2)
         colors = c1_data
-        colors[np.logical_and(c1_label, c2_label)] = (c1_data[np.logical_and(c1_label, c2_label)]+c2_data[np.logical_and(c1_label, c2_label)])/2
-        colors[np.logical_and(~c1_label, c2_label)] = c2_data[np.logical_and(~c1_label, c2_label)]
+        colors[np.logical_and(c1_label, c2_label)] = (c1_data[np.logical_and(
+            c1_label, c2_label)] + c2_data[np.logical_and(c1_label,
+                                                          c2_label)]) / 2
+        colors[np.logical_and(~c1_label, c2_label)] = c2_data[
+            np.logical_and(~c1_label, c2_label)]
+        colors = colors/256
         colors[np.logical_and(~c1_label, ~c2_label)] = np.NaN
         pos = np.append(pos, colors, axis=2)
-        alpha = (c1_label+c2_label)/2
-        pos = np.append(pos, alpha, axis=2)
-        kml_file = cloud2kml(pos, self.clouds[0].time, kml_path)
+        alpha = (c1_label + c2_label) / 2
+        pos = np.append(pos, alpha[..., np.newaxis], axis=2)
+        kml_file = cloud2kml(pos, self.clouds[0].image.time, kml_path)
         if not isinstance(kml_path, str):
             return kml_file
+
+    @property
+    def height(self):
+        return self.get_height()
+
+    @property
+    def latlon(self):
+        if not self.positions is None:
+            lat, lon = Projection().xy2lonlat(self.positions)
+            return lat, lon
+        else:
+            print('The positions aren\'t calculated yet!')
+
+    def get_height(self):
+        if not self.positions is None:
+            return np.mean(self.positions.coordinates.z)
+        else:
+            print('The positions aren\'t calculated yet!')
 
     def calc_position(self):
         """
         Method to calculate the x, y, z position of the spatial matched cloud.
         """
         self.positions = positioning.doppelanschnitt_Coordinates3d(
-            aziele1 = self.clouds[0].image.coordinates,
-            aziele2 = self.clouds[1].image.coordinates,
-            pos1    = self.clouds[0].image.position,
-            pos2    = self.clouds[1].image.position,
-            )
+            aziele1=self.clouds[0].image.coordinates,
+            aziele2=self.clouds[1].image.coordinates,
+            pos1=self.clouds[0].image.position,
+            pos2=self.clouds[1].image.position,
+        )
 
 
 class TemporalCloud(Cloud):
