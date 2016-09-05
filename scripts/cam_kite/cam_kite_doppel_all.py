@@ -111,12 +111,12 @@ theo4_2 = Coordinates3d(
     )
 
 # calculate 3d positions via doppelanschnitt
-doppel1 = pyclamster.doppelanschnitt_Coordinates3d(
+doppel1,var_list1 = pyclamster.doppelanschnitt_Coordinates3d(
     aziele1 = theo3_1, aziele2 = theo4_1,
     pos1 = theo3_gk, pos2 = theo4_gk
     )
 
-doppel2 = pyclamster.doppelanschnitt_Coordinates3d(
+doppel2,var_list2 = pyclamster.doppelanschnitt_Coordinates3d(
     aziele1 = theo3_2, aziele2 = theo4_2,
     pos1 = theo3_gk, pos2 = theo4_gk
     )
@@ -137,75 +137,84 @@ cam4_new,time4_new=pickle.load(open("data/cam_kite/FE4_cam_kite_new.pk","rb"))
 cam4_new.elevation = np.pi/2 - cam4_new.elevation
 
 # calculate 3d positions via doppelanschnitt
-doppel_cam_old = pyclamster.doppelanschnitt_Coordinates3d(
+doppel_cam_old,var_list_old = pyclamster.doppelanschnitt_Coordinates3d(
     aziele1 = cam3_old, aziele2 = cam4_old,
     pos1 = session3_old.position, pos2 = session4_old.position
     )
 
 # calculate 3d positions via doppelanschnitt new
-doppel_cam_new = pyclamster.doppelanschnitt_Coordinates3d(
+doppel_cam_new,var_list_new = pyclamster.doppelanschnitt_Coordinates3d(
     aziele1 = cam3_new, aziele2 = cam4_new,
     pos1 = session3_new.position, pos2 = session4_new.position
     )
 
-# plot results
-plt.style.use("fivethirtyeight")
+if 0:# plot results doppelanschnitt_plot function
+    pyclamster.doppelanschnitt_plot('theo1',doppel1,var_list1,theo3_gk,theo4_gk,
+                                    plot_view=1,plot_position=1,plot_n=1)
+    pyclamster.doppelanschnitt_plot('theo2',doppel2,var_list2,theo3_gk,theo4_gk,
+                                    plot_view=1,plot_position=1,plot_n=1)
+    pyclamster.doppelanschnitt_plot('cam_old',doppel_cam_old,var_list_old,session3_old.position,session4_old.position,
+                                    plot_view=1,plot_position=1,plot_n=1)
+    pyclamster.doppelanschnitt_plot('cam_new',doppel_cam_new,var_list_new,session3_new.position,session4_new.position,
+                                    plot_view=1,plot_position=1,plot_n=1)
 
-ax = doppel1.plot3d(method="line")
-ax.set_title("THEO first measurement")
-ax.scatter3D(theo3_gk.x,theo3_gk.y,theo3_gk.z,label="Theo 3",c='r')
-ax.scatter3D(theo4_gk.x,theo4_gk.y,theo4_gk.z,label="Theo 4",c='g')
-ax.set_zlim(0,200)
-plt.legend()
+if 1:# plot results theo
+    plt.style.use("fivethirtyeight")
+    
+    ax = doppel1.plot3d(method="line")
+    ax.set_title("THEO first measurement")
+    ax.scatter3D(theo3_gk.x,theo3_gk.y,theo3_gk.z,label="Theo 3",c='r')
+    ax.scatter3D(theo4_gk.x,theo4_gk.y,theo4_gk.z,label="Theo 4",c='g')
+    ax.set_zlim(0,200)
+    plt.legend()
+    
+    ax = doppel2.plot3d(method="line")
+    ax.set_title("THEO second measurement")
+    ax.scatter3D(theo3_gk.x,theo3_gk.y,theo3_gk.z,label="Theo 3",c='r')
+    ax.scatter3D(theo4_gk.x,theo4_gk.y,theo4_gk.z,label="Theo 4",c='g')
+    ax.set_zlim(0,200)
+    plt.legend()
 
-ax = doppel2.plot3d(method="line")
-ax.set_title("THEO second measurement")
-ax.scatter3D(theo3_gk.x,theo3_gk.y,theo3_gk.z,label="Theo 3",c='r')
-ax.scatter3D(theo4_gk.x,theo4_gk.y,theo4_gk.z,label="Theo 4",c='g')
-ax.set_zlim(0,200)
-plt.legend()
+if 1:# plot results cam
+    ax = doppel_cam_old.plot3d(method="line")
+    ax.scatter3D(session3_old.position.x,session3_old.position.y,
+        session3_old.position.z,label="Cam 3",c='r')
+    ax.scatter3D(session4_old.position.x,session4_old.position.y,
+        session4_old.position.z,label="Cam 4",c='g')
+    ax.set_title("CAM all with bad calibration [BUG, DON'T INTERPRET THIS!]")
+    ax.set_zlim(0,300)
+    plt.legend()
+    
+    ax = doppel_cam_new.plot3d(method="line")
+    ax.scatter3D(session3_new.position.x,session3_new.position.y,
+        session3_old.position.z,label="Cam 3",c='r')
+    ax.scatter3D(session4_new.position.x,session4_new.position.y,
+        session4_old.position.z,label="Cam 4",c='g')
+    ax.set_title("CAM all with new calibration")
+    ax.set_zlim(0,300)
+    plt.legend()
 
-# plot results
-ax = doppel_cam_old.plot3d(method="line")
-ax.scatter3D(session3_old.position.x,session3_old.position.y,
-    session3_old.position.z,label="Cam 3",c='r')
-ax.scatter3D(session4_old.position.x,session4_old.position.y,
-    session4_old.position.z,label="Cam 4",c='g')
-ax.set_title("CAM all with bad calibration [BUG, DON'T INTERPRET THIS!]")
-ax.set_zlim(0,300)
-plt.legend()
-
-# plot results
-ax = doppel_cam_new.plot3d(method="line")
-ax.scatter3D(session3_old.position.x,session3_old.position.y,
-    session3_old.position.z,label="Cam 3",c='r')
-ax.scatter3D(session4_old.position.x,session4_old.position.y,
-    session4_old.position.z,label="Cam 4",c='g')
-ax.set_title("CAM all with new calibration")
-ax.set_zlim(0,300)
-plt.legend()
-
-# plot time series
-fig, ax = plt.subplots()
-ax.plot(time3_old,cam3_old.elevation,label="cam3 old elevation")
-ax.plot(time3_old,cam3_old.azimuth,label="cam3 old azimuth")
-ax.plot(time4_old,cam4_old.elevation,label="cam4 old elevation")
-ax.plot(time4_old,cam4_old.azimuth,label="cam4 old azimuth")
-plt.legend(loc="best")
-
-fig, ax = plt.subplots()
-ax.plot(time3_new,cam3_new.elevation,label="cam3 new elevation")
-ax.plot(time3_new,cam3_new.azimuth,label="cam3 new azimuth")
-ax.plot(time4_new,cam4_new.elevation,label="cam4 new elevation")
-ax.plot(time4_new,cam4_new.azimuth,label="cam4 new azimuth")
-plt.legend(loc="best")
-
-fig, ax = plt.subplots()
-ax.plot(data[0][0],theo3_1.elevation,label="theo3 (first) elevation")
-ax.plot(data[0][0],theo3_1.azimuth,label="theo3 (first) azimuth")
-ax.plot(data[0][0],theo4_1.elevation,label="theo4 (first) elevation")
-ax.plot(data[0][0],theo4_1.azimuth,label="theo4 (first) azimuth")
-plt.legend(loc="best")
-
+if 0:# plot time series
+    fig, ax = plt.subplots()
+    ax.plot(time3_old,cam3_old.elevation,label="cam3 old elevation")
+    ax.plot(time3_old,cam3_old.azimuth,label="cam3 old azimuth")
+    ax.plot(time4_old,cam4_old.elevation,label="cam4 old elevation")
+    ax.plot(time4_old,cam4_old.azimuth,label="cam4 old azimuth")
+    plt.legend(loc="best")
+    
+    fig, ax = plt.subplots()
+    ax.plot(time3_new,cam3_new.elevation,label="cam3 new elevation")
+    ax.plot(time3_new,cam3_new.azimuth,label="cam3 new azimuth")
+    ax.plot(time4_new,cam4_new.elevation,label="cam4 new elevation")
+    ax.plot(time4_new,cam4_new.azimuth,label="cam4 new azimuth")
+    plt.legend(loc="best")
+    
+    fig, ax = plt.subplots()
+    ax.plot(data[0][0],theo3_1.elevation,label="theo3 (first) elevation")
+    ax.plot(data[0][0],theo3_1.azimuth,label="theo3 (first) azimuth")
+    ax.plot(data[0][0],theo4_1.elevation,label="theo4 (first) elevation")
+    ax.plot(data[0][0],theo4_1.azimuth,label="theo4 (first) azimuth")
+    plt.legend(loc="best")
+    
 plt.show()
 
