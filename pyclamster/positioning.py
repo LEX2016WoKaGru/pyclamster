@@ -59,8 +59,9 @@ def doppelanschnitt(azi1,azi2,ele1,ele2,pos1,pos2):
     n = np.cross(e1,e2,axis=0)
     n = n/np.linalg.norm(n)
 
-    a,b,c = np.linalg.solve(np.array([e1,e2,n]).T,
-        (np.array(pos1)-np.array(pos2)).T)
+    a_s = np.array([e1,e2,n]).T
+    b_s = (np.array(pos1)-np.array(pos2)).T
+    a,b,c = np.linalg.solve(a_s, b_s)
 
     logger.debug("minimum distance: {} m".format(c))
 
@@ -109,7 +110,8 @@ def doppelanschnitt_Coordinates3d(aziele1,aziele2,pos1,pos2):
     # loop over all azimuth/elevation values
     x = [];y = [];z = [] # start with empty lists
     for azi1,azi2,ele1,ele2 in zip(
-        aziele1.azimuth, aziele2.azimuth, aziele1.elevation, aziele2.elevation):
+        aziele1.azimuth.flatten(), aziele2.azimuth.flatten(), aziele1.elevation.flatten(), aziele2.elevation.flatten()):
+        #print(azi1.shape, azi2.shape, ele1.shape, ele2.shape)
         # calculate 3d doppelanschnitt position
         xnew, ynew, znew = doppelanschnitt(
             azi1=azi1,azi2=azi2,ele1=ele1,ele2=ele2,
@@ -164,7 +166,7 @@ class Projection(object):
         Returns:
             pos (tuple[float/numpy array]): The longitudes and latitudes as tuple of floats or as tuple of numpy arrays if the input arguments are also a numpy array.
         """
-        if isinstance(x, pyclamster.coordinates.Coordinates3d):
+        if isinstance(x, coordinates.Coordinates3d):
             coords = x
             x = coords.x
             y = coords.y
