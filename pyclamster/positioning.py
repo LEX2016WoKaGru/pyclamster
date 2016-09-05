@@ -66,10 +66,10 @@ def doppelanschnitt(azi1,azi2,ele1,ele2,pos1,pos2):
 
     logger.debug("minimum distance: {} m".format(c))
 
-    position = np.array(pos1 + a * e1 + n * 0.5 * c)
-
-
-    return position
+    position = np.array(pos1 - a * e1 - n * 0.5 * c)
+    
+    var_list = [e1 ,e2, n, a, c]
+    return position, var_list
 
 
 # multiple values
@@ -125,25 +125,76 @@ def doppelanschnitt_Coordinates3d(aziele1,aziele2,pos1,pos2):
     logger.debug("position2: \n{}".format(position2))
 
     # loop over all azimuth/elevation values
-    x = [];y = [];z = [] # start with empty lists
+    x = [];y = [];z = [];var_list = [] # start with empty lists
     for azi1,azi2,ele1,ele2 in zip(
         ae1.azimuth.ravel(),   ae2.azimuth.ravel(), 
         ae1.elevation.ravel(), ae2.elevation.ravel()):
         #print(azi1.shape, azi2.shape, ele1.shape, ele2.shape)
         logger.debug("azi1: {}, azi2: {}, ele1: {}, ele2: {}".format(azi1, azi2, ele1, ele2))
         # calculate 3d doppelanschnitt position
-        xnew, ynew, znew = doppelanschnitt(
+        xyz, var_list_doppel = doppelanschnitt(
             azi1=azi1,azi2=azi2,ele1=ele1,ele2=ele2,
             pos1=position1,pos2=position2)
 
-        x.append(xnew)
-        y.append(ynew)
-        z.append(znew)
+        x.append(xyz[0])
+        y.append(xyz[1])
+        z.append(xyz[2])
+        var_list.append(var_list_doppel)
 
     # merge new coordinates
     out = coordinates.Coordinates3d(x=x,y=y,z=z,shape = ae1.shape)
 
-    return out
+    return out,np.array(var_list).T.tolist()
+
+def doppelanschnitt_plot(title,position,var_list,pos1_in,pos2_in,col=['r','g','k','b'],
+                         plot_view=False,plot_position=False,plot_n=False):
+    """
+    plots the output of doppelanschnitt.
+    Args:
+        position(Coordinates3d): result of 'doppelanschnitt'
+        var_list(list): contains debug information ouput 
+                        of 'doppelanschnitt'
+        pos1_in, pos2_in(Coordinates3d): object containing position
+    """
+    import matplotlib.pyplot as plt
+    from mpl_toolkits.mplot3d import Axes3D
+
+    x = 0
+    y = 1
+    z = 2
+
+    fig = plt.figure()
+    ax = Axes3D(fig)
+    ax.set_xlabel('x')
+    ax.set_ylabel('y')
+    ax.set_zlabel('z')
+    ax.set_title(title)
+ 
+    pos1 = np.array([pos1_in.x,pos1_in.y,pos1_in.z])
+    pos2 = np.array([pos2_in.x,pos2_in.y,pos2_in.z])
+    e1 ,e2, n, a, c = var_list
+    zero_point = pos1
+
+    for i,pos_res in enumerate(zip(position.x,position.y,position.z)):
+        ppp  = np.array([pos_res[x],pos_res[y],pos_res[z]])
+        zero_point = pos1
+        
+        ppp = ppp-zero_point
+        p1p = pos1-zero_point
+        p2p = pos2-zero_point
+        e1p = e1[i]*300+p1p
+        e2p = e2[i]*300+p2p
+        n1p = n[i]*10+ppp
+        n2p = -n[i]*10+ppp
+        
+        if plot_view:
+            ax.plot([p1p[x],e1p[x]],[p1p[y],e1p[y]],[p1p[z],e1p[z]],col[0])
+            ax.plot([p2p[x],e2p[x]],[p2p[y],e2p[y]],[p2p[z],e2p[z]],col[1])
+        if plot_n:
+            ax.plot([n1p[x],n2p[x]],[n1p[y],n2p[y]],[n1p[z],n2p[z]],col[2])
+        if plot_position:
+            ax.plot([ppp[x]]       ,[ppp[y]]       ,[ppp[z]]       ,col[3]+'x')
+        
 
 class Projection(object):
     def __init__(self, zone=32):
