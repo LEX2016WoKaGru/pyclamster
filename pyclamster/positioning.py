@@ -21,6 +21,7 @@ Created for pyclamster
 """
 # System modules
 import logging
+import copy
 
 # External modules
 import numpy as np
@@ -86,32 +87,36 @@ def doppelanschnitt_Coordinates3d(aziele1,aziele2,pos1,pos2):
         positions (Coordinates3d): (x,y,z) positions taken from
             Doppelanschnitt.
     """
+    ae1 = copy.deepcopy(aziele1)
+    ae2 = copy.deepcopy(aziele2)
+    logger.debug("copied aziele1:\n{}".format(ae1))
+    logger.debug("copied aziele2:\n{}".format(ae2))
     # turn to north
-    aziele1.fill(
-        x = aziele1.x,
-        y = aziele1.y,
-        radius = 1
+    ae1.fill(
+        azimuth   = ae1.azimuth,
+        elevation = ae1.elevation,
+        radius    = 1
         )
-    aziele1.change_parameters(
+    ae1.change_parameters(
         azimuth_offset = 3/2 * np.pi,
         azimuth_clockwise = True,
         elevation_type = "ground",
         keep = {'x','y','z'}
         )
-    logger.debug("aziele1: \n{}".format(aziele1))
 
-    aziele2.fill(
-        x = aziele2.x,
-        y = aziele2.y,
+    ae2.fill(
+        azimuth   = ae2.azimuth,
+        elevation = ae2.elevation,
         radius = 1
         )
-    aziele2.change_parameters(
+    ae2.change_parameters(
         azimuth_offset = 3/2 * np.pi, 
         azimuth_clockwise = True,
         elevation_type = "ground",
         keep = {'x','y','z'}
         )
-    logger.debug("aziele2: \n{}".format(aziele2))
+    logger.debug("ae1 after turning: \n{}".format(ae1))
+    logger.debug("ae2 after turning: \n{}".format(ae2))
 
     # convert given positions to numpy array
     position1 = np.array([pos1.x,pos1.y,pos1.z])
@@ -122,8 +127,10 @@ def doppelanschnitt_Coordinates3d(aziele1,aziele2,pos1,pos2):
     # loop over all azimuth/elevation values
     x = [];y = [];z = [] # start with empty lists
     for azi1,azi2,ele1,ele2 in zip(
-        aziele1.azimuth.flatten(), aziele2.azimuth.flatten(), aziele1.elevation.flatten(), aziele2.elevation.flatten()):
+        ae1.azimuth.ravel(),   ae2.azimuth.ravel(), 
+        ae1.elevation.ravel(), ae2.elevation.ravel()):
         #print(azi1.shape, azi2.shape, ele1.shape, ele2.shape)
+        logger.debug("azi1: {}, azi2: {}, ele1: {}, ele2: {}".format(azi1, azi2, ele1, ele2))
         # calculate 3d doppelanschnitt position
         xnew, ynew, znew = doppelanschnitt(
             azi1=azi1,azi2=azi2,ele1=ele1,ele2=ele2,
@@ -134,7 +141,7 @@ def doppelanschnitt_Coordinates3d(aziele1,aziele2,pos1,pos2):
         z.append(znew)
 
     # merge new coordinates
-    out = coordinates.Coordinates3d(x=x,y=y,z=z,shape = aziele1.shape)
+    out = coordinates.Coordinates3d(x=x,y=y,z=z,shape = ae1.shape)
 
     return out
 
