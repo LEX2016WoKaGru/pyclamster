@@ -154,7 +154,7 @@ class MaskStore(object):
         labels, nb_labels = scipy.ndimage.label(~mask)
         return Labels(labels), nb_labels
 
-    def wsMask(self, labels=None):
+    def wsMask(self, labels=None, footprint=np.ones((21, 21))):
         """
         Label a given mask with the watershed algorithm.
         Args:
@@ -168,7 +168,7 @@ class MaskStore(object):
         mask = ~self.getMask(labels)
         distance = ndi.distance_transform_edt(mask)
         local_maxi = peak_local_max(distance, indices=False,
-                                    footprint=np.ones((21, 21)),
+                                    footprint=footprint,
                                     labels=mask)
         markers = ndi.label(local_maxi)[0]
         labels = watershed(-distance, markers, mask=mask)

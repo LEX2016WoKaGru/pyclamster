@@ -225,7 +225,7 @@ class SpatialCloud(Cloud):
         if not self.positions is None:
             c1_label = self.clouds[0].label
             c2_label = self.clouds[1].label
-            return self.positions.z
+            return np.nanmean(self.positions.z)
         else:
             print('The positions aren\'t calculated yet!')
 
