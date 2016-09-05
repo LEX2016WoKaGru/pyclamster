@@ -93,7 +93,7 @@ label = kmeans.predict(raw_image_lcn)
 label.reshape((w, h), replace=True)
 
 masks = label.getMaskStore()
-cloud_mask_num = [0]
+cloud_mask_num = [1]
 masks.denoise(cloud_mask_num, 1000) # cloud - sky choose right number (0 or 1)
 
 cloud_labels_object, numLabels = masks.labelMask(cloud_mask_num) 
