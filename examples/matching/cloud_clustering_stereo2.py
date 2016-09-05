@@ -60,68 +60,71 @@ warnings.filterwarnings('ignore')
 
 __version__ = ""
 
-base_folder = "./"
-image_directory = os.path.join(base_folder, "examples", "images", "wolf")
-trained_models = os.path.join(base_folder, "data")
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+image_dir = os.path.join(BASE_DIR, "examples", "images", "lex")
+data_dir = os.path.join(BASE_DIR, "data")
+trained_models = os.path.join(BASE_DIR, "data")
 
 good_angle = 45
 center = int(1920/2)
 good_angle_dpi = int(np.round(1920 / 180 * good_angle))
 denoising_ratio = 10
-#all_images = [
-#    os.path.join(image_directory, "Image_20160531_114000_UTCp1_3.jpg"),
-#    os.path.join(image_directory, "Image_20160531_114000_UTCp1_4.jpg")]
-all_images = [
-    os.path.join(base_folder, "examples", "images", "wettermast", "Image_Wkm_Aktuell_2.jpg"),
-    os.path.join(base_folder, "examples", "images", "wettermast", "Image_Wkm_Aktuell_2.jpg")]
 
+sessions = []
+sessions.append(pickle.load(open(os.path.join(data_dir,'sessions/FE3_session_new.pk'),'rb')))
+sessions.append(pickle.load(open(os.path.join(data_dir,'sessions/FE4_session_new.pk'),'rb')))
+
+#session.set_images('/home/yann/Studium/LEX/LEX/kite/cam3/FE3*.jpg')
+sessions[0].set_images(os.path.join(image_dir,'cam3/FE3_Image_20160901_100000_UTCp1.jpg'))
+sessions[1].set_images(os.path.join(image_dir,'cam4/FE4_Image_20160901_100000_UTCp1.jpg'))
+
+def simg(image):
+    plt.figure()
+    plt.imshow(image.data)
+    plt.show()
 
 kmeans = pickle.load(open(os.path.join(trained_models, "kmeans.pk"), "rb"))
 
-image = Image(all_images[0])
-image_lcn = Image(image)
-image_lcn.data = LCN(size=(50,50,3), scale=False).fit_transform(image_lcn.data)
-image_lcn = image_lcn.cut([480, 480, 1480, 1480])
-image_lcn.data = scipy.misc.imresize(image_lcn.data, (256,256), interp='bicubic')
-image = image.cut([480,480,1480,1480])
-image.data = scipy.misc.imresize(image.data, (256,256), interp='bicubic')
-
-w, h, _ = original_shape = image_lcn.data.shape
-raw_image_lcn = rbDetection(image_lcn.data).reshape((w*h, -1))
-#raw_image = image.data.reshape((w*h, -1))
-label = kmeans.predict(raw_image_lcn)
-label.reshape((w, h), replace=True)
-
-masks = label.getMaskStore()
-cloud_mask_num = [1]
-masks.denoise(cloud_mask_num, 1000) # cloud - sky choose right number (0 or 1)
-
-cloud_labels_object, numLabels = masks.labelMask(cloud_mask_num) 
-# NOTE: there will be cloud-lables as well as 0 !!!
-print ("number of detected clouds = "+str(numLabels))
-
-cloud_store = cloud_labels_object.getMaskStore()
-cloud_lables = [l+1 for l in range(numLabels)]
-clouds = [cloud_store.getCloud(image, [k,]) for k in cloud_lables] 
-template = clouds[0].image
-
-
-image2 = Image(all_images[0])
-image2 = image2.cut([480, 480, 1480, 1480])
-image2.data = scipy.misc.imresize(image2.data, (256,256), interp='bicubic')
+clouds =[]
+clobj = []
+for s in sessions:
+    for image in s.iterate_over_rectified_images():
+        image_lcn = Image(image)
+        image_lcn.data = LCN(size=(50,50,3), scale=False).fit_transform(image_lcn.data)
+        
+        w, h, _ = original_shape = image_lcn.data.shape
+        raw_image_lcn = rbDetection(image_lcn.data).reshape((w*h, -1))
+        #raw_image = image.data.reshape((w*h, -1))
+        label = kmeans.predict(raw_image_lcn)
+        label.reshape((w, h), replace=True)
+        
+        masks = label.getMaskStore()
+        cloud_mask_num = [1]
+        masks.denoise(cloud_mask_num, 1000) # cloud - sky choose right number (0 or 1)
+        
+        cloud_labels_object, numLabels = masks.wsMask(cloud_mask_num,np.ones((11,11))) 
+        clobj.append(cloud_labels_object)
+        # NOTE: there will be cloud-lables as well as 0 !!!
+        print ("number of detected clouds = "+str(numLabels))
+        
+        cloud_store = cloud_labels_object.getMaskStore()
+        cloud_lables = [l+1 for l in range(numLabels)]
+        clouds.append([cloud_store.getCloud(image, [k,]) for k in cloud_lables])
+            
+plt.figure()
+plt.subplot(121)
+plt.imshow(clobj[0].labels)
+plt.subplot(122)
+plt.imshow(clobj[1].labels)
+plt.show()
 
 print("----starting cloud-cloud matching")
 start = time.time()
 m = pyclamster.matching.Matching()
-matching_result,_ = m.matching(clouds,clouds)
+matching_result,_ = m.matching(clouds[0],clouds[1])
 gestime = time.time()-start
 print('time = '+str(gestime))
 
-if 0: #save png's
-    scipy.misc.imsave('image2.png', image2.data)
-    scipy.misc.imsave('template_cloud.png', template.data)
-    scipy.misc.imsave("lables_kmean.png", label.labels)
-    scipy.misc.imsave("lables_used.png", cloud_labels_object.labels)
 print('--- matched clouds = '+str(len(matching_result)))
 for mapcl in matching_result: 
     spcl = mapcl[1]
