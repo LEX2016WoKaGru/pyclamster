@@ -18,7 +18,7 @@ except: # if not
     # create session
     session = pyclamster.CameraSession(
         latitude  = 54.4947,
-        longitude   = 11.240817,
+        longitude  = 11.240817,
         heightNN   = 9.0,
         zone       = 32,
         imgshape   = (1920,1920),
@@ -41,15 +41,17 @@ except: # if not
     #filename = image._get_time_from_filename("FE3_Image_%Y%m%d_%H%M%S_UTCp1.jpg")
     #image.image.save("plots/images/fe3/newcalib/{}-rect.jpg".format(filename))
 
+
 # loop over all images
-#for image in session.iterate_over_images(size=(500,500)):
-#    plt.subplot(131)
-#    plt.imshow(image.data)
-#    plt.title("image")
-#    plt.subplot(132)
-#    plt.imshow(image.coordinates.elevation,cmap="Blues")
-#    plt.title("elevation")
-#    plt.subplot(133)
-#    plt.imshow(image.coordinates.azimuth,cmap="Blues")
-#    plt.title("azimuth")
-#    plt.show()
+session.add_images("/home/yann/Studium/LEX/LEX/cam/cam3/FE3*.jpg")
+for image in session.iterate_over_rectified_images():
+    plt.subplot(131)
+    plt.imshow(image.data)
+    plt.title("image")
+    plt.subplot(132)
+    plt.imshow(image.coordinates.elevation,cmap="Blues")
+    plt.title("elevation")
+    plt.subplot(133)
+    plt.imshow(image.coordinates.azimuth,cmap="Blues")
+    plt.title("azimuth")
+    plt.show()

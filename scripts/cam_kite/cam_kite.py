@@ -49,7 +49,7 @@ for image in session.iterate_over_images():
 
 session_coord=pyclamster.Coordinates3d(
     azimuth=session_azi,
-    elevation=session_ele,
+    elevation=np.pi/2-session_ele,
     azimuth_offset=3/2*np.pi,
     azimuth_clockwise=True,
     elevation_type="ground"
