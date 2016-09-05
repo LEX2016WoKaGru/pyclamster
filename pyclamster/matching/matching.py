@@ -113,7 +113,7 @@ class ProbabilityMap(object):
         self.w = self._normalize_weights(self.w)
         self.template_size = template_size
 
-        self.prop_map = self._calc_map()
+        self.prob_map = self._calc_map()
 
     def __call__(self):
         return self.map
@@ -179,9 +179,9 @@ class ProbabilityMap(object):
             best (dict[float]): A dict with information about the best point
                 within the map.
         """
-        idx = self.prop_map.argmax()
-        xy = np.unravel_index(idx, self.prop_map.shape)
-        best = {'prob': self.prop_map[xy[0], xy[1]], 'point': xy}
+        idx = self.prob_map.argmax()
+        xy = np.unravel_index(idx, self.prob_map.shape)
+        best = {'prob': self.prob_map[xy[0], xy[1]], 'point': xy}
         return best
 
     def _calc_max_boundary(self, main, temp, fact):
