@@ -127,6 +127,7 @@ session4_new = pickle.load(open('data/sessions/FE4_session_new.pk','rb'))
 
 cam3_old,time3_old=pickle.load(open("data/cam_kite/FE3_cam_kite.pk","rb"))
 cam4_old,time4_old=pickle.load(open("data/cam_kite/FE4_cam_kite.pk","rb"))
+time4_old = time3_old
 
 cam3_new,time3_new=pickle.load(open("data/cam_kite/FE3_cam_kite_new.pk","rb"))
 cam4_new,time4_new=pickle.load(open("data/cam_kite/FE4_cam_kite_new.pk","rb"))
@@ -144,23 +145,39 @@ doppel_cam_new = pyclamster.doppelanschnitt_Coordinates3d(
     )
 
 # plot results
+plt.style.use("fivethirtyeight")
+
 ax = doppel1.plot3d(method="line")
 ax.set_title("THEO first measurement")
-ax.set_zlim(0,300)
+ax.set_zlim(0,200)
 ax = doppel2.plot3d(method="line")
 ax.set_title("THEO second measurement")
-ax.set_zlim(0,300)
-plt.show()
+ax.set_zlim(0,200)
 
 # plot results
 ax = doppel_cam_old.plot3d(method="line")
 ax.set_title("CAM all with bad calibration")
 ax.set_zlim(0,300)
-plt.show()
 
 # plot results
 ax = doppel_cam_new.plot3d(method="line")
 ax.set_title("CAM all with new calibration")
 ax.set_zlim(0,300)
+
+# plot time series
+fig, ax = plt.subplots()
+ax.plot(time3_old,cam3_old.elevation,label="cam3 old elevation")
+ax.plot(time4_old,cam4_old.elevation,label="cam4 old elevation")
+ax.plot(time4_old,cam4_old.azimuth,label="cam4 old azimuth")
+ax.plot(time3_old,cam3_old.azimuth,label="cam3 old azimuth")
+plt.legend()
+
+fig, ax = plt.subplots()
+ax.plot(time3_new,cam3_new.elevation,label="cam3 new elevation")
+ax.plot(time4_new,cam4_new.elevation,label="cam4 new elevation")
+ax.plot(time4_new,cam4_new.azimuth,label="cam4 new azimuth")
+ax.plot(time3_new,cam3_new.azimuth,label="cam3 new azimuth")
+plt.legend()
+
 plt.show()
 

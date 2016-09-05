@@ -18,7 +18,7 @@ except: # if not
     session = pyclamster.CameraSession(
         longitude  = 54.49587,
         latitude   = 11.237683,
-        heightNN   = 1,
+        heightNN   = 0,
         zone       = 32,
         imgshape   = (1920,1920),
         smallshape = (500,500),
@@ -32,6 +32,7 @@ except: # if not
     session.createDistortionMap(max_angle=pyclamster.deg2rad(75))
 
     # save thie session
+    session.reset_images()
     session.save(sessionfile)
 
 # loop over all images

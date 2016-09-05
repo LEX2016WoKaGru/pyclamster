@@ -18,8 +18,8 @@ except: # if not
     # create session
     session = pyclamster.CameraSession(
         longitude  = 54.4947,
-        latitude   = 11.24768,
-        heightNN   = 6.0,
+        latitude   = 11.240817,
+        heightNN   = 9.0,
         zone       = 32,
         imgshape   = (1920,1920),
         smallshape = (500,500),
@@ -33,12 +33,13 @@ except: # if not
     session.createDistortionMap(max_angle=pyclamster.deg2rad(75))
 
     # save thie session
+    session.reset_images()
     session.save(sessionfile)
 
 # loop over all images
-for image in session.iterate_over_rectified_images():
-    filename = image._get_time_from_filename("FE3_Image_%Y%m%d_%H%M%S_UTCp1.jpg")
-    image.image.save("plots/images/fe3/newcalib/{}-rect.jpg".format(filename))
+#for image in session.iterate_over_rectified_images():
+    #filename = image._get_time_from_filename("FE3_Image_%Y%m%d_%H%M%S_UTCp1.jpg")
+    #image.image.save("plots/images/fe3/newcalib/{}-rect.jpg".format(filename))
 
 # loop over all images
 #for image in session.iterate_over_images(size=(500,500)):

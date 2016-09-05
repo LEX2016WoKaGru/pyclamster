@@ -32,7 +32,7 @@ for image in session.iterate_over_images():
     time = image._get_time_from_filename("FE4_Image_%Y%m%d_%H%M%S_UTCp1.jpg")
     fig = plt.figure()
     ax = fig.add_subplot(111)
-    ax.imshow(image.data)
+    ax.imshow(image.data,interpolation="nearest")
     plt.title("image "+str(time))
     fig.canvas.mpl_connect('scroll_event',lambda e:on_click(time,image,e))
 #    plt.subplot(132)
@@ -48,10 +48,13 @@ for image in session.iterate_over_images():
     
 
 session_coord=pyclamster.Coordinates3d(
-    azimuth=np.unique(session_azi)[:-1],
-    elevation=np.unique(np.pi/2-np.array(session_ele))[:-1],
-    azimuth_offset=3/2*np.pi,azimuth_clockwise=True,elevation_type="ground")
+    azimuth=session_azi,
+    elevation=session_ele,
+    azimuth_offset=3/2*np.pi,
+    azimuth_clockwise=True,
+    elevation_type="ground"
+    )
 
-pickle.dump([session_coord,np.unique(session_time)[:-1]],
+pickle.dump([session_coord,session_time],
     open("data/cam_kite/FE4_cam_kite_new.pk","wb"))
 

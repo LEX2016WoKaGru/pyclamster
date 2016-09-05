@@ -41,7 +41,7 @@ lossfunction = pyclamster.calibration.CameraCalibrationLossFunction(
     imgshape = imgshape,
     optimize_projection=True
     )
-lossfunction.PLOT     = True
+lossfunction.PLOT     = False
 lossfunction.SKIPPLOT = 50
 lossfunction.VERBOSE  = True
 

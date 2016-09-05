@@ -97,12 +97,11 @@ plt.colorbar()
 fig = plt.figure()
 rh=np.linspace(0,960,100)
 ele=calibration.lossfunc.radial.elevation(rh)
-plt.plot([960,0],[0,np.pi/2])
-plt.plot(rh,np.pi/2-ele)
+plt.plot([960,0],[0,np.pi/2],label="ideal equidistant projection")
+plt.plot(rh,np.pi/2-ele,label="calibrated projection")
+plt.xlabel("horizontal image radius [px]")
+plt.ylabel("elevation [rad]")
 plt.legend()
 
 plt.show()
 
-
-
-plt.show()
