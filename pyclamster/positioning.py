@@ -164,14 +164,19 @@ def doppelanschnitt_Coordinates3d(aziele1,aziele2,pos1,pos2,plot_info=False):
         #print(azi1.shape, azi2.shape, ele1.shape, ele2.shape)
         logger.debug("azi1: {}, azi2: {}, ele1: {}, ele2: {}".format(azi1, azi2, ele1, ele2))
         # calculate 3d doppelanschnitt position
-        xyz, var_list_doppel = doppelanschnitt(
-            azi1=azi1,azi2=azi2,ele1=ele1,ele2=ele2,
-            pos1=position1,pos2=position2,plot_info=plot_info)
+        if plot_info:
+            xyz, var_list_doppel = doppelanschnitt(
+                azi1=azi1,azi2=azi2,ele1=ele1,ele2=ele2,
+                pos1=position1,pos2=position2,plot_info=plot_info)
+            var_list.append(var_list_doppel)
+        else:
+            xyz = doppelanschnitt(
+                azi1=azi1,azi2=azi2,ele1=ele1,ele2=ele2,
+                pos1=position1,pos2=position2)
 
         x.append(xyz[0])
         y.append(xyz[1])
         z.append(xyz[2])
-        var_list.append(var_list_doppel)
 
     # merge new coordinates
     out = coordinates.Coordinates3d(x=x,y=y,z=z,shape = ae1.shape)
