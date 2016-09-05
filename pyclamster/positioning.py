@@ -87,7 +87,11 @@ def doppelanschnitt_Coordinates3d(aziele1,aziele2,pos1,pos2):
             Doppelanschnitt.
     """
     # turn to north
-    aziele1.radius = 1
+    aziele1.fill(
+        x = aziele1.x,
+        y = aziele1.y,
+        radius = 1
+        )
     aziele1.change_parameters(
         azimuth_offset = 3/2 * np.pi,
         azimuth_clockwise = True,
@@ -96,7 +100,11 @@ def doppelanschnitt_Coordinates3d(aziele1,aziele2,pos1,pos2):
         )
     logger.debug("aziele1: \n{}".format(aziele1))
 
-    aziele2.radius = 1
+    aziele2.fill(
+        x = aziele2.x,
+        y = aziele2.y,
+        radius = 1
+        )
     aziele2.change_parameters(
         azimuth_offset = 3/2 * np.pi, 
         azimuth_clockwise = True,
