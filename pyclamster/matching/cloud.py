@@ -209,7 +209,7 @@ class SpatialCloud(Cloud):
 
     def get_height(self):
         if not self.positions is None:
-            return np.mean(self.positions.coordinates.z)
+            return np.mean(self.positions.z)
         else:
             print('The positions aren\'t calculated yet!')
 
