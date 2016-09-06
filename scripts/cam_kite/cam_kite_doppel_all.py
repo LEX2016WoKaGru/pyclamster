@@ -113,12 +113,12 @@ theo4_2 = Coordinates3d(
 # calculate 3d positions via doppelanschnitt
 doppel1,var_list1 = pyclamster.doppelanschnitt_Coordinates3d(
     aziele1 = theo3_1, aziele2 = theo4_1,
-    pos1 = theo3_gk, pos2 = theo4_gk
+    pos1 = theo3_gk, pos2 = theo4_gk,plot_info=True
     )
 
 doppel2,var_list2 = pyclamster.doppelanschnitt_Coordinates3d(
     aziele1 = theo3_2, aziele2 = theo4_2,
-    pos1 = theo3_gk, pos2 = theo4_gk
+    pos1 = theo3_gk, pos2 = theo4_gk,plot_info=True
     )
 
 session3_old = pickle.load(open('data/sessions/FE3_session.pk','rb'))
@@ -139,13 +139,13 @@ cam4_new.elevation = np.pi/2 - cam4_new.elevation
 # calculate 3d positions via doppelanschnitt
 doppel_cam_old,var_list_old = pyclamster.doppelanschnitt_Coordinates3d(
     aziele1 = cam3_old, aziele2 = cam4_old,
-    pos1 = session3_old.position, pos2 = session4_old.position
+    pos1 = session3_old.position, pos2 = session4_old.position,plot_info=True
     )
 
 # calculate 3d positions via doppelanschnitt new
 doppel_cam_new,var_list_new = pyclamster.doppelanschnitt_Coordinates3d(
     aziele1 = cam3_new, aziele2 = cam4_new,
-    pos1 = session3_new.position, pos2 = session4_new.position
+    pos1 = session3_new.position, pos2 = session4_new.position,plot_info=True
     )
 
 if 0:# plot results doppelanschnitt_plot function
