@@ -5,6 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import logging
 import pickle
+import datetime
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -148,7 +149,7 @@ doppel_cam_new,var_list_new = pyclamster.doppelanschnitt_Coordinates3d(
     pos1 = session3_new.position, pos2 = session4_new.position,plot_info=True
     )
 
-if 1:# plot results doppelanschnitt_plot function
+if 0:# plot results doppelanschnitt_plot function
     pyclamster.doppelanschnitt_plot('theo1',doppel1,var_list1,theo3_gk,theo4_gk,
                                     plot_view=1,plot_position=1,plot_n=1)
     pyclamster.doppelanschnitt_plot('theo2',doppel2,var_list2,theo3_gk,theo4_gk,
@@ -196,26 +197,56 @@ if 0:# plot results cam
     ax.set_zlim(0,300)
     plt.legend()
 
-if 0:# plot time series
-    fig, ax = plt.subplots()
-    ax.plot(time3_old,cam3_old.elevation,label="cam3 old elevation")
-    ax.plot(time3_old,cam3_old.azimuth,label="cam3 old azimuth")
-    ax.plot(time4_old,cam4_old.elevation,label="cam4 old elevation")
-    ax.plot(time4_old,cam4_old.azimuth,label="cam4 old azimuth")
-    plt.legend(loc="best")
+if 1:# plot time series
+    #fig, ax = plt.subplots()
+    #ax.plot(time3_old,cam3_old.elevation,label="cam3 old elevation")
+    #ax.plot(time3_old,cam3_old.azimuth,label="cam3 old azimuth")
+    #ax.plot(time4_old,cam4_old.elevation,label="cam4 old elevation")
+    #ax.plot(time4_old,cam4_old.azimuth,label="cam4 old azimuth")
+    #plt.legend(loc="best")
     
     fig, ax = plt.subplots()
-    ax.plot(time3_new,cam3_new.elevation,label="cam3 new elevation")
-    ax.plot(time3_new,cam3_new.azimuth,label="cam3 new azimuth")
-    ax.plot(time4_new,cam4_new.elevation,label="cam4 new elevation")
-    ax.plot(time4_new,cam4_new.azimuth,label="cam4 new azimuth")
+    ax.plot(time3_new,cam3_new.azimuth/np.pi*180,label="cam3 new azimuth")
+    ax.plot(time4_new,cam4_new.azimuth/np.pi*180,label="cam4 new azimuth")
     plt.legend(loc="best")
-    
+    ax.set_title("Drachen Doppelanschnitt Azimuth")
+    ax.set_xlabel("Zeit [Uhr]")
+    ax.set_ylabel("Winkel [°]")
+
+    starttime1 = datetime.datetime(2016,9,1,11+1,2,35) #utc +1
+    timeseries1 = np.array([starttime1+datetime.timedelta(seconds = data[0][0,i]) for i in range(len(data[0][0,:]))])
+
+    ax.plot(timeseries1,theo3_1.azimuth/np.pi*180,'x',label="theo3 (first) azimuth")
+    ax.plot(timeseries1,theo4_1.azimuth/np.pi*180,'x',label="theo4 (first) azimuth")
+    plt.legend(loc="best")
+
+    starttime2 = datetime.datetime(2016,9,1,11+1,23,44) #utc +1
+    timeseries2 = np.array([starttime2+datetime.timedelta(seconds = data[1][0,i]) for i in range(len(data[1][0,:]))])
+
+    ax.plot(timeseries2,theo3_2.azimuth/np.pi*180,'x',label="theo3 (second) azimuth")
+    ax.plot(timeseries2,theo4_2.azimuth/np.pi*180,'x',label="theo4 (second) azimuth")
+    plt.legend(loc="best")
+
     fig, ax = plt.subplots()
-    ax.plot(data[0][0],theo3_1.elevation,label="theo3 (first) elevation")
-    ax.plot(data[0][0],theo3_1.azimuth,label="theo3 (first) azimuth")
-    ax.plot(data[0][0],theo4_1.elevation,label="theo4 (first) elevation")
-    ax.plot(data[0][0],theo4_1.azimuth,label="theo4 (first) azimuth")
+    ax.plot(time3_new,cam3_new.elevation/np.pi*180,label="cam3 new elevation")
+    ax.plot(time4_new,cam4_new.elevation/np.pi*180,label="cam4 new elevation")
+    plt.legend(loc="best")
+    ax.set_title("Drachen Doppelanschnitt Elevation")
+    ax.set_xlabel("Zeit [Uhr]")
+    ax.set_ylabel("Winkel [°]")
+
+    starttime1 = datetime.datetime(2016,9,1,11+1,2,35) #utc +1
+    timeseries1 = np.array([starttime1+datetime.timedelta(seconds = data[0][0,i]) for i in range(len(data[0][0,:]))])
+
+    ax.plot(timeseries1,theo3_1.elevation/np.pi*180,'x',label="theo3 (first) elevation")
+    ax.plot(timeseries1,theo4_1.elevation/np.pi*180,'x',label="theo4 (first) elevation")
+    plt.legend(loc="best")
+
+    starttime2 = datetime.datetime(2016,9,1,11+1,23,44) #utc +1
+    timeseries2 = np.array([starttime2+datetime.timedelta(seconds = data[1][0,i]) for i in range(len(data[1][0,:]))])
+
+    ax.plot(timeseries2,theo3_2.elevation/np.pi*180,'x',label="theo3 (second) elevation")
+    ax.plot(timeseries2,theo4_2.elevation/np.pi*180,'x',label="theo4 (second) elevation")
     plt.legend(loc="best")
     
 plt.show()
