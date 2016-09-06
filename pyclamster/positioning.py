@@ -162,11 +162,14 @@ def doppelanschnitt_Coordinates3d(aziele1,aziele2,pos1,pos2,plot_info=False):
 
         a_s = np.array([e1,-e2,n]).T
         b_s = (np.array(position2)-np.array(position1)).T
-        a,b,c = np.linalg.solve(a_s, b_s)
-
+        try:
+            a,b,c = np.linalg.solve(a_s, b_s)
+            xyz = np.array(position1 + a * e1 + n * 0.5 * c)
+        except LinAlgError:
+            a,b,c = np.nan, np.nan, np.nan
+            xyz = [np.nan,np.nan,np.nan]
+    
         logger.debug("minimum distance: {} m".format(c))
-
-        xyz = np.array(position1 + a * e1 + n * 0.5 * c)
 
         var_list.append([e1 ,e2, n, a, c])
 
