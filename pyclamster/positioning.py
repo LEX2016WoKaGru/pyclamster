@@ -203,9 +203,9 @@ def doppelanschnitt_plot(title,position,var_list,pos1_in,pos2_in,col=['r','g','k
 
     fig = plt.figure()
     ax = Axes3D(fig)
-    ax.set_xlabel('x')
-    ax.set_ylabel('y')
-    ax.set_zlabel('z')
+    ax.set_xlabel('x [m]')
+    ax.set_ylabel('y [m]')
+    ax.set_zlabel('z [m]')
     ax.set_title(title)
  
     pos1 = np.array([pos1_in.x,pos1_in.y,pos1_in.z])
