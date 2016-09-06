@@ -136,7 +136,8 @@ class SpatialCloud(Cloud):
         if successful:
             try:
                 self.calc_position()
-            except:
+            except Exception as e:
+                print(e)
                 successful = False
         return successful
 
@@ -223,9 +224,8 @@ class SpatialCloud(Cloud):
 
     def get_height(self):
         if not self.positions is None:
-            c1_label = self.clouds[0].label
-            c2_label = self.clouds[1].label
-            return np.nanmean(self.positions.z)
+            shp = self.positions.z.shape
+            return self.positions.z[int(shp[0]/2), int(shp[1]/2)]
         else:
             print('The positions aren\'t calculated yet!')
 
