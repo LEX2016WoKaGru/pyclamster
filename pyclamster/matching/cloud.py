@@ -90,7 +90,7 @@ class Cloud(BaseCloud):
                   int((np.max(ind[0]) + np.min(ind[0])) / 2))
         return center
 
-    def merge(self, clouds, w=None):
+    def merge(self, clouds, w=None, greyscale=False):
         """
         Method to merge cloud spatially. This method is based on a template
         matching algorithm.
@@ -111,7 +111,7 @@ class Cloud(BaseCloud):
             clouds = [clouds]
         merged_result = []
         for c in clouds:
-            prob_map = ProbabilityMap(self, c, w)
+            prob_map = ProbabilityMap(self, c, w, greyscale)
             matched_cloud = SpatialCloud(cloud1=self, cloud2=c,
                                          prob_map=prob_map)
             merged_result.append([prob_map, matched_cloud])
@@ -233,6 +233,8 @@ class SpatialCloud(Cloud):
         """
         Method to calculate the x, y, z position of the spatial matched cloud.
         """
+        # self.clouds[0].image.coordinates.elevation_type = 'ground'
+        # self.clouds[1].image.coordinates.elevation_type = 'ground'
         self.positions = positioning.doppelanschnitt_Coordinates3d(
             aziele1=self.clouds[0].image.coordinates,
             aziele2=self.clouds[1].image.coordinates,
