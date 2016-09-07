@@ -94,5 +94,17 @@ aziele2=pyclamster.Coordinates3d(
 doppel_c3d,var_list_c3d = pyclamster.doppelanschnitt_Coordinates3d(aziele1,aziele2,p1,p2,plot_info=True)
 pyclamster.doppelanschnitt_plot('c3d single point by hand',doppel_c3d,var_list_c3d,p1,p2,plot_view=1,plot_position=1)
 
+ax,m = pyclamster.positioning.plot_results2d(doppel_c3d.x,doppel_c3d.y,doppel_c3d.z)
+lon1,lat1 = pyclamster.positioning.Projection().xy2lonlat(p1.x,p1.y)
+lon2,lat2 = pyclamster.positioning.Projection().xy2lonlat(p2.x,p2.y)
+x1,y1 = m(lon1,lat1)
+x2,y2 = m(lon2,lat2)
+ax.plot([x1],[y1],'go')
+ax.plot([x2],[y2],'bo')
+
+ax,m = pyclamster.positioning.plot_results3d(doppel_c3d.x,doppel_c3d.y,doppel_c3d.z)
+ax.plot([x1],[y1],[p1.z],'gx')
+ax.plot([x2],[y2],[p2.z],'bx')
+
 plt.show()
 
