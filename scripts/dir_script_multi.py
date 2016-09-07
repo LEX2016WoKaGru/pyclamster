@@ -15,7 +15,6 @@ from multiprocessing.dummy import Pool as ThreadPool
 
 # External modules
 import numpy as np
-import scipy.misc
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 import pandas as pd
@@ -93,15 +92,6 @@ def generate_doppel(images):
         cloud_store = cloud_labels_object.getMaskStore()
         cloud_lables = np.unique(cloud_labels_object.labels)[1:]
         clouds.append([cloud_store.getCloud(img, [k, ]) for k in cloud_lables])
-        if debug:
-            j = 0
-            scipy.misc.imsave(
-                os.path.join(plot_dir, "lables_kmean_{0:s}_{1:d}.png".format(img.time.strftime('%Y%m%d%H%M'), k)),
-                             label.labels)
-            scipy.misc.imsave(
-                os.path.join(plot_dir, "lables_used_{0:s}_{1:d}.png".format(img.time.strftime('%Y%m%d%H%M'), k)),
-                             cloud_labels_object.labels)
-            print('finished image {0:s} of camera {1:d}'.format(img.time.strftime('%Y%m%d%H%M'), k))
         k += 1
     t=0
     if not(not clouds[0] or not clouds[1]):
