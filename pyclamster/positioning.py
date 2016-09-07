@@ -273,13 +273,23 @@ def plot_results3d(lons,lats,z):
     from mpl_toolkits.basemap import Basemap
     from mpl_toolkits.mplot3d import Axes3D
 
+    llcrnrlon = 11.
+    urcrnrlon = 11.3
+    llcrnrlat = 54.4
+    urcrnrlat = 54.55
+    if np.min(lons)> llcrnrlon: llcrnrlon = np.min(lons)
+    if np.max(lons)> urcrnrlon: urcrnrlon = np.max(lons)
+    if np.min(lats)> llcrnrlat: llcrnrlat = np.min(lats)
+    if np.max(lats)> urcrnrlat: urcrnrlat = np.max(lats)
+  
+
     # create new figure, axes instances.
     fig=plt.figure()
     ax=Axes3D(fig)
     ax.set_title('stereo cam results')
     
     # setup mercator map projection.
-    m = Basemap(llcrnrlon=11.,llcrnrlat=54.4,urcrnrlon=11.3,urcrnrlat=54.55,
+    m = Basemap(llcrnrlon=llcrnrlon,llcrnrlat=llcrnrlat,urcrnrlon=urcrnrlon,urcrnrlat=urcrnrlat,
                 resolution='i',projection='merc')
     x, y = m(lons,lats)
     #m.fillcontinents(zorder=1)
@@ -302,7 +312,16 @@ def plot_results2d(lons,lats,z):
     import matplotlib.pyplot as plt
     from mpl_toolkits.basemap import Basemap
     from mpl_toolkits.mplot3d import Axes3D
- 
+
+    llcrnrlon = 11.
+    urcrnrlon = 11.3
+    llcrnrlat = 54.4
+    urcrnrlat = 54.55
+    if np.min(lons)> llcrnrlon: llcrnrlon = np.min(lons)
+    if np.max(lons)> urcrnrlon: urcrnrlon = np.max(lons)
+    if np.min(lats)> llcrnrlat: llcrnrlat = np.min(lats)
+    if np.max(lats)> urcrnrlat: urcrnrlat = np.max(lats)
+
     # create new figure, axes instances.
     fig=plt.figure()
     #ax=Axes3D(fig)
@@ -310,7 +329,7 @@ def plot_results2d(lons,lats,z):
     ax.set_title('stereo cam results')
     
     # setup mercator map projection.
-    m = Basemap(llcrnrlon=11.,llcrnrlat=54.4,urcrnrlon=11.3,urcrnrlat=54.55,
+    m = Basemap(llcrnrlon=llcrnrlon,llcrnrlat=llcrnrlat,urcrnrlon=urcrnrlon,urcrnrlat=urcrnrlat,
                 resolution='i',projection='merc')
     x, y = m(lons,lats)
     m.fillcontinents(zorder=1)
