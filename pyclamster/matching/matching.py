@@ -167,21 +167,28 @@ class ProbabilityMap(object):
             # print("margins dim 1 reset "+str(margins))
 
         ### useing this with weights to do every channel on it's own
-        if self.greyscale:
-            main_img = np.mean(main_img, axis=2)
-            template = np.mean(template, axis=2)
-            return match_template(main_img[:, :], template[:, :],
-                                  pad_input=True, mode='reflect',
-                                  constant_values=0)
+        if 0 in main_img.shape or 0 in template.shape:
+            return np.array([np.NaN])[:, np.newaxis]
         else:
-            probability_map = []
-            for i in range(main_img.shape[2]):
-                probability_map.append(
-                    match_template(main_img[:, :, i], template[:, :, i],
-                                   pad_input=True, mode='reflect',
-                                   constant_values=0)
-                    * self.w[i])
-            return np.sum(probability_map, 0)
+            if self.greyscale:
+                main_img = np.mean(main_img, axis=2)
+                template = np.mean(template, axis=2)
+                try:
+                    return match_template(main_img[:, :], template[:, :],
+                                          pad_input=True, mode='reflect',
+                                          constant_values=0)
+                except Exception as e:
+                    print(main_img.shape, template.shape, e)
+
+            else:
+                probability_map = []
+                for i in range(main_img.shape[2]):
+                    probability_map.append(
+                        match_template(main_img[:, :, i], template[:, :, i],
+                                       pad_input=True, mode='reflect',
+                                       constant_values=0)
+                        * self.w[i])
+                return np.sum(probability_map, 0)
 
     #        probability_map = match_template(main_img,template,pad_input=True,mode='reflect',constant_values=0)
     #        return probability_map
