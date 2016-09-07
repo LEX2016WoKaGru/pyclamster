@@ -28,7 +28,7 @@ import numpy as np
 
 # Internal modules
 from . import coordinates
-
+from . import utils
 
 logger = logging.getLogger(__name__)
 
@@ -375,3 +375,67 @@ class Projection(object):
             y = coords.y
         pos = self.p(x, y, inverse=True)
         return pos
+
+def plot_results3d(x,y,z):
+    import matplotlib.pyplot as plt
+    from mpl_toolkits.basemap import Basemap
+    from mpl_toolkits.mplot3d import Axes3D
+
+    lons,lats = Projection().xy2lonlat(x,y)
+    
+    # create new figure, axes instances.
+    fig=plt.figure()
+    ax=Axes3D(fig)
+    ax.set_title('stereo cam results')
+    
+    # setup mercator map projection.
+    m = Basemap(llcrnrlon=11.,llcrnrlat=54.4,urcrnrlon=11.3,urcrnrlat=54.55,
+                resolution='i',projection='merc')
+    x, y = m(lons,lats)
+    #m.fillcontinents(zorder=1)
+    ax.add_collection3d(m.drawcoastlines())
+    # draw parallels
+    #m.drawparallels(np.arange(54,55,0.1),labels=[1,1,0,1])
+    # draw meridians
+    #m.drawmeridians(np.arange(10,12,0.1),labels=[1,1,0,1])
+    for xi,yi,zi in zip(x,y,z):
+        ax.plot([xi],[yi],[zi],'o',color=utils.calc_color(zi,0,15000))
+        ax.plot([xi,xi],[yi,yi],[0,zi],color=utils.calc_color(zi,0,15000))
+        ax.plot([xi],[yi],[0],'x',color=utils.calc_color(zi,0,15000))
+    # Now adding the colorbar
+    ax.set_zlabel('Hoehe [m]')
+    ax.set_xlabel('Longitude')
+    ax.set_ylabel('Latitude')
+    return ax,m
+
+def plot_results2d(x,y,z):
+    import matplotlib.pyplot as plt
+    from mpl_toolkits.basemap import Basemap
+    from mpl_toolkits.mplot3d import Axes3D
+
+    lons,lats = Projection().xy2lonlat(x,y)
+    
+    # create new figure, axes instances.
+    fig=plt.figure()
+    #ax=Axes3D(fig)
+    ax = fig.add_subplot(111)
+    ax.set_title('stereo cam results')
+    
+    # setup mercator map projection.
+    m = Basemap(llcrnrlon=11.,llcrnrlat=54.4,urcrnrlon=11.3,urcrnrlat=54.55,
+                resolution='i',projection='merc')
+    x, y = m(lons,lats)
+    m.fillcontinents(zorder=1)
+    m.drawcoastlines()
+    # draw parallels
+    m.drawparallels(np.arange(54,55,0.1),labels=[1,1,0,1])
+    # draw meridians
+    m.drawmeridians(np.arange(10,12,0.1),labels=[1,1,0,1])
+    #print(x,y,z)
+    sc = ax.scatter(x,y,c=z,cmap='RdBu',vmin=0,vmax=15000,zorder=10)
+    # Now adding the colorbar
+    cb = plt.colorbar(mappable=sc,cmap='RdBu',ax=ax,pad=0.13)
+    cb.set_clim(0,15000)
+    cb.set_label('Hoehe [m]')
+    return ax,m
+

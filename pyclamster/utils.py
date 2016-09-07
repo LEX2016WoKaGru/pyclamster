@@ -146,5 +146,19 @@ def cloud2kml(cloud, date, file_path=None):
     elif not isinstance(file_path, simplekml.kml.Kml):
         return kml_file
 
+def calc_color(val,vmin,vmax):
+    if val < vmin:
+        val = vmin
+    if val > vmax: 
+        val = vmax
+    c = (val-vmin)/(vmax-vmin)
+    r,g,b = np.array([1-c,0,c])*99
+    r = str(int(r))
+    g = str(int(g))
+    b = str(int(b))
+    if len(r) == 1: r = '0'+r;
+    if len(g) == 1: g = '0'+g;
+    if len(b) == 1: b = '0'+b;
+    return '#'+r+g+b
 
 
