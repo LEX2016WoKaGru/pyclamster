@@ -79,7 +79,7 @@ def save():
     df_height = df_height.sort()
     df_height.to_json(os.path.join(trained_models, 'heights_long_600.json'))
     pickle.dump(xy, open(
-        os.path.join(trained_models, 'xy_long_600.pk', mode='wb')))
+        os.path.join(trained_models, 'xy_long_600.pk'), mode='wb'))
 
 def generate_doppel(images):
     start_time = time.time()
