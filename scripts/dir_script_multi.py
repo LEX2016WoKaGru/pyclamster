@@ -49,8 +49,8 @@ debug = False
 predictor = pickle.load(open(os.path.join(trained_models, "kmeans.pk"), "rb"))
 
 cams = []
-cams.append(pickle.load(open(os.path.join(trained_models, 'sessions', 'FE3_session_new_600.pk'), mode='rb')))
-cams.append(pickle.load(open(os.path.join(trained_models, 'sessions', 'FE4_session_new_600.pk'), mode='rb')))
+cams.append(pickle.load(open(os.path.join(trained_models, 'sessions', 'FE3_session_new.pk'), mode='rb')))
+cams.append(pickle.load(open(os.path.join(trained_models, 'sessions', 'FE4_session_new.pk'), mode='rb')))
 cams[0].set_images(os.path.join(image_directory, 'cam3'))
 cams[1].set_images(os.path.join(image_directory, 'cam4'))
 matching = pyclamster.matching.Matching(greyscale=True)
@@ -168,6 +168,7 @@ while images_available:
                 cnt_thread = 99
     try:
         print('Found 8 image pairs, starting the multiprocessing.')
+        pool = ThreadPool(num_cores)
         pool.map(generate_doppel, available_images)
         pool.close() 
         pool.join()
