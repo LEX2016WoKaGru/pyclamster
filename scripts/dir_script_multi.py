@@ -68,6 +68,18 @@ pool = ThreadPool(num_cores)
 
 
 # In[5]:
+def save():
+    max_len = np.max([len(height[i]) for i in height.keys()])
+    df_height = pd.DataFrame(columns=range(max_len), index=height.keys())
+    for i in df_height.index:
+        for k, j in enumerate(height[i]):
+            if not j is None:
+                if 70 < j < 15000:
+                    df_height.ix[i, k] = j
+    df_height = df_height.sort()
+    df_height.to_json(os.path.join(trained_models, 'heights_long_600.json'))
+    pickle.dump(xy, open(
+        os.path.join(trained_models, 'xy_long_600.pk', mode='wb')))
 
 def generate_doppel(images):
     start_time = time.time()
@@ -129,7 +141,7 @@ def generate_doppel(images):
                 plt.tight_layout()
                 plt.savefig(os.path.join(plot_dir, 'height{0:s}_{1:d}.png'.format(img.time.strftime('%Y%m%d%H%M'), t)))
             height[images[0].time].append(spatial_cloud.height)
-            xy[images[0].time].append(list(spatial_cloud.get_latlon()))
+            xy[images[0].time].append(spatial_cloud.get_latlon())
             t+=1
     try:      
         print('finished image {0:s} calculations with {1:d} heights (min: {2:.1f}, max: {3:.1f}), duration: {4:.1f} s'.format(images[0].time.strftime('%Y%m%d%H%M'), t, np.nanmin(height[images[0].time]), np.nanmax(height[images[0].time]), time.time()-start_time))
@@ -138,7 +150,7 @@ def generate_doppel(images):
 
 
 # In[ ]:
-
+last_time = None
 images_available = True
 gens = [cams[0].iterate_over_rectified_images(), cams[1].iterate_over_rectified_images()]
 images = [next(gens[0]), next(gens[1])]
@@ -174,21 +186,14 @@ while images_available:
         pool.join()
     except Exception as e:
         print(e)
+    if last_time is None or (images[0].time - last_time).seconds > 3600:
+        save()
+        last_time = images[0].time
 print('finished image processing')
 
-
+save()
 # In[11]:
 
-max_len = np.max([len(height[i]) for i in height.keys()])
-df_height = pd.DataFrame(columns=range(max_len), index=height.keys())
-for i in df_height.index:
-    for k, j in enumerate(height[i]):
-        if not j is None:
-            if 70<j<15000:
-                df_height.ix[i, k] = j
-df_height = df_height.sort()
-df_height.to_json(os.path.join(trained_models, 'heights_long_600.json'))
-pickle.dump(xy, open(os.path.join(trained_models, 'xy_long_600.pk', mode='wb')))
 
 
 # In[ ]:
