@@ -4,11 +4,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pyclamster
 
-x = 3641343.2618716503
-y = 6042905.146374716
-#z = 1999.9201277320833
-z = 10000
-
 x = np.linspace(3641300,3641350,num=25)
 y = np.linspace(6042900,6042910,num=25)
 z = np.linspace(0,15000,num=25)
@@ -31,7 +26,10 @@ m.drawparallels(np.arange(54,55,0.1),labels=[1,1,0,1])
 m.drawmeridians(np.arange(10,12,0.1),labels=[1,1,0,1])
 ax.set_title('Great Circle from New York to London')
 print(x,y,z)
-ax.scatter(x,y,c=z,cmap='winter',vmin=0,vmax=15000,zorder=10)
-plt.colorbar()
+sc = ax.scatter(x,y,c=z,cmap='RdBu',vmin=0,vmax=15000,zorder=10)
+# Now adding the colorbar
+cb = plt.colorbar(mappable=sc,cmap='RdBu',ax=ax,pad=0.13)
+cb.set_clim(0,15000)
+cb.set_label('Hoehe [m]')
 plt.show()
 
