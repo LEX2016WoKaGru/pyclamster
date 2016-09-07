@@ -40,13 +40,14 @@ class Matching(object):
         w(list[float]): weights used for the given channels (max value 1, dim = cloud.data.shape[2])
     """
 
-    def __init__(self, w=None):
+    def __init__(self, w=None, greyscale=False):
         self.w = w
+        self.greyscale = greyscale
 
     def matching(self, clouds1, clouds2, min_match_prob=0.75):
         """
         matching to lists of clouds together by creating a ProbabilityMap to compare clouds
-        Args:
+        Args:d
             clouds1 (list[Cloud/SpatialCloud]): list of clouds from first camera
             clouds2 (list[Cloud/SPatialCloud]): list of clouds from second camera
             min_match_prob (float): used to determine minimal matching probability to accept
@@ -62,7 +63,7 @@ class Matching(object):
         matched_idx = [[-1, -1]]
         for idx_c1, c in enumerate(clouds1):
             # merge one cloud1 with all clouds2(= PropabilityMap)
-            mergedC[0].append(c.merge(clouds2, self.w))
+            mergedC[0].append(c.merge(clouds2, self.w, self.greyscale))
             # get best matching points out of matches(= dict)
             best_dicts[0].append(
                 [mergedC[0][idx_c1][idx_c2][0].get_best() for idx_c2 in
@@ -100,7 +101,8 @@ class Matching(object):
 
 
 class ProbabilityMap(object):
-    def __init__(self, cloud1, cloud2, w, template_size=0.75):
+    def __init__(self, cloud1, cloud2, w, greyscale=False, template_size=0.75):
+        self.greyscale = greyscale
         if len(cloud1.data.shape)<3 or len(cloud2.data.shape)<3:
             self.w = w
             self.prob_map = np.array([-99999])[:, np.newaxis]
@@ -165,14 +167,21 @@ class ProbabilityMap(object):
             # print("margins dim 1 reset "+str(margins))
 
         ### useing this with weights to do every channel on it's own
-        probability_map = []
-        for i in range(main_img.shape[2]):
-            probability_map.append(
-                match_template(main_img[:, :, i], template[:, :, i],
-                               pad_input=True, mode='reflect',
-                               constant_values=0)
-                * self.w[i])
-        return np.sum(probability_map, 0)
+        if self.greyscale:
+            main_img = np.mean(main_img, axis=2)
+            template = np.mean(template, axis=2)
+            return match_template(main_img[:, :], template[:, :],
+                                  pad_input=True, mode='reflect',
+                                  constant_values=0)
+        else:
+            probability_map = []
+            for i in range(main_img.shape[2]):
+                probability_map.append(
+                    match_template(main_img[:, :, i], template[:, :, i],
+                                   pad_input=True, mode='reflect',
+                                   constant_values=0)
+                    * self.w[i])
+            return np.sum(probability_map, 0)
 
     #        probability_map = match_template(main_img,template,pad_input=True,mode='reflect',constant_values=0)
     #        return probability_map
