@@ -38,7 +38,7 @@ warnings.filterwarnings('ignore')
 
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 #image_directory = os.path.join(BASE_DIR, "examples", "images", "lex")
-image_directory = '/home/tfinn/Data/Cloud_camera/lex/'
+image_directory = '/home/lex16/data/'
 trained_models = os.path.join(BASE_DIR, "data")
 plot_dir = os.path.join(BASE_DIR, 'plots')
 
@@ -58,12 +58,13 @@ matching = pyclamster.matching.Matching(greyscale=True)
 dist = np.sqrt((cams[0].position.x-cams[1].position.x)**2+(cams[0].position.y-cams[1].position.y)**2)
 
 height = {}
+xy = {}
 
 
 # In[4]:
 
 # Initiate the multiprocessing pool
-num_cores = 2
+num_cores = 8
 pool = ThreadPool(num_cores)
 
 
@@ -74,6 +75,7 @@ def generate_doppel(images):
     k = 0
     clouds = []
     height[images[0].time] = []
+    xy[images[0].time] = []
     for img in images:
         image_lcn = pyclamster.Image(img)
         image_lcn.data = LCN(size=(50, 50, 3), scale=False).fit_transform(
@@ -137,6 +139,7 @@ def generate_doppel(images):
                 plt.tight_layout()
                 plt.savefig(os.path.join(plot_dir, 'height{0:s}_{1:d}.png'.format(img.time.strftime('%Y%m%d%H%M'), t)))
             height[images[0].time].append(spatial_cloud.height)
+            xy[images[0].time].append(list(spatial_cloud.get_latlon()))
             t+=1
     try:      
         print('finished image {0:s} calculations with {1:d} heights (min: {2:.1f}, max: {3:.1f}), duration: {4:.1f} s'.format(images[0].time.strftime('%Y%m%d%H%M'), t, np.nanmin(height[images[0].time]), np.nanmax(height[images[0].time]), time.time()-start_time))
@@ -193,7 +196,8 @@ for i in df_height.index:
             if 70<j<15000:
                 df_height.ix[i, k] = j
 df_height = df_height.sort()
-df_height.to_json(os.path.join(trained_models, 'heights_201609010900_4h_300_new.json'))
+df_height.to_json(os.path.join(trained_models, 'heights_long_600.json'))
+pickle.dump(xy, open(os.path.join(trained_models, 'xy_long_600.pk', mode='wb')))
 
 
 # In[ ]:
