@@ -302,8 +302,20 @@ class CameraSession(object):
             # rectify
             img.coordinates = self.calibration.create_coordinates(
                 (img.data.shape[:2]))
+
+            #import matplotlib.pyplot as plt
+            #plt.figure()
+            #plt.imshow(img.coordinates.elevation)
+            #plt.colorbar()
+            #plt.figure()
+            #plt.imshow(img.coordinates.azimuth)
+            #plt.colorbar()
+            #plt.show()
+
             img.position = self.position # set carthesian position
+
             img.applyDistortionMap(self.distmap, inplace=True)
+
             logger.debug("yielding rectified image '{}'".format(imgpath))
             yield img
         

@@ -75,10 +75,12 @@ cal_coords=calibration.create_coordinates((300,300))
 import matplotlib.pyplot as plt
 plt.subplot(121)
 plt.title("[calibrated]\nelevation on the image [deg]")
-plt.imshow(cal_coords.elevation*360/(2*np.pi),cmap="Blues")
+plt.imshow(cal_coords.elevation*360/(2*np.pi),cmap="Blues",
+    interpolation="nearest",vmin=0,vmax=90)
 plt.colorbar()
 plt.subplot(122)
 plt.title("[calibrated]\nazimuth on the image [deg]")
-plt.imshow(cal_coords.azimuth*360/(2*np.pi),cmap="Blues")
+plt.imshow(cal_coords.azimuth*360/(2*np.pi),cmap="Blues",
+    interpolation="nearest",vmin=0,vmax=360)
 plt.colorbar()
 plt.show()

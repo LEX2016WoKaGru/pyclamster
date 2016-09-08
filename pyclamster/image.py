@@ -439,12 +439,15 @@ class Image(object):
                 try:    out = np.dstack( (out, layerout) ) # add to stack
                 except: out = layerout # first addition
             image.data = out # set image data
+            #image.data = scipy.ndimage.filters.median_filter(image.data,(5,5,1))
         else: # only 2 dim...
             image.data = scipy.ndimage.interpolation.map_coordinates(
                 input = image.data,
                 coordinates = map.T, # map has to be transposed somehow
                 order = order
                 )
+            #image.data = scipy.ndimage.filters.median_filter(image.data,(5,5))
+
 
         # set coordinates from DistortionMap
         image.coordinates = map.out_coord

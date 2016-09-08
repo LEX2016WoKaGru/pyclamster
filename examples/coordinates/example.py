@@ -23,3 +23,9 @@ print(c)
 print("\nCoordinates after parameter changing")
 c.change_parameters(elevation_type="ground",keep={'elevation','azimuth','radiush'})
 print(c)
+
+print("\nCoordinates after parameter to zenith")
+c.elevation_type="zenith"
+c.shape = 1
+c.fill(x=0,y=0)
+print(c)
