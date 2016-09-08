@@ -30,7 +30,7 @@ except: # if not
     #session.add_images("/home/yann/Studium/LEX/LEX/cam/cam3/FE3*.jpg")
     
     # create distortion map
-    session.createDistortionMap(max_angle=pyclamster.deg2rad(75))
+    session.createDistortionMap(max_angle=pyclamster.deg2rad(80))
 
     # save thie session
     session.reset_images()

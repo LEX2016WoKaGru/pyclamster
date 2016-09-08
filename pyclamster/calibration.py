@@ -440,20 +440,12 @@ class CameraCalibrationLossFunction(object):
         eul = self.euler_matrix(est_ang_1,est_ang_2,est_ang_3)
         xyz = np.dot(eul,np.array([img.x.ravel(),img.y.ravel(),img.z.ravel()]))
         img.fill(x=xyz[0,:],y=xyz[1,:],z=xyz[2,:])
-        img.fill(x=img.x/img.radius,
-                 y=img.y/img.radius,
-                 z=img.z/img.radius)
+        # project elevation/azimuth to unit sphere
+        img.fill(azimuth   = img.azimuth,
+                 elevation = img.elevation,
+                 radius    = 1
+                 )
         
-#        xnew,ynew,znew = [],[],[]
-#        for x,y,z in zip(img.x.flatten(),img.y.flatten(),
-#            img.z.flatten()):
-#            vec = np.array([x,y,z])
-#            xn,yn,zn = np.dot(eul,vec)
-#            xnew.append(xn)
-#            ynew.append(yn)
-#            znew.append(zn)
-#        img.fill(x=xnew,y=ynew,z=znew)
-
         # plot image sun coordinates after euler angle adjustion
         if self.PLOT: 
             if self.VERBOSE: logger.debug(
@@ -636,12 +628,22 @@ class CameraCalibration(object):
         plane.azimuth_offset    = self.lossfunc.sun_img.azimuth_offset
         plane.azimuth_clockwise = self.lossfunc.sun_img.azimuth_clockwise
         # first, take x and y as row and col to calculate the azimuth/radiush
-        plane.fill(x=col,y=row) # set row and col and calculate azimuth/radiush
+        # to prevent the zero-vector from existing, add a small number
+        plane.fill(x=col+1e-4,y=row+1e-4) # set row and col and calculate azimuth/radiush
         # now we can get the elevation based on the horizontal image radius
-
-        coords = self.lossfunc.project_image_to_real(img=plane,
+        coords = self.lossfunc.project_image_to_real(img=copy.deepcopy(plane),
             real=self.lossfunc.sun_real,
             estimate=self.parameters)
+
+        coords.fill(
+            elevation = np.ma.masked_where(np.logical_or(
+                plane.radiush>self.shape[1]/2,coords.elevation<0),
+                coords.elevation),
+            azimuth = np.ma.masked_where(np.logical_or(
+                plane.radiush>self.shape[1]/2,coords.elevation<0),
+                coords.azimuth)
+            )
+
 
         return(coords)
 

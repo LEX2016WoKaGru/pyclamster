@@ -14,18 +14,18 @@ img = pyclamster.image.Image(os.path.join("/home/yann/Studium/LEX/LEX/cam/cam3/F
 # convert to grayscale
 img.image = img.convert("L")
 # resize image
-img.image = img.resize((500,500))
+img.image = img.resize((200,200))
 
 
 ### create rectified coordinates ###
-outshape=(300,300) # size of output image
+outshape=(200,200) # size of output image
 rect_azimuth_offset = 3/2 * np.pi # north angle of rectified image
 rect_clockwise = True
 rect_x,rect_y=np.meshgrid(
     np.linspace(-20,20,num=outshape[1]),# image x coordinate goes right
     np.linspace(20,-20,num=outshape[0]) # image y coordinate goes up
     )
-rect_z = 6 # rectify for height rect_z
+rect_z = 100 # rectify for height rect_z
 
 rect_coord = pyclamster.coordinates.Coordinates3d(
     x = rect_x,
@@ -38,7 +38,7 @@ rect_coord = pyclamster.coordinates.Coordinates3d(
 
 ### create spherical coordinates of original image ###
 # read calibration of wolf-3-camera
-calibrationfile = "data/fe3/FE3_straightcal.pk"
+calibrationfile = "data/fe3/FE3_straight+projcal.pk"
 calibration = pickle.load(open(calibrationfile,"rb"))
 
 # get calibrated coordinates

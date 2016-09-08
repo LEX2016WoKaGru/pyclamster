@@ -292,14 +292,16 @@ class FisheyeProjection(object):
         if basedon == "carthesian":
             logger.debug("interpolate based on carthesian coordinates.")
             # input image coordinates (ele, azi)
-            points = (in_coord.x.flatten(), 
-                      in_coord.y.flatten())
+            points = (np.asarray(in_coord.x.flatten().filled()), 
+                      np.asarray(in_coord.y.flatten().filled()))
             # output image coordinates (ele, azi)
             xi = (out_coord.x.flatten(),
                   out_coord.y.flatten())
         else:
             logger.debug("interpolate based on spherical coordinates.")
             # input image coordinates (ele, azi)
+            #np.ma.set_fill_value(in_coord.azimuth,-1)
+            #np.ma.set_fill_value(in_coord.elevation,np.pi/2)
             points = (in_coord.azimuth.flatten(), 
                       in_coord.elevation.flatten())
             # output image coordinates (ele, azi)
@@ -325,8 +327,15 @@ class FisheyeProjection(object):
         distmap = np.dstack(
                 # reshape to output shape
                 # not exactly sure why this has to be transponated...
-                (out_row_from_in.reshape(out_shape).T,
-                 out_col_from_in.reshape(out_shape).T)
+                (scipy.ndimage.filters.median_filter(
+                    out_row_from_in.reshape(out_shape).T,
+                    size = 10
+                    ) ,
+                scipy.ndimage.filters.median_filter(
+                    out_col_from_in.reshape(out_shape).T,
+                    size = 10
+                    )
+                    )
                  )
 
         logger.debug("interpolation ended!")

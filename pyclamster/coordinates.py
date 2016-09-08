@@ -78,6 +78,9 @@ class CalculationMethodSet(object):
         for method in utils.flatten(methods):
             self.addmethod(method) 
 
+        # tell what you use to calculate what
+        self.VERBOSE = False
+
     ################################################################
     ### make the method set behave correct in certain situations ###
     ################################################################
@@ -107,8 +110,9 @@ class CalculationMethodSet(object):
     # make it callable
     def __call__(self): # when this set is called
         for method in self.methods: # loop over all methods
-            #logger.debug("using {i} to calculate {o}".format(i=method.input,
-                #o=method.output))
+            if self.VERBOSE:
+                logger.debug("using {i} to calculate {o}".format(i=method.input,
+                    o=method.output))
             method() # call the method
 
 
@@ -467,6 +471,7 @@ class Coordinates3d(BaseCoordinates3d):
         if dimensions:
             self.fill(**dimensions)
 
+
     @property
     def azimuth_clockwise(self): return self._azimuth_clockwise
     @property
@@ -672,9 +677,9 @@ class Coordinates3d(BaseCoordinates3d):
 
     def radius_from_elevation_radiush(self):
         if self.elevation_type == "zenith":
-            self._radius = self.radiush / np.sin( self.elevation )
+            self._radius = self.radiush / (np.sin( self.elevation )+1e-4)
         elif self.elevation_type == "ground":
-            self._radius = self.radiush / np.cos( self.elevation )
+            self._radius = self.radiush / (np.cos( self.elevation )+1e-4)
         else:
             raise Exception("unknown elevation type '{}'".format(
                 self.elevation_type))
@@ -711,18 +716,18 @@ class Coordinates3d(BaseCoordinates3d):
 
     def elevation_from_radiush_z(self):
         if self.elevation_type == "zenith":
-            self._elevation = np.arctan(self.radiush / self.z)
+            self._elevation = np.arctan(self.radiush / (self.z+1e-4))
         elif self.elevation_type == "ground":
-            self._elevation = np.arctan(self.z / self.radiush)
+            self._elevation = np.arctan(self.z / (self.radiush+1e-4))
         else:
             raise Exception("unknown elevation type '{}'".format(
                 self.elevation_type))
 
     def elevation_from_radius_z(self):
         if self.elevation_type == "zenith":
-            self._elevation = np.arccos(self.z / self.radius)
+            self._elevation = np.arccos(self.z / (self.radius + 1e-4))
         elif self.elevation_type == "ground":
-            self._elevation = np.arccos(self.radius / self.z)
+            self._elevation = np.arccos(self.radius / (self.z + 1e-4))
         else:
             raise Exception("unknown elevation type '{}'".format(
                 self.elevation_type))
@@ -737,7 +742,7 @@ class Coordinates3d(BaseCoordinates3d):
         elif self.elevation_type == "ground":
             self._x = self.radius                          \
                 * np.cos( self.elevation )              \
-                * np.cos( azimuth )
+                * np.sin( azimuth )
         else:
             raise Exception("unknown elevation type '{}'".format(
                 self.elevation_type))
@@ -789,7 +794,7 @@ class Coordinates3d(BaseCoordinates3d):
         if self.elevation_type == "zenith":
             self._radiush = self.z * np.tan( self.elevation )
         elif self.elevation_type == "ground":
-            self._radiush = np.tan( self.elevation ) / self.z
+            self._radiush = np.tan( self.elevation ) / (self.z+1e-4)
         else:
             raise Exception("unknown elevation type '{}'".format(
                 self.elevation_type))
@@ -798,16 +803,16 @@ class Coordinates3d(BaseCoordinates3d):
         if self.elevation_type == "zenith":
             self._radiush = self.radius * np.sin( self.elevation )
         elif self.elevation_type == "ground":
-            self._radiush = np.sin( self.elevation ) / self.radius
+            self._radiush = np.sin( self.elevation ) / (self.radius+1e-4)
         else:
             raise Exception("unknown elevation type '{}'".format(
                 self.elevation_type))
 
     def elevation_from_radiusses(self):
         if self.elevation_type == "zenith":
-            self._elevation = np.arcsin( self.radiush / self.radius )
+            self._elevation = np.arcsin( self.radiush / (self.radius + 1e-4) )
         elif self.elevation_type == "ground":
-            self._elevation = np.arcsin( self.radius / self.radiush )
+            self._elevation = np.arcsin( self.radius / (self.radiush + 1e-4) )
         else:
             raise Exception("unknown elevation type '{}'".format(
                 self.elevation_type))

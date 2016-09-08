@@ -84,12 +84,12 @@ plt.style.use('fivethirtyeight')
 
 ax = plt.subplot(121)
 plt.title("[calibrated]\nelevation on the image [deg]")
-plt.imshow(cal_coords.elevation*360/(2*np.pi),cmap="Blues",vmin=0,vmax=90
+plt.imshow(cal_coords.elevation.filled()*360/(2*np.pi),cmap="Blues",vmin=0,vmax=90
     ,interpolation="nearest")
 plt.colorbar()
 plt.subplot(122)
 plt.title("[calibrated]\nazimuth on the image [deg]")
-plt.imshow(cal_coords.azimuth*360/(2*np.pi),cmap="Blues"
+plt.imshow(cal_coords.azimuth.filled()*360/(2*np.pi),cmap="Blues"
     ,interpolation="nearest")
 plt.colorbar()
 
