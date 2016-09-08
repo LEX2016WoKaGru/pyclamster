@@ -151,6 +151,8 @@ def calc_color(val,vmin,vmax):
         val = vmin
     if val > vmax: 
         val = vmax
+    if np.isnan(val):
+        return '#FFFFFF'
     c = (val-vmin)/(vmax-vmin)
     r,g,b = np.array([1-c,0,c])*99
     r = str(int(r))
