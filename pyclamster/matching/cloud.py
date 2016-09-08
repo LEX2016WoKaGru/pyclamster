@@ -229,6 +229,15 @@ class SpatialCloud(Cloud):
         else:
             print('The positions aren\'t calculated yet!')
 
+    def get_latlon(self):
+        if not self.positions is None:
+            lat, lon = Projection().xy2lonlat(self.positions)
+            shp = lat.shape
+            return lat[int(shp[0]/2), int(shp[1]/2)], lon[int(shp[0]/2), int(shp[1]/2)]
+        else:
+            print('The positions aren\'t calculated yet!')
+
+
     def calc_position(self):
         """
         Method to calculate the x, y, z position of the spatial matched cloud.
