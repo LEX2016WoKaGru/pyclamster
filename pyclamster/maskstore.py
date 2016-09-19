@@ -140,6 +140,12 @@ class MaskStore(object):
             self.masks[key] = denoiseMask(self.masks[key], denoising_ratio)
         return self
 
+    def givenLabelMask(self, label_array, labels=None):
+        mask = ~self.getMask(labels)
+        labels = mask*label_array
+        return Labels(labels), len(np.unique(labels))-1
+
+
     def labelMask(self, labels=None):
         """
         Label a given mask.
