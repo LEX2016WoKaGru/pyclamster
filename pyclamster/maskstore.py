@@ -29,6 +29,7 @@ import numpy as np
 import scipy.ndimage
 
 from skimage.morphology import remove_small_objects
+from skimage.segmentation import slic
 from scipy import ndimage as ndi
 
 from skimage.morphology import watershed
@@ -172,6 +173,24 @@ class MaskStore(object):
                                     labels=mask)
         markers = ndi.label(local_maxi)[0]
         labels = watershed(-distance, markers, mask=mask)
+        nb_labels = len(np.unique(labels))-1
+        return Labels(labels), nb_labels
+
+    def slicMask(self, image, labels=None, segments=30):
+        """
+        Label a given mask with the watershed algorithm.
+        Args:
+            labels (optional[list of int or str]): list of mask labels to be
+                labeled. Defaults to all masks.
+
+        Returns:
+            labels (Labels): Labels instance with the labels as data.
+            n_labels (int): Number of labels.
+        """
+        mask = ~self.getMask(labels)
+        segmented = slic(image, n_segments=segments, sigma=1, compactness=1)
+        segmented = segmented+1
+        labels = segmented*mask
         nb_labels = len(np.unique(labels))-1
         return Labels(labels), nb_labels
 
