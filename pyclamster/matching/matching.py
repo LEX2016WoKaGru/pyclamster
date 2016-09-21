@@ -160,7 +160,7 @@ class ProbabilityMap(object):
             template = template[:, margins[0]:margins[1]]
 
         ### useing this with weights to do every channel on it's own
-        if 0 in main_img.shape or 0 in template.shape or template.shape[0]<10 or template.shape[1]<10:
+        if 0 in main_img.shape or 0 in template.shape or template.shape[0]<30 or template.shape[1]<30:
             return np.array([-99999])[:, np.newaxis]
         else:
             if self.greyscale:
