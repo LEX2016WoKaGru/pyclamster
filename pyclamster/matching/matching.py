@@ -148,27 +148,20 @@ class ProbabilityMap(object):
         template = np.array(self.clouds[1].data)
 
         # make sure that the main_img is the bigger-cloud
-        # print("template.shape = "+str(template.shape))
         if main_img.shape[0] * self.template_size < template.shape[0]:
             margins = self._calc_max_boundary(main_img.shape[0],
                                               template.shape[0],
                                               self.template_size)
             template = template[margins[0]:margins[1], :]
-            # print("main_img.shape = "+str(main_img.shape))
-            # print("template.shape = "+str(template.shape))
-            # print("margins dim 0 reset "+str(margins))
         if main_img.shape[1] * self.template_size < template.shape[1]:
             margins = self._calc_max_boundary(main_img.shape[1],
                                               template.shape[1],
                                               self.template_size)
             template = template[:, margins[0]:margins[1]]
-            # print("main_img.shape = "+str(main_img.shape))
-            # print("template.shape = "+str(template.shape))
-            # print("margins dim 1 reset "+str(margins))
 
         ### useing this with weights to do every channel on it's own
-        if 0 in main_img.shape or 0 in template.shape:
-            return np.array([np.NaN])[:, np.newaxis]
+        if 0 in main_img.shape or 0 in template.shape or template.shape[0]<10 or template.shape[1]<10:
+            return np.array([-99999])[:, np.newaxis]
         else:
             if self.greyscale:
                 main_img = np.mean(main_img, axis=2)
@@ -190,8 +183,6 @@ class ProbabilityMap(object):
                         * self.w[i])
                 return np.sum(probability_map, 0)
 
-    #        probability_map = match_template(main_img,template,pad_input=True,mode='reflect',constant_values=0)
-    #        return probability_map
 
     def get_best(self):
         """

@@ -28,7 +28,7 @@ from copy import deepcopy
 import numpy as np
 import scipy.ndimage
 
-from skimage.morphology import remove_small_objects
+from skimage.morphology import remove_small_objects, remove_small_holes
 from skimage.segmentation import slic
 from scipy import ndimage as ndi
 
@@ -377,5 +377,6 @@ def denoiseMask(mask, denoising_ratio=15):
     # denoised_mask = scipy.ndimage.binary_opening(
     #     opened_mask, structure=np.ones((denoising_ratio, denoising_ratio)))
     denoised_mask = remove_small_objects(mask, denoising_ratio)
+    denoised_mask = remove_small_holes(denoised_mask, denoising_ratio)
     denoised_mask = ~denoised_mask
     return denoised_mask
