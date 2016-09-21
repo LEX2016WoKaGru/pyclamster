@@ -110,7 +110,6 @@ def doppelanschnitt_Coordinates3d(aziele1,aziele2,pos1,pos2,plot_info=False):
         )
     ae2.radius = 1
 
-
     # convert given positions to numpy array
     position1 = np.array([pos1.x,pos1.y,pos1.z])
     logger.debug("position1: \n{}".format(position1))
@@ -123,17 +122,16 @@ def doppelanschnitt_Coordinates3d(aziele1,aziele2,pos1,pos2,plot_info=False):
         ae1.x.ravel(), ae1.y.ravel(), ae1.z.ravel(),
         ae2.x.ravel(), ae2.y.ravel(), ae2.z.ravel()):
         # calculate 3d doppelanschnitt position
- 
+
         e1 = np.array([x1,y1,z1])
         e2 = np.array([x2,y2,z2])
 
-        n = np.cross(e1,e2,axis=0)
+        n = np.cross(e1,e2)
         n = n/np.linalg.norm(n)
-
-        a_s = np.array([e1,-e2,n]).T
-        b_s = (np.array(position2)-np.array(position1)).T
+        a_s = np.array([e1,-e2,n])
+        b_s = (np.array(position2)-np.array(position1))
         try:
-            a,b,c = np.linalg.solve(a_s, b_s)
+            a,b,c = np.linalg.solve(a_s.T, b_s)
             xyz = np.array(position1 + a * e1 + n * 0.5 * c)
         except LinAlgError:
             a,b,c = np.nan, np.nan, np.nan

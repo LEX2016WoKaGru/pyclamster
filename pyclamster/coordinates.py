@@ -762,7 +762,7 @@ class Coordinates3d(BaseCoordinates3d):
         elif self.elevation_type == "ground":
             self._y = self.radius                              \
                 * np.cos( self.elevation )                  \
-                * np.sin( azimuth )
+                * np.cos( azimuth )
         else:
             raise Exception("unknown elevation type '{}'".format(
                 self.elevation_type))
