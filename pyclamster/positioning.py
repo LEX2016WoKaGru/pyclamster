@@ -23,8 +23,10 @@ Created for pyclamster
 import logging
 import copy
 
+
 # External modules
 import numpy as np
+import scipy
 
 # Internal modules
 from . import coordinates
@@ -131,9 +133,13 @@ def doppelanschnitt_Coordinates3d(aziele1,aziele2,pos1,pos2,plot_info=False):
         a_s = np.array([e1,-e2,n])
         b_s = (np.array(position2)-np.array(position1))
         try:
-            a,b,c = np.linalg.solve(a_s.T, b_s)
+            a,b,c = scipy.linalg.lstsq(a_s.T, b_s)[0]
+            #a,b,c = np.linalg.solve(a_s.T, b_s)
             xyz = np.array(position1 + a * e1 + n * 0.5 * c)
-        except LinAlgError:
+        except scipy.linalg.LinAlgError:
+            a,b,c = np.nan, np.nan, np.nan
+            xyz = [np.nan,np.nan,np.nan]
+        except ValueError:
             a,b,c = np.nan, np.nan, np.nan
             xyz = [np.nan,np.nan,np.nan]
     
