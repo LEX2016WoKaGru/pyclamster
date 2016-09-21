@@ -37,12 +37,14 @@ data_dir = os.path.join(BASE_DIR, "data")
 
 #session = pickle.load(open('data/sessions/FE3_session_new.pk','rb'))
 sessions = []
-sessions.append(pickle.load(open(os.path.join(data_dir,'sessions/FE3_session_new.pk'),'rb')))
-sessions.append(pickle.load(open(os.path.join(data_dir,'sessions/FE4_session_new.pk'),'rb')))
+sessions.append(pickle.load(open(os.path.join(data_dir,'sessions/FE3_session_new_600.pk'),'rb')))
+sessions.append(pickle.load(open(os.path.join(data_dir,'sessions/FE4_session_new_600.pk'),'rb')))
 
 #session.set_images('/home/yann/Studium/LEX/LEX/kite/cam3/FE3*.jpg')
-sessions[0].set_images(os.path.join(image_dir,'cam3/FE3_Image_20160901_100000_UTCp1.jpg'))
-sessions[1].set_images(os.path.join(image_dir,'cam4/FE4_Image_20160901_100000_UTCp1.jpg'))
+image_dir = '/home/tfinn/Data/specific/'
+sessions[0].set_images(os.path.join(image_dir, 'cam3'))
+sessions[1].set_images(os.path.join(image_dir, 'cam4'))
+
 
 marked_left_azi = []
 marked_left_ele = []
