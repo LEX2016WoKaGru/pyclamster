@@ -101,7 +101,7 @@ class Matching(object):
 
 
 class ProbabilityMap(object):
-    def __init__(self, cloud1, cloud2, w, greyscale=False, template_size=0.75):
+    def __init__(self, cloud1, cloud2, w, greyscale=False, template_size=0.9):
         self.greyscale = greyscale
         if len(cloud1.data.shape)<3 or len(cloud2.data.shape)<3:
             self.w = w
@@ -174,14 +174,9 @@ class ProbabilityMap(object):
                     print(main_img.shape, template.shape, e)
 
             else:
-                probability_map = []
-                for i in range(main_img.shape[2]):
-                    probability_map.append(
-                        match_template(main_img[:, :, i], template[:, :, i],
+                return match_template(main_img, template,
                                        pad_input=True, mode='reflect',
                                        constant_values=0)
-                        * self.w[i])
-                return np.sum(probability_map, 0)
 
 
     def get_best(self):
@@ -209,8 +204,8 @@ class ProbabilityMap(object):
         max_temp = main * fact
         additional_size = temp - max_temp
         if additional_size > 0:
-            margins = [round(additional_size * .5),
-                       round(temp - additional_size * .5)]
+            margins = [int(additional_size * .5)+1,
+                       int(temp - additional_size * .5)]
         else:
             margins = [0, temp]
         if margins[0] < 0 or margins[1] > main:
