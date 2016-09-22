@@ -28,6 +28,9 @@ import copy
 import numpy as np
 import scipy
 
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
+
 # Internal modules
 from . import coordinates
 from . import utils
@@ -96,21 +99,8 @@ def doppelanschnitt_Coordinates3d(aziele1,aziele2,pos1,pos2,plot_info=False):
     logger.debug("copied aziele1:\n{}".format(ae1))
     logger.debug("copied aziele2:\n{}".format(ae2))
     # turn to north
-    ae1.change_parameters(
-        azimuth_offset = 3/2*np.pi,
-        azimuth_clockwise = True,
-        elevation_type = "ground",
-        keep = {'azimuth','elevation'}
-        )
-    ae1.radius = 1
-
-    ae2.change_parameters(
-        azimuth_offset = 3/2*np.pi,
-        azimuth_clockwise = True,
-        elevation_type = "ground",
-        keep = {'azimuth','elevation'}
-        )
-    ae2.radius = 1
+    ae1.fill(azimuth=ae1.azimuth, elevation=ae1.elevation, radius=1)
+    ae2.fill(azimuth=ae2.azimuth, elevation=ae2.elevation, radius=1)
 
     # convert given positions to numpy array
     position1 = np.array([pos1.x,pos1.y,pos1.z])
@@ -168,8 +158,7 @@ def doppelanschnitt_plot(title,position,var_list,pos1_in,pos2_in,col=['r','g','k
                         of 'doppelanschnitt'
         pos1_in, pos2_in(Coordinates3d): object containing position
     """
-    import matplotlib.pyplot as plt
-    from mpl_toolkits.mplot3d import Axes3D
+
 
     x = 0
     y = 1
@@ -218,12 +207,14 @@ def doppelanschnitt_plot(title,position,var_list,pos1_in,pos2_in,col=['r','g','k
             n2p = n*c+ppp
         
         if plot_view:
-            ax.plot([p1p[x],e1p[x]],[p1p[y],e1p[y]],[p1p[z],e1p[z]],col[0])
-            ax.plot([p2p[x],e2p[x]],[p2p[y],e2p[y]],[p2p[z],e2p[z]],col[1])
+            ax.plot([p1p[x],e1p[x]],[p1p[y],e1p[y]],[p1p[z],e1p[z]],col[0], label='cam3')
+            ax.plot([p2p[x],e2p[x]],[p2p[y],e2p[y]],[p2p[z],e2p[z]],col[1], label='cam4')
         if plot_n:
             ax.plot([n1p[x],n2p[x]],[n1p[y],n2p[y]],[n1p[z],n2p[z]],col[2])
         if plot_position:
             ax.plot([ppp[x]]       ,[ppp[y]]       ,[ppp[z]]       ,col[3]+'x')
+    plt.legend()
+    return ax
         
 
 class Projection(object):
