@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 # set up logging
 logging.basicConfig(level=logging.DEBUG)
 
-sessionfile = "data/sessions/FE4_session_new_45.pk"
+sessionfile = "data/sessions/FE4_session_new_poster.pk"
 try: # maybe there is already a session
     session = pickle.load(open(sessionfile,"rb"))
 except: # if not
