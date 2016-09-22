@@ -201,7 +201,7 @@ Die verwendeten zwei Kameramodelle haben beide die Bezeichnung VIVOTEK FE8174V.
 Metadaten sind in der Tabelle \ref{TabelleKameraMeta} zu finden.
 \absatz
 
-\begin{table}
+\begin{table}[!h]
 \begin{center}
 \caption{Metadaten der verwendeten Kameras}
 \label{TabelleKameraMeta}
@@ -209,9 +209,10 @@ Metadaten sind in der Tabelle \ref{TabelleKameraMeta} zu finden.
 \begin{tabular}{|c|c|c|}
 \hline
 \textbf{Kamera} & \textbf{GPS Position} & \textbf{Höhe über N.N.[m]} \\\hline
-\textbf{Zaun}   & $54,1234^\circ\,\mathrm{N}$; $11,1234^\circ\,\mathrm{O}$ & 10                \\\hline
-\textbf{Acker}   & $54,1234^\circ\,\mathrm{N}$; $11,1235^\circ\,\mathrm{O}$ & 6                \\\hline
+\textbf{Zaun}   & $54,4947^\circ\,\mathrm{N}$ \, $11,2408^\circ\,\mathrm{O}$ & 9                \\\hline
+\textbf{Acker}   & $54,4959^\circ\,\mathrm{N}$ \, $11,2377^\circ\,\mathrm{O}$ & 0                \\\hline
 \end{tabular}
+\vspace{-0.5cm}
 \end{center}
 \end{table}
 
@@ -224,8 +225,13 @@ Metadaten sind in der Tabelle \ref{TabelleKameraMeta} zu finden.
 %%%%%%%%%%%%%%%%%%%
 \section{Kalibration}
 
-Grundlegend für Triangulation auf Basis der Kamerabilder ist die Kenntnis des Azimuth- und Elevationswinkels in jedem Bildpunkt. 
-Dazu ist eine Kalibration der verwendeten Kameras erforderlich, die sich 
+Grundlegend für Triangulation auf Basis von Kamerabildern ist die Kenntnis des Azimuth- und Elevationswinkels in jedem Bildpunkt. 
+Dazu ist eine Kalibration der verwendeten Kameras erforderlich, mit der sowohl die radiale Projektion der Kameralinse als auch die Drehungseffekte durch ungenaues Aufstellen der Kamera quantifiziert werden können.
+Für eine derartige Kalibration sind Raumpunkte nötig, deren Positionen sowohl auf dem Bild als auch in der Realität bekannt sind.
+Es bietet sich hierfür die Sonne an, deren Azimuth- und Elevationswinkel zu jedem Zeitpunkt berechenbar sind.
+Legt man an einem nahezu wolkenlosen Tag eine Goldfolie auf die Kamera und passt einige Kameraeinstellungen an, erscheint lediglich die Sonne als heller Fleck auf dem ansonsten dunklen Bild.
+Das ermöglicht die programmatische Bestimmung der Sonnenposition auf dem Bild.
+
 
 %\newpage
 
@@ -234,7 +240,8 @@ Dazu ist eine Kalibration der verwendeten Kameras erforderlich, die sich
 %%%%%%%%%%%%%%%%%%%%%%%
 \section{Wolkenerkennung}
 
-Wolkenerkennung allgemein
+Wolkenerkennung.
+Machste halt k-Means...
 \blindtext
 
 %%%%%%%%%%%%%%%%%%%%%%%%
