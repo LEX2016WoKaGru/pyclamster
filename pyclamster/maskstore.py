@@ -213,7 +213,7 @@ class MaskStore(object):
         return Labels(labels), label_cnt
 
 
-    def getCloud(self, image, labels=None):
+    def getCloud(self, image, labels=None, data=None):
         """
         Method to get a cloud instance with a given image for selected labels.
         Args:
@@ -225,8 +225,10 @@ class MaskStore(object):
             cloud_image (Cloud): Cloud instance, with only the mask based on
                 the selected labels.
         """
-        data = self.cutMask(image, labels)
-        return Cloud(data, label=~self.getMask(labels))
+        image = self.cutMask(image, labels)
+        if not data is None:
+            data = self.cutMask(data, labels)
+        return Cloud(image, label=~self.getMask(labels), data=data)
 
 
     def applyMask(self, image, labels=None, fill_value=None, replace=True):
