@@ -103,24 +103,23 @@ class Matching(object):
 class ProbabilityMap(object):
     def __init__(self, cloud1, cloud2, w, greyscale=False, template_size=0.9):
         self.greyscale = greyscale
-        if len(cloud1.data.shape)<3 or len(cloud2.data.shape)<3:
-            self.w = w
-            self.prob_map = np.array([-99999])[:, np.newaxis]
-
+        if len(cloud1.data.shape)<2:
+            cloud1.data = cloud1.data[:,:,np.newaxis]
+        if len(cloud2.data.shape)<2:
+            cloud2.data = cloud2.data[:,:,np.newaxis]
+        if cloud1.data.shape[2] == cloud2.data.shape[2]:
+            self.clouds = [cloud1, cloud2]
         else:
-            if cloud1.data.shape[2] == cloud2.data.shape[2]:
-                self.clouds = [cloud1, cloud2]
-            else:
-                raise ("error matching.PropabilityMap: cloud-dimension missmatch!")
+            raise ValueError("error matching.PropabilityMap: cloud-dimension missmatch!")
 
-            self.w = [1] * cloud1.data.shape[2]
-            if isinstance(w, list):
-                if len(w) == cloud1.data.shape[2]:
-                    self.w = w
-            self.w = self._normalize_weights(self.w)
-            self.template_size = template_size
+        self.w = [1] * cloud1.data.shape[2]
+        if isinstance(w, list):
+            if len(w) == cloud1.data.shape[2]:
+                self.w = w
+        self.w = self._normalize_weights(self.w)
+        self.template_size = template_size
 
-            self.prob_map = self._calc_map()
+        self.prob_map = self._calc_map()
 
     def __call__(self):
         return self.map
