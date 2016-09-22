@@ -76,14 +76,13 @@ class Matching(object):
             bm = np.argmax(best_probs[0][idx_c1])
             # store matched cloud1 -> cloud2 if probability higher than 'min_match_prob'
             # print(str(best_dicts[0][idx_c1][bm]['prob'])+' > '+str(min_match_prob)+' and not '+str([idx_c1, bm])+' in '+str(matched_idx))
-            if best_dicts[0][idx_c1][bm]['prob'] > min_match_prob and not [
-                idx_c1, bm] in matched_idx:
+            if best_dicts[0][idx_c1][bm]['prob'] > min_match_prob and not [idx_c1, bm] in matched_idx:
                 matched_clouds.append(mergedC[0][idx_c1][bm])
                 matched_idx.append(
                     [idx_c1, bm])  # care that there will be no double match
 
         for idx_c2, c in enumerate(clouds2):
-            mergedC[1].append(c.merge(clouds1, self.w))
+            mergedC[1].append(c.merge(clouds1, self.w, self.greyscale))
             best_dicts[1].append(
                 [mergedC[1][idx_c2][idx_c1][0].get_best() for idx_c1 in
                  range(len(clouds1))])
@@ -91,8 +90,7 @@ class Matching(object):
                 [best_dicts[1][idx_c2][idx_c1]['prob'] for idx_c1 in
                  range(len(clouds1))])
             bm = np.argmax(best_probs[1][idx_c2])
-            if best_dicts[1][idx_c2][bm]['prob'] > min_match_prob and not [bm,
-                                                                           idx_c2] in matched_idx:
+            if best_dicts[1][idx_c2][bm]['prob'] > min_match_prob and not [bm, idx_c2] in matched_idx:
                 matched_clouds.append(mergedC[1][idx_c2][bm])
                 matched_idx.append(
                     [bm, idx_c2])  # care that there will be no double match

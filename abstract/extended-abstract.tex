@@ -43,12 +43,12 @@
 
 \usepackage{amsmath}    	% damit abgefahrene mathematische Dinge in equations gehen
 \usepackage{enumitem}   % Damit Aufzählungen hübscher sind
-\usepackage{ifthen}     % Damit an if-else-Strukturen machen kann
+\usepackage{ifthen}     % Damit man if-else-Strukturen machen kann
 
 \setlength{\parindent}{0pt} % Keine Absatzeinrückung
 \usepackage{setspace} % Zeilenabstände machen können
 \linespread{1.1} % Zeilenabstand definieren
-\newcommand{\lb}{\smallbreak} % Standardmäßig \lb zur Trennung von Absätzen verwendet und hier das Kommando anpassen
+\newcommand{\absatz}{\smallbreak} % Standardmäßig \lb zur Trennung von Absätzen verwendet und hier das Kommando anpassen
 %\renewcommand{\familydefault}{\sfdefault} % Serifenlose Schrift
 
 %%% Links und Verweise %%%
@@ -173,6 +173,8 @@ Das ist der Abstract.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Abbildungsverzeichnis %%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\listoftables % Abbildungsverzeichnis
+
 \listoffigures % Abbildungsverzeichnis
 
 \newpage
@@ -183,8 +185,10 @@ Das ist der Abstract.
 %%%%%%%%%%%%%%%%%%
 \section{Motivation}
 
-Stimmung, Stimmung!!!
-\blindtext[3]
+Ceilometer sind teuer, Kameras sind billig und vielseitig (Bedeckungsgrad, Höhenwind, Wettergeschehen, etc...).
+Es lohnt sich daher die Untersuchung, inwiefern die Wolkenhöhe auch mit Kameras bestimmt werden kann.
+\absatz
+\blindtext[1]
 
 %\newpage
 
@@ -193,7 +197,24 @@ Stimmung, Stimmung!!!
 %%%%%%%%%%%%%%
 \section{Geräte}
 
-Geräte. Lies \cite{abook}.
+Die verwendeten zwei Kameramodelle haben beide die Bezeichnung VIVOTEK FE8174V.
+Metadaten sind in der Tabelle \ref{TabelleKameraMeta} zu finden.
+\absatz
+
+\begin{table}
+\begin{center}
+\caption{Metadaten der verwendeten Kameras}
+\label{TabelleKameraMeta}
+\absatz
+\begin{tabular}{|c|c|c|}
+\hline
+\textbf{Kamera} & \textbf{GPS Position} & \textbf{Höhe über N.N.[m]} \\\hline
+\textbf{Zaun}   & $54,1234^\circ\,\mathrm{N}$; $11,1234^\circ\,\mathrm{O}$ & 10                \\\hline
+\textbf{Acker}   & $54,1234^\circ\,\mathrm{N}$; $11,1235^\circ\,\mathrm{O}$ & 6                \\\hline
+\end{tabular}
+\end{center}
+\end{table}
+
 \blindtext
 
 %\newpage % Neue Seite 
@@ -203,8 +224,8 @@ Geräte. Lies \cite{abook}.
 %%%%%%%%%%%%%%%%%%%
 \section{Kalibration}
 
-Kalibration.
-\blindtext[3]
+Grundlegend für Triangulation auf Basis der Kamerabilder ist die Kenntnis des Azimuth- und Elevationswinkels in jedem Bildpunkt. 
+Dazu ist eine Kalibration der verwendeten Kameras erforderlich, die sich 
 
 %\newpage
 
