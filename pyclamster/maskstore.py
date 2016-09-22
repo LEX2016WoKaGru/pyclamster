@@ -228,6 +228,8 @@ class MaskStore(object):
         image = self.cutMask(image, labels)
         if not data is None:
             data = self.cutMask(data, labels)
+        if isinstance(data, pyClImage):
+            data = data.data
         return Cloud(image, label=~self.getMask(labels), data=data)
 
 
