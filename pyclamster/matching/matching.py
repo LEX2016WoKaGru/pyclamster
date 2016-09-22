@@ -101,7 +101,6 @@ class Matching(object):
 class ProbabilityMap(object):
     def __init__(self, cloud1, cloud2, w, greyscale=False, template_size=0.9):
         self.greyscale = greyscale
-        print(cloud1.data.shape)
         if len(cloud1.data.shape)==2:
             cloud1.data = cloud1.data[:,:,np.newaxis]
         if len(cloud2.data.shape)==2:
