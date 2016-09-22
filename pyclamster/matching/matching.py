@@ -128,6 +128,8 @@ class ProbabilityMap(object):
             self.prob_map = self._calc_map()
         except Exception as e:
             logger.info('Couldn\'t compare the two clouds, due to {0:s}'.format(e))
+            self.w = w
+            self.prob_map = np.array([-99999])[:, np.newaxis]
 
     def __call__(self):
         return self.map
