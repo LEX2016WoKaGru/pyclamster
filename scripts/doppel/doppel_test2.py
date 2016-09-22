@@ -83,7 +83,7 @@ aziele1=pyclamster.Coordinates3d(
     azimuth=azi1,
     elevation=ele1,
     azimuth_offset=image_list[0].coordinates.azimuth_offset,
-    azimuth_clockwise=image_list[0].coordinates.azimuth_clockwise,
+    azimuth_clockwise=False,
     elevation_type=image_list[0].coordinates.elevation_type)
 
 aziele2=pyclamster.Coordinates3d(
@@ -91,8 +91,9 @@ aziele2=pyclamster.Coordinates3d(
     elevation=ele2,
     azimuth_offset=image_list[1].coordinates.azimuth_offset,
     azimuth_clockwise=image_list[1].coordinates.azimuth_clockwise,
-    elevation_type=image_list[0].coordinates.elevation_type)
+    elevation_type=image_list[1].coordinates.elevation_type)
 ############
+print(aziele1.elevation_type, aziele1.azimuth_offset, aziele1.azimuth_clockwise, aziele2.elevation_type, aziele2.azimuth_offset, aziele2.azimuth_clockwise)
 doppel_c3d,var_list_c3d = pyclamster.doppelanschnitt_Coordinates3d(aziele1,aziele2,p1,p2,plot_info=True)
 pyclamster.doppelanschnitt_plot('c3d single point by hand',doppel_c3d,var_list_c3d,p1,p2,plot_view=1,plot_position=1)
 

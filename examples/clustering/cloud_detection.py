@@ -60,7 +60,7 @@ anomaly_images = None
 
 for image_path in all_images:
     image = Image(image_path)
-    image.data = LCN(size=(50,50,3), scale=False).fit_transform(image.data/256)
+    image.data = LCN(size=(50,50,3), scale=False).fit_transform(image.data)
     image.data = image.data[center - good_angle_dpi:center + good_angle_dpi,
                             center - good_angle_dpi:center + good_angle_dpi]
     anomaly_image = rbDetection(image.data)

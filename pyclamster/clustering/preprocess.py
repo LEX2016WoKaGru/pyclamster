@@ -69,12 +69,8 @@ class LCN(BaseEstimator, TransformerMixin):
         """
         if self.size is None:
             self.size = X.shape
-        try:
-            self.mean_ = self.base_estimator_(X, size=self.size, mode=self.mode_)
-            squared = self.base_estimator_(X**2, size=self.size, mode=self.mode_)
-        except:
-            self.mean_ = self.base_estimator_(X, mode=self.mode_)
-            squared = self.base_estimator_(X**2, mode=self.mode_)
+        self.mean_ = self.base_estimator_(X, size=self.size, mode=self.mode_)
+        squared = self.base_estimator_(X**2, size=self.size, mode=self.mode_)
         var_ = squared - self.mean_**2
         self.scale_ = np.sqrt(var_)
         self.scale_[self.scale_<np.mean(self.scale_)] = np.mean(self.scale_)
@@ -96,7 +92,7 @@ class LCN(BaseEstimator, TransformerMixin):
             X = np.array(X, copy=self.copy)
             X = np.copy(X)
         if self.mean:
-            X -= self.mean_
+            X = X-self.mean_
         if self.scale:
             X = X/self.scale_
         return X

@@ -22,15 +22,15 @@ except: # if not
         heightNN   = 0,
         zone       = 32,
         imgshape   = (1920,1920),
-        smallshape = (1000,1000),
-        rectshape  = (600,600),
+        smallshape = (960,960),
+        rectshape  = (900,900),
         calibration = calib
         )
     # add images to session
     #session.add_images("/home/yann/Studium/LEX/LEX/cam/cam4/20160901/*.jpg")
     
     # create distortion map
-    session.createDistortionMap(max_angle=pyclamster.deg2rad(75))
+    session.createDistortionMap(max_angle=pyclamster.deg2rad(45))
 
     # save thie session
     session.reset_images()
