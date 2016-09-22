@@ -44,7 +44,7 @@ class BaseCloud(object):
 
 
 class Cloud(BaseCloud):
-    def __init__(self, image, label, preprocess=[]):
+    def __init__(self, image, label, preprocess=[], data=None):
         """
         This is a clustered cloud from one camera.
         Args:
@@ -63,7 +63,9 @@ class Cloud(BaseCloud):
         self.preprocessing = preprocess
         self.image = image
         self.label = label
-        self.data = self.image.data
+        self.data = data
+        if isinstance(self.image, Image) and self.data is None:
+            self.data = self.image.data
         self.__merge_cloud_type = SpatialCloud
         super().__init__()
 
