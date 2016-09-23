@@ -20,6 +20,8 @@ Created for pyclamster
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 # System modules
+import logging
+
 
 # External modules
 import numpy as np
@@ -31,6 +33,9 @@ from skimage.feature import match_template
 # from pyclamster.matching.cloud import SpatialCloud, TemporalCloud
 
 __version__ = "0.1"
+
+logger = logging.getLogger(__name__)
+
 
 
 class Matching(object):
@@ -103,15 +108,15 @@ class Matching(object):
 class ProbabilityMap(object):
     def __init__(self, cloud1, cloud2, w, greyscale=False, template_size=0.9):
         self.greyscale = greyscale
-        if len(cloud1.data.shape)<3 or len(cloud2.data.shape)<3:
-            self.w = w
-            self.prob_map = np.array([-99999])[:, np.newaxis]
-
-        else:
+        if len(cloud1.data.shape)==2:
+            cloud1.data = cloud1.data[:,:,np.newaxis]
+        if len(cloud2.data.shape)==2:
+            cloud2.data = cloud2.data[:,:,np.newaxis]
+        try:
             if cloud1.data.shape[2] == cloud2.data.shape[2]:
                 self.clouds = [cloud1, cloud2]
             else:
-                raise ("error matching.PropabilityMap: cloud-dimension missmatch!")
+                raise ValueError("error matching.PropabilityMap: cloud-dimension missmatch!")
 
             self.w = [1] * cloud1.data.shape[2]
             if isinstance(w, list):
@@ -121,6 +126,10 @@ class ProbabilityMap(object):
             self.template_size = template_size
 
             self.prob_map = self._calc_map()
+        except Exception as e:
+            logger.info('Couldn\'t compare the two clouds, due to {0:s}'.format(e))
+            self.w = w
+            self.prob_map = np.array([-99999])[:, np.newaxis]
 
     def __call__(self):
         return self.map

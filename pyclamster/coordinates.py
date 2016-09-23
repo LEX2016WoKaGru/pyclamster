@@ -742,7 +742,7 @@ class Coordinates3d(BaseCoordinates3d):
         elif self.elevation_type == "ground":
             self._x = self.radius                          \
                 * np.cos( self.elevation )              \
-                * np.sin( azimuth )
+                * np.cos( azimuth )
         else:
             raise Exception("unknown elevation type '{}'".format(
                 self.elevation_type))
@@ -762,7 +762,7 @@ class Coordinates3d(BaseCoordinates3d):
         elif self.elevation_type == "ground":
             self._y = self.radius                              \
                 * np.cos( self.elevation )                  \
-                * np.cos( azimuth )
+                * np.sin( azimuth )
         else:
             raise Exception("unknown elevation type '{}'".format(
                 self.elevation_type))
@@ -939,7 +939,7 @@ class Coordinates3d(BaseCoordinates3d):
 
         return p
 
-    def plot3d(self,method="scatter"):
+    def plot3d(self,fig=None, method="scatter"):
         """
         create a matplotlib 3d scatterplot of the coordinates.
         The plot has then to be shown.
@@ -957,13 +957,13 @@ class Coordinates3d(BaseCoordinates3d):
             "Plotting coordinates not possible because",
             "matplotlib could not be found."]))
 
-        
-        p = plt.figure()
-        ax = Axes3D(p)
+        if fig is None:
+            fig = plt.figure()
+        ax = fig.gca(projection='3d')
         if method == "scatter":
-            ax.scatter3D(self.x,self.y,self.z)
+            ax.scatter3D(self.x,self.y,self.z, label='cloud points')
         elif method == "line":
-            ax.plot(self.x,self.y,self.z)
+            ax.plot(self.x,self.y,self.z, label='cloud points')
         else:
             raise ValueError("unknown method '{}'".format(method))
         return ax
