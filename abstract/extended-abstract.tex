@@ -48,7 +48,7 @@
 \setlength{\parindent}{0pt} % Keine Absatzeinrückung
 \usepackage{setspace} % Zeilenabstände machen können
 \linespread{1.1} % Zeilenabstand definieren
-\newcommand{\absatz}{\smallbreak} % Standardmäßig \lb zur Trennung von Absätzen verwendet und hier das Kommando anpassen
+\newcommand{\absatz}{\smallbreak} % Standardmäßig \absatz zur Trennung von Absätzen verwendet und hier das Kommando anpassen
 %\renewcommand{\familydefault}{\sfdefault} % Serifenlose Schrift
 
 %%% Links und Verweise %%%
@@ -103,6 +103,7 @@
 %%% Titelseite %%%
 %%%%%%%%%%%%%%%%%%
 
+\hypersetup{pageanchor=false}
 \makeatletter
 \begin{titlepage}
 
@@ -127,7 +128,9 @@
 \begin{large}
 \begin{tabular}{ccc}
 Büchau, Yann Georg & Finn, Tobias Sebastian & Schaper, Maximilian \\
-\small{\texttt{64\,36\,211}} & \small{\texttt{00\,00\,000}} & \small{\texttt{00\,00\,000}}
+\small{\texttt{64\,36\,211}} & 
+\small{\texttt{00\,00\,000}} &
+\small{\texttt{00\,00\,000}}
 \end{tabular}
 \end{large}
 
@@ -145,26 +148,14 @@ Büchau, Yann Georg & Finn, Tobias Sebastian & Schaper, Maximilian \\
 
 \end{titlepage}
 \makeatother
+\hypersetup{pageanchor=true}
 
 \newpage
-
-
-%%%%%%%%%%%%%%%%%%%
-%%% Kurzfassung %%%
-%%%%%%%%%%%%%%%%%%%
-\thispagestyle{empty} % Don't show page number this page
-
-\section*{Kurzfassung}
-
-Das ist der Abstract.
-\blindtext[3]
-
-\newpage
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Inhaltsverzeichnis %%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%
+\clearpage
 \setcounter{page}{1} % Page counting begins here!
 
 \tableofcontents % Inhaltsverzeichnis
@@ -185,8 +176,9 @@ Das ist der Abstract.
 %%%%%%%%%%%%%%%%%%
 \section{Motivation}
 
-Ceilometer sind teuer, Kameras sind billig und vielseitig (Bedeckungsgrad, Höhenwind, Wettergeschehen, etc...).
-Es lohnt sich daher die Untersuchung, inwiefern die Wolkenhöhe auch mit Kameras bestimmt werden kann.
+Ceilometer sind teuer, Kameras sind billig und vielseitig (Bedeckungsgrad,
+Höhenwind, Wettergeschehen, etc...).  Es lohnt sich daher die Untersuchung,
+inwiefern die Wolkenhöhe auch mit Kameras bestimmt werden kann.
 \absatz
 \blindtext[1]
 
@@ -199,6 +191,7 @@ Es lohnt sich daher die Untersuchung, inwiefern die Wolkenhöhe auch mit Kameras
 
 Die verwendeten zwei Kameramodelle haben beide die Bezeichnung VIVOTEK FE8174V.
 Metadaten sind in der Tabelle \ref{TabelleKameraMeta} zu finden.
+Zum genauen Verstännis sei \cite{abook} empfohlen.
 \absatz
 
 \begin{table}[!h]
@@ -209,8 +202,10 @@ Metadaten sind in der Tabelle \ref{TabelleKameraMeta} zu finden.
 \begin{tabular}{|c|c|c|}
 \hline
 \textbf{Kamera} & \textbf{GPS Position} & \textbf{Höhe über N.N.[m]} \\\hline
-\textbf{Zaun}   & $54,4947^\circ\,\mathrm{N}$ \, $11,2408^\circ\,\mathrm{O}$ & 9                \\\hline
-\textbf{Acker}   & $54,4959^\circ\,\mathrm{N}$ \, $11,2377^\circ\,\mathrm{O}$ & 0                \\\hline
+\textbf{Zaun}   & $54,4947^\circ\,\mathrm{N}$ \, $11,2408^\circ\,\mathrm{O}$ &
+9                \\\hline
+\textbf{Acker}   & $54,4959^\circ\,\mathrm{N}$ \, $11,2377^\circ\,\mathrm{O}$ &
+0                \\\hline
 \end{tabular}
 \vspace{-0.5cm}
 \end{center}
@@ -225,13 +220,41 @@ Metadaten sind in der Tabelle \ref{TabelleKameraMeta} zu finden.
 %%%%%%%%%%%%%%%%%%%
 \section{Kalibration}
 
-Grundlegend für Triangulation auf Basis von Kamerabildern ist die Kenntnis des Azimuth- und Elevationswinkels in jedem Bildpunkt. 
-Dazu ist eine Kalibration der verwendeten Kameras erforderlich, mit der sowohl die radiale Projektion der Kameralinse als auch die Drehungseffekte durch ungenaues Aufstellen der Kamera quantifiziert werden können.
-Für eine derartige Kalibration sind Raumpunkte nötig, deren Positionen sowohl auf dem Bild als auch in der Realität bekannt sind.
-Es bietet sich hierfür die Sonne an, deren Azimuth- und Elevationswinkel zu jedem Zeitpunkt berechenbar sind.
-Legt man an einem nahezu wolkenlosen Tag eine Goldfolie auf die Kamera und passt einige Kameraeinstellungen an, erscheint lediglich die Sonne als heller Fleck auf dem ansonsten dunklen Bild.
-Das ermöglicht die programmatische Bestimmung der Sonnenposition auf dem Bild.
+Grundlegend für Triangulation auf Basis von Kamerabildern ist die Kenntnis des
+Azimuth- und Elevationswinkels in jedem Bildpunkt. Dazu ist eine Kalibration
+der verwendeten Kameras erforderlich, mit der sowohl die radiale Projektion der
+Kameralinse als auch die Drehungseffekte durch ungenaues Aufstellen der Kamera
+quantifiziert werden können. Für eine derartige Kalibration sind Raumpunkte
+nötig, deren Positionen sowohl auf dem Bild als auch in der Realität bekannt
+sind. Es bietet sich hierfür die Sonne an, deren realer Azimuth- und
+Elevationswinkel zu jedem Zeitpunkt berechenbar sind. Legt man an einem nahezu
+wolkenlosen Tag eine Goldfolie auf die Kamera und verringert die
+Helligkeitsempfindlichkeit der Kamera, erscheint die Sonne als einziger heller
+Fleck auf dem ansonsten dunklen Bild (Abbildung ). Das
+ermöglicht die programmatische Bestimmung der Sonnenposition auf dem Bild.
+\absatz
+Mit einer parameterbasierten Projektion, die Bildkoordinaten in reale
+Koordinaten umrechnet, lassen sich durch Optimierung die optimalen Parameter
+bestimmen, mit denen die Kalibration gut ist.
+Die Kalibratoin ist dann ein Optimierungsproblem.
+Dazu werden alle auf dem Bild gefundenen Sonnenpositionen auf eine
+Einheitssphäre im realen Koordinatensystem projiziert. Der mittlere
+quadratische Abstand zu den tatsächlichen Sonnenpositionen auf der
+Einheitssphäre ist die zu optimierende Kostenfunktion in Abhängigkeit der
+gewählten Projetionsparameter.
+\absatz
+Die Projektion funktioniert wie in (Abbildung \ref{FIGProjektion}).
 
+\begin{figure}[!h]
+\begin{center}
+\includegraphics[width=0.7\textwidth]{media/calibration-chart.png}
+\caption{Projektion von Bildkoordinaten zu realen Koordinaten: (1) Sonne auf dem
+Bild (2) Elevation wird aus Radialprojektion angenährt (3)\,-\,(5) Drehung im Raum
+durch Euler-Winkel. Die Punkte\ (2)\,-\,(5) befinden sich auf der Einheitsphäre.}
+\label{FIGProjektion}
+\vspace{-0.5cm}
+\end{center}
+\end{figure}
 
 %\newpage
 
