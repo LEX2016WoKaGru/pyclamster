@@ -71,7 +71,7 @@ predictor = pickle.load(open(os.path.join(trained_models, "kmeans.pk"), "rb"))
 for image_path in all_images:
     image = Image(image_path)
     image.cut([center - good_angle_dpi, center-good_angle_dpi, center+good_angle_dpi, center + good_angle_dpi]).save('test.jpg')
-    image.data = LCN(size=(50,50,3), scale=False).fit_transform(image.data/256)
+    image.data = LCN(size=(50,50,3), scale=False).fit_transform(image.data)
     image.data = image.data[center - good_angle_dpi:center + good_angle_dpi,
                             center - good_angle_dpi:center + good_angle_dpi]
     raw_image = rbDetection(image.data)
@@ -86,3 +86,4 @@ for image_path in all_images:
     scipy.misc.imsave("labels.png", cloud_labels.labels)
     scipy.misc.imshow(cloud_labels.labels)
     cloud_store = cloud_labels.getMaskStore()
+
