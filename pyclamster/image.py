@@ -242,7 +242,7 @@ class Image(object):
             success = True
         # argument is an image aleady
         elif isinstance(image, Image):
-            logger.info("copying image directly from Image")
+            logger.debug("copying image directly from Image")
             # copy over attributes
             self.__dict__.update(image.__dict__)
             ### copy everything by hand ###
