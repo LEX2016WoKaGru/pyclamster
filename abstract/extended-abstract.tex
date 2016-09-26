@@ -297,7 +297,13 @@ p_1 = 658,265 \;\;\;\;
 \end{equation}
 
 Da die beiden hier verwendeten Kameras baugleich sind, wird für Kamera
-\enquote{Acker} dieselbe Projektionsfunktion angenommen.
+\enquote{Acker} dieselbe Projektionsfunktion angenommen.  Mit dieser
+Projektionsfunktion (Abbildung \ref{FIGProjektioncalib}) können jetzt die in den
+Zenith gerichteten Kameraaufstellungen kalibriert werden wie etwa in Abbildung
+\ref{FIGFolie}(a) zu sehen. Aus den daraus gewonnenen Parametern lassen sich wie
+gewünscht für jeden Bildpunkt ein Azimuth- und Elevationswinkel bestimmen. Eine
+Koordinatentransformation kann dann dazu verwendet werden, die Bilder zu
+entzerren.
 
 \begin{figure}[!h]
 \begin{center}
@@ -331,11 +337,14 @@ Da die beiden hier verwendeten Kameras baugleich sind, wird für Kamera
 \end{center}
 \end{figure}
 
-\begin{figure}
+\begin{figure}[!h]
 \begin{center}
-\includegraphics[width=0.8\textwidth]{media/projection-calibration.pdf}
-\caption[kalibrierte Projektionsfunktion]{kalibrierte Projektionsfunktion im
-Vergleich} \end{center}
+\includegraphics[width=0.5\textwidth]{media/projection-calibration.pdf}
+\vspace{-0.7cm}
+\caption[kalibrierte Projektionsfunktion]{kalibriertes Projektionspolynom im
+Vergleich zur equidistanten Fischaugenprojektion}
+\label{FIGProjektioncalib}
+\end{center}
 \end{figure}
 
 
