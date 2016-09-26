@@ -38,7 +38,7 @@
 % \usepackage{float}    	% damit Floats da sind, wo sie hingehören
 \usepackage{floatrow}   % bessere float Organisation
 \usepackage[font=footnotesize,labelfont=bf,skip=0pt]{caption} % Captions anpassen
-\addtolength{\intextsep}{5mm} % mehr Platz um figures und tables
+\addtolength{\intextsep}{2mm} % mehr Platz um figures und tables
 \usepackage{subcaption}
 
 
@@ -234,7 +234,7 @@ Elevationswinkel zu jedem Zeitpunkt berechenbar sind (siehe auch
 Bedeckt man eine Kamera an einem nahezu wolkenlosen Tag mit Goldfolie und
 verringert die Belichtungszeit, erscheint die Sonne als einziger heller Fleck
 auf dem ansonsten dunklen Bild (Abbildung \ref{FIGFolie}).  Das ermöglicht die
-programmatische Bestimmung der Sonnenposition auf dem Bild durch Weichzeichnung,
+programmatische Bestimmung der Sonnenposition auf dem Bild mittels Weichzeichnung,
 Erosion kleiner Elemente und Mittelpunktsbestimmung des hellsten Bildbereichs.
 \absatz
 Zur Bestimmung von Azimuth- und Elevationswinkel in jedem Bildpunkt wird eine
@@ -243,16 +243,17 @@ Spalte\right]$ in das reale, dreidimensionale Koordinatensystem
 $\left[X\,\,Y\,\,Z\right]$ umrechnen lassen. Eine solche Projektion ist
 in Abbildung~\ref{FIGProjektion} gezeigt. Dabei wird zunächst anhand des
 Bildradius $R_\mathrm{h}$, also des Abstandes des betrachteten Bildpunktes zur
-Bildmitte, die Elevation $\epsilon$ angenährt. Dem liegt die Annahme zugrunde,
-dass es sich um eine radiale Verzerrung handelt, die rotationssymmetrisch zur in
-der Bildmitte liegenden optischen Achse der Linse ist.  Dieser Schritt
-quantifiziert also den Verzerrungseffekt der Linse. Hier wird nach \cite{ingo} ein
-Polynom vierten Grades als
-Zusammenhang angenommen:
+Bildmitte in Bildpunktbreiten, der Lotwinkel $\phi$ angenährt. Er lässt sich
+umrechnen in die Elevation $\epsilon = \frac{\pi}{2} - \phi$. Dem liegt die
+Annahme zugrunde, dass es sich um eine radiale Verzerrung handelt, die
+rotationssymmetrisch zur in der Bildmitte liegenden optischen Achse der Linse
+ist.  Dieser Schritt quantifiziert also den Verzerrungseffekt der Linse. Hier
+wird nach \cite{ingo} ein Polynom vierten Grades als Zusammenhang angenommen und
+invertiert:
 
 \begin{equation}
 \label{GLRadial}
-R_\mathrm{h} = p_4 \epsilon ^ 4 + p_3 \epsilon ^ 3 + p_2 \epsilon ^ 2 + p_1
+R_\mathrm{h} = p_4 \phi ^ 4 + p_3 \phi ^ 3 + p_2 \phi ^ 2 + p_1
 \epsilon 
 \end{equation}
 
@@ -285,8 +286,8 @@ möglichst viele Sonnenpositionen auch in der Bildmitte erforderlich, was bei
 einer Ausrichtung in den Zenith in den mittleren Breiten nicht erfüllt ist.
 Richtet man die Kamera aber in Richtung der Mittagssonne aus, ist diese
 Vorraussetzung erfüllt, wie in Abbildung \ref{FIGFolie}(b) zu sehen ist.
-Mit dieser Aufstellung der Kamera \enquote{Zaun} ergeben sich für die
-Radialprojektion die folgenden Parameter:
+Mit dieser Aufstellung ergeben sich für die Kamera \enquote{Zaun} 
+die folgenden Radialprojektionsparameter:
 
 \begin{equation}
 p_4 = -20,933 \;\;\;\;
@@ -302,7 +303,7 @@ Da die beiden hier verwendeten Kameras baugleich sind, wird für Kamera
 \begin{center}
 \begin{floatrow}
 \ffigbox{
-    \caption[Sonnenbahn auf mit Goldfolie bedeckten Kamera]{
+    \caption[Sonnenbahn auf mit Goldfolie bedeckter Kamera]{
     Zusammenstellung ausgewählter Aufnahmen der mit Goldfolie bedeckten Kamera
     \enquote{Zaun} bei einer groben Ausrichtung der optischen Achse (Bildmitte)
     (a) in den Zenith und (b) in die Mittagssonne.
