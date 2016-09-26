@@ -191,14 +191,14 @@ inwiefern die Wolkenhöhe auch mit Kameras bestimmt werden kann.
 \section{Geräte}
 
 Die verwendeten zwei Kameramodelle haben beide die Bezeichnung VIVOTEK FE8174V.
-Metadaten sind in der Tabelle \ref{TabelleKameraMeta} zu finden.
-Zum genauen Verstännis sei \cite{2016ingo} empfohlen.
+Metadaten sind in der Tabelle \ref{TABKameraMeta} zu finden.
+Zum genauen Verständnis sei die Lektüre von \cite{ingo} ans Herz gelegt.
 \absatz
 
 \begin{table}[!h]
 \begin{center}
 \caption{Metadaten der verwendeten Kameras}
-\label{TabelleKameraMeta}
+\label{TABKameraMeta}
 \absatz
 \begin{tabular}{|c|c|c|}
 \hline
@@ -228,24 +228,63 @@ Kameralinse als auch die Drehungseffekte durch ungenaues Aufstellen der Kamera
 quantifiziert werden können. Für eine derartige Kalibration sind Raumpunkte
 nötig, deren Positionen sowohl auf dem Bild als auch in der Realität bekannt
 sind. Es bietet sich hierfür die Sonne an, deren realer Azimuth- und
-Elevationswinkel zu jedem Zeitpunkt berechenbar sind.
+Elevationswinkel zu jedem Zeitpunkt berechenbar sind (siehe auch
+\mbox{\citeauthor{pysolar}, \citeyear{pysolar}}).
 \absatz
-Bedeckt man die Kamera an einem nahezu wolkenlosen Tag mit Goldfolie und
-verringert die Helligkeitsempfindlichkeit der Kamera, erscheint die Sonne als
-einziger heller Fleck auf dem ansonsten dunklen Bild (Abbildung \ref{FIGFolie}).
-Das ermöglicht die programmatische Bestimmung der Sonnenposition auf dem Bild.
+Bedeckt man eine Kamera an einem nahezu wolkenlosen Tag mit Goldfolie und
+verringert die Belichtungszeit, erscheint die Sonne als einziger heller Fleck
+auf dem ansonsten dunklen Bild (Abbildung \ref{FIGFolie}).  Das ermöglicht die
+programmatische Bestimmung der Sonnenposition auf dem Bild durch Weichzeichnung,
+Erosion kleiner Elemente und Mittelpunktsbestimmung des hellsten Bildbereichs.
 \absatz
-Mit einer parameterbasierten Projektion, die Bildkoordinaten in reale
-Koordinaten umrechnet, lassen sich durch Optimierung die optimalen Parameter
-bestimmen, mit denen die Kalibration gut ist.
-Die Kalibratoin ist dann ein Optimierungsproblem.
-Dazu werden alle auf dem Bild gefundenen Sonnenpositionen auf eine
-Einheitssphäre im realen Koordinatensystem projiziert. Der mittlere
-quadratische Abstand zu den tatsächlichen Sonnenpositionen auf der
-Einheitssphäre ist die zu optimierende Kostenfunktion in Abhängigkeit der
-gewählten Projetionsparameter.
+Zur Bestimmung von Azimuth- und Elevationswinkel in jedem Bildpunkt wird eine
+Projektion benötigt, mit der sich Bildkoordinaten $\left[Zeile \,\,
+Spalte\right]$ in das reale, dreidimensionale Koordinatensystem
+$\left[X\,\,Y\,\,Z\right]$ umrechnen lassen. Eine solche Projektion ist
+in Abbildung~\ref{FIGProjektion} gezeigt. Dabei wird zunächst anhand des
+Bildradius $R_\mathrm{h}$, also des Abstandes des betrachteten Bildpunktes zur
+Bildmitte, die Elevation $\epsilon$ angenährt. Dem liegt die Annahme zugrunde,
+dass es sich um eine radiale Verzerrung handelt, die rotationssymmetrisch zur in
+der Bildmitte liegenden optischen Achse der Linse ist.  Dieser Schritt
+quantifiziert also den Verzerrungseffekt der Linse. Hier wird nach \cite{ingo} ein
+Polynom vierten Grades als
+Zusammenhang angenommen:
+
+\begin{equation}
+\label{GLRadial}
+R_\mathrm{h} = p_4 \epsilon ^ 4 + p_3 \epsilon ^ 3 + p_2 \epsilon ^ 2 + p_1
+\epsilon 
+\end{equation}
+
+Durch die nun bekannte Elevation wird der Vektor des betrachteten Bildpunktes
+dreidimensional. Zur Nordung wird der Vektor anschließend um den Winkel $\Phi_Z$
+um die $Z$-Achse gedreht. Eine weitere Drehung um den Winkel $\Phi_X$ um die
+$X$-Achse und um den Winkel $\theta_Z$ um die dann mitbewegte $Z$-Achse
+korrigieren den Vektor um Fehler, die bei der Ze\-nit\-aus\-rich\-tung der
+Kamera gemacht wurden. Diese drei Winkel $\Phi_Z$, $\Phi_X$ und $\theta_Z$
+werden auch als Euler-Winkel bezeichnet.
 \absatz
-Die Projektion funktioniert wie in (Abbildung \ref{FIGProjektion}).
+Die Kalibration kann somit als Optimierungsproblem betrachtet werden. Dazu
+werden alle auf den Kamerabildern gefundenen Sonnenpositionen auf eine
+Einheitssphäre im realen Koordinatensystem projiziert. Der mittlere quadratische
+Abstand zu den tatsächlichen Sonnenpositionen auf der Einheitssphäre ist die zu
+optimierende Kostenfunktion in Ab\-häng\-ig\-keit der Projetionsparameter $p_1$,
+$p_2$, $p_3$, $p_4$, $\Phi_Z$, $\Phi_X$ und $\theta_Z$.
+\absatz
+Dieser Kalibrationsansatz lässt sich theoretisch sowohl für jede Aufstellung
+einer Kamera, als auch für jede Art von Kamera anwenden. Allerdings wird es bei
+anderen Kameras eventuell nötig sein, die radiale Projektionsfunktion in
+Gleichung \ref{GLRadial} anzupassen, wenn sich die Art der Linse stark von der
+hier verbauten unterscheidet.
+\absatz
+Die radiale Projektionsfunktion ist gerätespezifisch. Somit sind die Parameter 
+$p_1$, $p_2$, $p_3$ und $p_4$ unabhängig von der Aufstellung. Daher bietet es
+sich an, die Projektionsfunktion separat zu bestimmen und für jede
+Kameraaufstellung zu übernehmen. Für eine optimale Genauigkeit sind
+möglichst viele Sonnenpositionen auch in der Bildmitte erforderlich, was bei
+einer Ausrichtung in den Zenith in den mittleren Breiten nicht erfüllt ist.
+Richtet man die Kamera aber in Richtung der Mittagssonne aus, ist diese
+Vorraussetzung erfüllt, wie in Abbildung \ref{FIGFolie}(b) zu sehen ist.
 
 \begin{figure}[!h]
 \begin{center}
@@ -253,8 +292,8 @@ Die Projektion funktioniert wie in (Abbildung \ref{FIGProjektion}).
 \ffigbox{
     \caption[Sonnenbahn auf mit Goldfolie bedeckten Kamera]{
     Zusammenstellung ausgewählter Aufnahmen der mit Goldfolie bedeckten Kamera
-    \enquote{Zaun} bei einer groben Ausrichtung der optischen Achse (Bildmitte) (a) in
-    den Zenith und (b) in die Mittagssonne.
+    \enquote{Zaun} bei einer groben Ausrichtung der optischen Achse (Bildmitte)
+    (a) in den Zenith und (b) in die Mittagssonne.
     }
     \label{FIGFolie}
 }{
@@ -287,6 +326,7 @@ Die Projektion funktioniert wie in (Abbildung \ref{FIGProjektion}).
 \section{Wolkenerkennung}
 
 Wolkenerkennung.
+Oder in Englisch: Mett-Sching!
 Machste halt k-Means...
 \blindtext
 
