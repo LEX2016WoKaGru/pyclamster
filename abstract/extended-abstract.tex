@@ -35,7 +35,8 @@
 
 %%% Grafiken %%%
 \usepackage{graphicx}    % damit man Bilder einbinden kann
-\usepackage{float}    	% damit Floats da sind, wo sie hingehören
+% \usepackage{float}    	% damit Floats da sind, wo sie hingehören
+\usepackage{floatrow}   % bessere float Organisation
 \usepackage[font=footnotesize,labelfont=bf,skip=0pt]{caption} % Captions anpassen
 \addtolength{\intextsep}{5mm} % mehr Platz um figures und tables
 \usepackage{subcaption}
@@ -220,18 +221,19 @@ Zum genauen Verstännis sei \cite{abook} empfohlen.
 %%%%%%%%%%%%%%%%%%%
 \section{Kalibration}
 
-Grundlegend für Triangulation auf Basis von Kamerabildern ist die Kenntnis des
-Azimuth- und Elevationswinkels in jedem Bildpunkt. Dazu ist eine Kalibration
-der verwendeten Kameras erforderlich, mit der sowohl die radiale Projektion der
+Grundlegend für die hier angewendete Triangulationsmethode ist die Kenntnis des
+Azimuth- und Elevationswinkels in jedem Bildpunkt. Dazu ist eine Kalibration der
+verwendeten Kameras erforderlich, mit der sowohl die radiale Projektion der
 Kameralinse als auch die Drehungseffekte durch ungenaues Aufstellen der Kamera
 quantifiziert werden können. Für eine derartige Kalibration sind Raumpunkte
 nötig, deren Positionen sowohl auf dem Bild als auch in der Realität bekannt
 sind. Es bietet sich hierfür die Sonne an, deren realer Azimuth- und
-Elevationswinkel zu jedem Zeitpunkt berechenbar sind. Legt man an einem nahezu
-wolkenlosen Tag eine Goldfolie auf die Kamera und verringert die
-Helligkeitsempfindlichkeit der Kamera, erscheint die Sonne als einziger heller
-Fleck auf dem ansonsten dunklen Bild (Abbildung ). Das
-ermöglicht die programmatische Bestimmung der Sonnenposition auf dem Bild.
+Elevationswinkel zu jedem Zeitpunkt berechenbar sind.
+\absatz
+Bedeckt man die Kamera an einem nahezu wolkenlosen Tag mit Goldfolie und
+verringert die Helligkeitsempfindlichkeit der Kamera, erscheint die Sonne als
+einziger heller Fleck auf dem ansonsten dunklen Bild (Abbildung \ref{FIGFolie}).
+Das ermöglicht die programmatische Bestimmung der Sonnenposition auf dem Bild.
 \absatz
 Mit einer parameterbasierten Projektion, die Bildkoordinaten in reale
 Koordinaten umrechnet, lassen sich durch Optimierung die optimalen Parameter
@@ -247,12 +249,33 @@ Die Projektion funktioniert wie in (Abbildung \ref{FIGProjektion}).
 
 \begin{figure}[!h]
 \begin{center}
-\includegraphics[width=0.7\textwidth]{media/calibration-chart.png}
-\caption{Projektion von Bildkoordinaten zu realen Koordinaten: (1) Sonne auf dem
-Bild (2) Elevation wird aus Radialprojektion angenährt (3)\,-\,(5) Drehung im Raum
-durch Euler-Winkel. Die Punkte\ (2)\,-\,(5) befinden sich auf der Einheitsphäre.}
-\label{FIGProjektion}
-\vspace{-0.5cm}
+\begin{floatrow}
+\ffigbox{
+    \caption[Sonnenbahn auf mit Goldfolie bedeckten Kamera]{
+    Zusammenstellung ausgewählter Aufnahmen der mit Goldfolie bedeckten Kamera
+    \enquote{Zaun} bei einer groben Ausrichtung der optischen Achse (Bildmitte) (a) in
+    den Zenith und (b) in die Mittagssonne.
+    }
+    \label{FIGFolie}
+}{
+    \begin{tabular}{cc}
+        \includegraphics[width=0.22\textwidth]{media/cam3_straight_gold.jpg} &
+        \includegraphics[width=0.22\textwidth]{media/cam3_proj_gold.jpg} \\
+        (a) & (b) \\
+    \end{tabular}
+    }
+    
+\ffigbox{
+    \caption[Projektion von Bildkoordinaten zu realen Koordinaten]{Projektion
+    von Bildkoordinaten zu realen Koordinaten: (1) Sonne auf dem Bild (2)
+    Elevation wird aus Radialprojektion angenährt (3)\,-\,(5) Drehung im Raum
+    durch Euler-Winkel.  Die Punkte\ (2)\,-\,(5) befinden sich auf der
+    Einheitsphäre.}
+    \label{FIGProjektion}
+}{
+    \includegraphics[width=0.49\textwidth]{media/calibration-chart.png}
+}
+\end{floatrow}
 \end{center}
 \end{figure}
 
