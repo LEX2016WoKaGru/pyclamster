@@ -41,6 +41,7 @@
 \usepackage[font=footnotesize,labelfont=bf,skip=0pt]{caption} %Captions anpassen
 \addtolength{\intextsep}{2mm} % mehr Platz um figures und tables
 \usepackage{subcaption}
+\usepackage{pbox}
 
 
 \usepackage{amsmath}  % damit abgefahrene mathematische Dinge in equations gehen
@@ -187,8 +188,6 @@ Büchau, Yann Georg & Finn, Tobias Sebastian & Schaper, Maximilian \\
 Ceilometer sind teuer, Kameras sind billig und vielseitig (Bedeckungsgrad,
 Höhenwind, Wettergeschehen, etc...).  Es lohnt sich daher die Untersuchung,
 inwiefern die Wolkenhöhe auch mit Kameras bestimmt werden kann.
-\absatz
-\blindtext[1]
 
 %\newpage
 
@@ -197,29 +196,56 @@ inwiefern die Wolkenhöhe auch mit Kameras bestimmt werden kann.
 %%%%%%%%%%%%%%
 \section{Geräte}
 
-Die verwendeten zwei Kameramodelle haben die Bezeichnung VIVOTEK FE8174V.
-Metadaten sind in der Tabelle \ref{TABKameraMeta} zu finden.
-Zum genauen Verständnis sei die Lektüre von \cite{ingo} ans Herz gelegt.
+Die verwendeten zwei Kameras (Abbildung \ref{FIGKameras}) werden im Folgenden
+\enquote{Acker} und \enquote{Feld} genannt. Es handelt sich um
+Überwachungskameras VIVOTEK FE8174V mit einem Blickfeld von nahezu $180^\circ$
+und einer Bildauflösung von $1920\,\mathrm{px} \cdot 1920
+\,\mathrm{px}$.
 \absatz
 
-\begin{table}[!h]
+\begin{figure}[!h]
 \begin{center}
-\caption{Metadaten der verwendeten Kameras}
-\label{TABKameraMeta}
-\absatz
-\begin{tabular}{|c|c|c|}
-\hline
-\textbf{Kamera} & \textbf{GPS Position} & \textbf{Höhe über N.N.[m]} \\\hline
-\textbf{Zaun}   & $54,4947^\circ\,\mathrm{N}$ \, $11,2408^\circ\,\mathrm{O}$ &
-9                \\\hline
-\textbf{Acker}   & $54,4959^\circ\,\mathrm{N}$ \, $11,2377^\circ\,\mathrm{O}$ &
-0                \\\hline
-\end{tabular}
+\scriptsize
+\begin{minipage}{0.45\textwidth}
+    \bgroup
+    \def\arraystretch{0.2}
+    \begin{tabular}{cc}
+    Kamera \enquote{\textbf{Acker}} & Kamera \enquote{\textbf{Zaun}} \\
+    \includegraphics[width=0.45\textwidth, angle=-90]{media/cam4.jpg} &
+    \includegraphics[width=0.45\textwidth, angle=-90]{media/cam3.jpg} \\
+    \end{tabular}
+    \egroup
+\end{minipage}
+\begin{minipage}{0.45\textwidth}
+    \bgroup
+    \def\arraystretch{2}
+    \scriptsize
+    \begin{tabular}{ccc}
+    & 
+    \pbox{\textwidth}{Kamera\\ \enquote{\textbf{Acker}}} &
+    \pbox{\textwidth}{Kamera\\ \enquote{\textbf{Zaun}}} \\
+    \hline
+    \pbox{\textwidth}{\textbf{GPS Position}} & 
+    \pbox{\textwidth}{$54,4959^\circ\,\mathrm{N}$ \\
+    $11,2377^\circ\,\mathrm{O}$} &
+    \pbox{\textwidth}{$54,4947^\circ\,\mathrm{N}$ \\ $11,2408^\circ\,\mathrm{O}$} \\
+    \hline
+    \pbox{\textwidth}{\textbf{Höhe über N.N.}} & 
+    $0\,\mathrm{m}$ &
+    $9\,\mathrm{m}$ \\
+    \hline
+    \end{tabular}
+    \egroup
+\end{minipage}
 \vspace{-0.5cm}
+\caption[verwendete Kameras]{Kameras \enquote{Acker} und \enquote{Zaun} mit
+Koordinaten. Kamera \enquote{Zaun} befand sich auf dem Militärgelände
+Marienleuchte, Kamera \enquote{Acker} etwa $241\,\mathrm{m}$ entfernt auf einem
+Feld.}
+\label{FIGKameras}
 \end{center}
-\end{table}
+\end{figure}
 
-\blindtext
 
 %\newpage % Neue Seite 
 
