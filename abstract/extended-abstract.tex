@@ -28,33 +28,35 @@
 
 %%% Sprache %%%
 \usepackage[ngerman]{babel}    	% damit man deutsche Dinge tun kann
-\usepackage{ziffer} % Deutsche Zahlen (kein Abstand hinterm Komma, Punkt als Tausendertrennzeichen, etc...)
+\usepackage{ziffer} % Deutsche Zahlen
+
 \usepackage[utf8]{inputenc}   % damit Umlaute funktionieren
-\usepackage[autostyle=true,german=quotes]{csquotes} % Anführungszeichen richtig machen
+\usepackage[autostyle=true,german=quotes]{csquotes} % Anführungszeichen richtig
 \usepackage{blindtext} % damit man sinnlosen Text produzieren kann
 
 %%% Grafiken %%%
 \usepackage{graphicx}    % damit man Bilder einbinden kann
 % \usepackage{float}    	% damit Floats da sind, wo sie hingehören
 \usepackage{floatrow}   % bessere float Organisation
-\usepackage[font=footnotesize,labelfont=bf,skip=0pt]{caption} % Captions anpassen
+\usepackage[font=footnotesize,labelfont=bf,skip=0pt]{caption} %Captions anpassen
 \addtolength{\intextsep}{2mm} % mehr Platz um figures und tables
 \usepackage{subcaption}
 
 
-\usepackage{amsmath}    	% damit abgefahrene mathematische Dinge in equations gehen
-\usepackage{enumitem}   % Damit Aufzählungen hübscher sind
-\usepackage{ifthen}     % Damit man if-else-Strukturen machen kann
+\usepackage{amsmath}  % damit abgefahrene mathematische Dinge in equations gehen
+\usepackage{enumitem} % Damit Aufzählungen hübscher sind
+\usepackage{ifthen}   % Damit man if-else-Strukturen machen kann
 
 \setlength{\parindent}{0pt} % Keine Absatzeinrückung
 \usepackage{setspace} % Zeilenabstände machen können
 \linespread{1.1} % Zeilenabstand definieren
-\newcommand{\absatz}{\smallbreak} % Standardmäßig \absatz zur Trennung von Absätzen verwendet und hier das Kommando anpassen
+% Standardmäßig \absatz zur Trennung von Absätzen verwendet und hier anpassen
+\newcommand{\absatz}{\smallbreak} 
 %\renewcommand{\familydefault}{\sfdefault} % Serifenlose Schrift
 
 %%% Links und Verweise %%%
 \usepackage[breaklinks]{hyperref} % Damit Links funktionieren
-\hypersetup{colorlinks=false,pdfborder={0 0 0}} % Damit die hässlichen Kästen um Links weg sind
+\hypersetup{colorlinks=false,pdfborder={0 0 0}} % entferne hässliche Link-Kästen
 
 
 %%% Bibliographie %%%
@@ -69,15 +71,20 @@
     \bibliography{#1}
     }
 
-\usepackage[nottoc,notlot,notlof]{tocbibind} % damit das Literaturverzeichnis im Inhaltsverzeichnis auftaucht, aber NICHT nummeriert wird
-% \usepackage[nottoc,numbib]{tocbibind} % damit das Literaturverzeichnis nummeriert wird und im Inhaltsverzeichnis auftaucht
+% Literaturverzeichnis im Inhaltsverzeichnis, aber NICHT nummeriert
+\usepackage[nottoc,notlot,notlof]{tocbibind} 
+% Literaturverzeichnis nummeriert und im Inhaltsverzeichnis
+% \usepackage[nottoc,numbib]{tocbibind}
 
 
 % Commands to place things on a left or right side
-% Put this before something you want to place either right (onto the NEXT EVEN page) or left (onto the NEXT ODD page)
+% Put this before something you want to place either right 
+% (onto the NEXT EVEN page) or left (onto the NEXT ODD page)
 \newcommand{\emptypage}{\newpage\leavevmode\thispagestyle{empty}\newpage}
-\newcommand{\fillwithemptypagestillevenside}{\ifthenelse{\isodd{\thepage}}{\emptypage}{}}
-\newcommand{\fillwithemptypagestilloddside}{\ifthenelse{\isodd{\thepage}}{}{\emptypage}}
+\newcommand{\fillwithemptypagestillevenside}{\ifthenelse{\isodd{\thepage}}
+    {\emptypage}{}}
+\newcommand{\fillwithemptypagestilloddside}{\ifthenelse{\isodd{\thepage}}{}
+    {\emptypage}}
 
 \newcommand{\breaktoevenside}{\ifthenelse{\isodd{\thepage}}{\newpage}{}}
 \newcommand{\breaktooddside}{\ifthenelse{\isodd{\thepage}}{}{\newpage}}
@@ -190,7 +197,7 @@ inwiefern die Wolkenhöhe auch mit Kameras bestimmt werden kann.
 %%%%%%%%%%%%%%
 \section{Geräte}
 
-Die verwendeten zwei Kameramodelle haben beide die Bezeichnung VIVOTEK FE8174V.
+Die verwendeten zwei Kameramodelle haben die Bezeichnung VIVOTEK FE8174V.
 Metadaten sind in der Tabelle \ref{TABKameraMeta} zu finden.
 Zum genauen Verständnis sei die Lektüre von \cite{ingo} ans Herz gelegt.
 \absatz
@@ -221,30 +228,31 @@ Zum genauen Verständnis sei die Lektüre von \cite{ingo} ans Herz gelegt.
 %%%%%%%%%%%%%%%%%%%
 \section{Kalibration}
 
-Grundlegend für die hier angewendete Triangulationsmethode ist die Kenntnis des
-Azimuth- und Elevationswinkels in jedem Bildpunkt. Dazu ist eine Kalibration der
-verwendeten Kameras erforderlich, mit der sowohl die radiale Projektion der
-Kameralinse als auch die Drehungseffekte durch ungenaues Aufstellen der Kamera
-quantifiziert werden können. Für eine derartige Kalibration sind Raumpunkte
-nötig, deren Positionen sowohl auf dem Bild als auch in der Realität bekannt
-sind. Es bietet sich hierfür die Sonne an, deren realer Azimuth- und
-Elevationswinkel zu jedem Zeitpunkt berechenbar sind (siehe auch
-\mbox{\citeauthor{pysolar}, \citeyear{pysolar}}).
-\absatz
-Bedeckt man eine Kamera an einem nahezu wolkenlosen Tag mit Goldfolie und
-verringert die Belichtungszeit, erscheint die Sonne als einziger heller Fleck
-auf dem ansonsten dunklen Bild (Abbildung \ref{FIGFolie}).  Das ermöglicht die
-programmatische Bestimmung der Sonnenposition auf dem Bild mittels Weichzeichnung,
-Erosion kleiner Elemente und Mittelpunktsbestimmung des hellsten Bildbereichs.
+Grundlegend für die im Folgenden angewendete Triangulationsmethode ist die
+Kenntnis des Azimuth- und Elevationswinkels in jedem Bildpunkt. Dazu ist eine
+Kalibration der verwendeten Kameras erforderlich, mit der sowohl die radiale
+Projektion der Kameralinse als auch die Drehungseffekte durch ungenaues
+Aufstellen der Kamera quantifiziert werden können. Für eine derartige
+Kalibration sind Raumpunkte nötig, deren Positionen sowohl auf dem Bild als auch
+in der Realität bekannt sind. Es bietet sich hierfür die Sonne an, deren realer
+Azimuth- und Elevationswinkel zu jedem Zeitpunkt berechenbar sind
+\citep{pysolar}.
+\absatz 
+Bedeckt man eine Kamera an einem nahezu wolkenlosen
+Tag mit Goldfolie und verringert die Belichtungszeit \citep{ingo}, erscheint die
+Sonne als einziger heller Fleck auf dem ansonsten dunklen Bild (Abbildung
+\ref{FIGFolie}).  Das ermöglicht die programmatische Bestimmung der
+Sonnenposition auf dem Bild mittels Weichzeichnung, Erosion kleiner Elemente und
+Mittelpunktsbestimmung des hellsten Bildbereichs.
 \absatz
 Zur Bestimmung von Azimuth- und Elevationswinkel in jedem Bildpunkt wird eine
 Projektion benötigt, mit der sich Bildkoordinaten $\left[Zeile \,\,
 Spalte\right]$ in das reale, dreidimensionale Koordinatensystem
-$\left[X\,\,Y\,\,Z\right]$ umrechnen lassen. Eine solche Projektion ist
-in Abbildung~\ref{FIGProjektion} gezeigt. Dabei wird zunächst anhand des
-Bildradius $R_\mathrm{h}$, also des Abstandes des betrachteten Bildpunktes zur
-Bildmitte in Bildpunktbreiten, der Lotwinkel $\phi$ angenährt. Er lässt sich
-umrechnen in die Elevation $\epsilon = \frac{\pi}{2} - \phi$. Dem liegt die
+$\left[X\,\,Y\,\,Z\right]$ umrechnen lassen.  Eine solche Projektion ist in
+Abbildung~\ref{FIGProjektion} gezeigt. Dabei wird zunächst anhand des Bildradius
+$R_\mathrm{h}$, also des Abstandes des betrachteten Bildpunktes zur Bildmitte in
+Bildpunktbreiten, der Lotwinkel $\phi$ zur optischen Achse angenährt. Er lässt
+sich umrechnen in die Elevation $\epsilon = \frac{\pi}{2} - \phi$. Dem liegt die
 Annahme zugrunde, dass es sich um eine radiale Verzerrung handelt, die
 rotationssymmetrisch zur in der Bildmitte liegenden optischen Achse der Linse
 ist.  Dieser Schritt quantifiziert also den Verzerrungseffekt der Linse. Hier
@@ -253,8 +261,7 @@ invertiert:
 
 \begin{equation}
 \label{GLRadial}
-R_\mathrm{h} = p_4 \phi ^ 4 + p_3 \phi ^ 3 + p_2 \phi ^ 2 + p_1
-\epsilon 
+R_\mathrm{h} = p_4 \phi ^ 4 + p_3 \phi ^ 3 + p_2 \phi ^ 2 + p_1 \phi
 \end{equation}
 
 Durch die nun bekannte Elevation wird der Vektor des betrachteten Bildpunktes
@@ -301,9 +308,15 @@ Da die beiden hier verwendeten Kameras baugleich sind, wird für Kamera
 Projektionsfunktion (Abbildung \ref{FIGProjektioncalib}) können jetzt die in den
 Zenith gerichteten Kameraaufstellungen kalibriert werden wie etwa in Abbildung
 \ref{FIGFolie}(a) zu sehen. Aus den daraus gewonnenen Parametern lassen sich wie
-gewünscht für jeden Bildpunkt ein Azimuth- und Elevationswinkel bestimmen. Eine
-Koordinatentransformation kann dann dazu verwendet werden, die Bilder zu
-entzerren.
+gewünscht für jeden Bildpunkt ein Azimuth- und Elevationswinkel bestimmen. 
+\absatz 
+Eine Koordinatentransformation kann dann dazu verwendet werden, die
+Bilder zu entzerren. Dazu wird ein Gitter aus equidistanten $X$ und $Y$
+Koordinaten erstellt und eine virtuelle, konstante Höhe $Z$ angenommen. Diese
+virtuelle Höhe $Z$ hat keine Verbindung zu der Wolkenhöhe, sondern dient nur der
+Darstellung einer Ebene. Aus diesen Koordinaten werden Azimuth und Elevation
+berechnet und dann darauf das Kamerabild auf Basis seiner kalibrierten Azimuth-
+und Elevationswinkel intepoliert.
 
 \begin{figure}[!h]
 \begin{center}
