@@ -184,16 +184,32 @@ Büchau, Yann Georg & Finn, Tobias Sebastian & Schaper, Maximilian \\
 %%% Motivation %%%
 %%%%%%%%%%%%%%%%%%
 \section{Motivation}
-Die Wolkenbasishöhen sind eine wichtige Größe in der Beschreibung von Wolken und haben einen maßgeblichen Einfluss auf die langwellige Ausstrahlung der Wolken. Das klassische Gerät um die Wolkenbasishöhe zu berechnen ist das Ceilometer. Das Ceilometer berechnet aus senkrechten Laser-Punktmessungen mehrere Wolkenbasishöhen. Als weiteres Instrument um Wolken zu analysieren ist in den letzten Jahren die sogenannte Wolkenkamera hinzugekommen. Klassische Anwendungsbereiche der Wolkenkamera beinhalten den Bedeckungsgrad, die Wolkenzuggeschwindigkeit und -Richtung, sowie die Nowcast-Vorhersage für Solarkraftanlagen.\\ Für diese Anwendungsbereich bedarf es jedoch zumeist eines zusätzlichen Ceilometers. Damit das Ceilometer nicht mehr notwendig ist, lässt sich ein Stereo-Wolkenkamera-Aufbau konstruieren, der die Berechnung von Punkten im 3D-Raum ermöglicht. Damit die Wolkenpositionen im 3D-Raum berechnet werden können, sind mehrere Schritte notwendig, die im nachfolgenden beschrieben werden. So gliedert sich der folgende Text in mehrere Kapitel.\\
-Im zweiten Kapitel wird kurz der Aufbau der Kameras mit den dazugehörigen Positionen beschrieben. Im dritten Kapitel wird eine neue Methode vorgestellt, um die Wolkenkameras mit Hilfe der Sonne zu kalibrieren. Im vierten Kapitel werden Methoden zu Wolkenerkennung beschrieben. Im fünften Kapitel wird die Berechnung der Wolkenbasishöhe thematisiert, während im sechsten Kapitel diese evaluiert werden.
-%Ceilometer si nd teuer, Kameras sind billig und vielseitig (Bedeckungsgrad,Höhenwind, Wettergeschehen, etc...).  Es lohnt sich daher die Untersuchung, inwiefern die Wolkenhöhe auch mit Kameras bestimmt werden kann.
+Die Wolkenbasishöhe ist eine wichtige Größe in der Charakterisierung von Wolken,
+da sie maßgeblichen Einfluss auf ihre langwellige Ausstrahlung hat.  Das
+klassische Gerät zur Ermittlung der Wolkenbasishöhe ist das Ceilometer, welches
+Rückstreuprofile senkrechter Laser-Punktmessungen zur Höhenbestimmung verwendet.
+Auch Kameras haben als weiteres Instrument zur Wolkenanalyse Verwendung
+gefunden. Anwendungsbereiche solcher Wolkenkameras beinhalten die Bestimmung des
+Bedeckungsgrads, der Wolkenzuggeschwindigkeit und -richtung sowie die
+Nowcast-Vorhersage für Solarkraftanlagen.\\ Für viele dieser Anwendungsbereiche
+bedarf es jedoch zumeist eines zusätzlichen Ceilometers. Da diese allerdings
+recht kostspielig in der Anschaffung sind, lohnt sich die Entwicklung
+alternativer Techniken der Wolkenbasishöhenbestimmung. Eine solche Methode auf
+Basis eines Stereo-Wolkenkamera-Aufbaus soll hier untersucht werden. Dabei soll
+analog zum klassischen Theodoliten-Doppelanschnitt mit zwei Wolkenkameras die
+Wolkenhöhe trianguliert werden.\\ Damit Wolkenpositionen im
+dreidimensionalen Raum ermittelt werden können, sind mehrere Schritte notwendig:
+Kalibration der Kameras (Kapitel\;\ref{SECCalib}), Wolkenerkennung
+(Kapitel\;\ref{SECWolkenErkennung}) und Positionsbestimmung
+(Kapitel\;\ref{SECHoehenbestimmung}). Eine Validierung erfolgt in
+Kapitel\;\ref{SECValidation}.
 
-%\newpage
 
 %%%%%%%%%%%%%%
 %%% Geräte %%%
 %%%%%%%%%%%%%%
 \section{Geräte}
+\label{SECGeraete}
 
 Die verwendeten zwei Kameras (Abbildung \ref{FIGKameras}) werden im Folgenden
 \enquote{Acker} und \enquote{Feld} genannt. Es handelt sich um
@@ -391,6 +407,7 @@ Vergleich zur equidistanten Fischaugenprojektion}
 %%% Wolkenerkennung %%%
 %%%%%%%%%%%%%%%%%%%%%%%
 \section{Wolkenerkennung}
+\label{SECWolkenErkennung}
 Die entzerrten Wolkenkamerabilder werden im nächsten Schritt weiter verarbeitet. Die Wolkenerkennung ist ein elementarer Punkt diese Ansatzes zur Bestimmung der Wolkenbasishöhe. Die Wolkenerkennung auf den Bildern gliedert sich in zwei unterschiedliche Unterbereiche, die aufeinander aufbauen - Die Unterscheidung zwischen Wolke/nicht Wolke und die Gruppierung der Wolkenpixel, sowie das zusammenführen von zwei unterschiedlichen Wolkenkamerabildern. In unserem Ansatz werden statistische Methoden benutzt, um die gewünschten Informationen aus den Wolkenkamerabildern herauszufinden.
 
 \subsection{Wolkensegmentierung}
@@ -416,6 +433,7 @@ Nachdem die Zusammengehörigkeit von zwei Wolkenteilen erkannt worden ist, muss 
 %%% Höhenbestimmung %%%
 %%%%%%%%%%%%%%%%%%%%%%%
 \section{Berechnung der Wolkenbasishöhe}
+\label{SECHoehenbestimmung}
 Wie in Abschnitt \ref{SECCalib} beschrieben hat jedes Wolkenkamerabild zusätzlich zu den drei Farbkanälen eine Azimuth- und Elevationsmatrix, die für jeden Pixel definiert ist. Diese Winkelinformation werden benutzt, um die Wolkenbasishöhe aus den zusammengehörigen Wolkenteilen zu berechnen. Die Wolkenbasishöhe wird für jeden überlappenden Pixel mit Hilfe des Doppelanschnitts berechnet. Der Algorithmus des Doppelanschnitts ist im Unterkapitel \ref{SECDoppel} beschrieben. Es kann davon ausgegangen werden, dass jeder der bisherigen Schritte Fehler produziert, die sich aufsummieren und so die berechnete Wolkenbasishöhe beeinflussen. Deshalb werden die Daten des Doppelanschnitt nachbearbeitet, bevor diese evaluiert werden. Dieser Filterungsprozess wird in Unterkapitel \ref{SECHeightPost} aufgezeigt.
 \subsection{Doppelanschnitt}
 \label{SECDoppel}
@@ -442,6 +460,7 @@ Die Kameras haben nur eine begrenzte räumliche Auflösung und zusätzlich ist d
 %%% Validierung %%%
 %%%%%%%%%%%%%%%%%%%
 \section{Validierung}
+\label{SECValidation}
 Mit Hilfe der vorgestellten Methoden wird für ein Zeitpunkt eine Wolkenhöhe berechnet. Um diese auf ihre Richtigkeit zu überprüfen muss diese Evaluiert werden. Es kann untersucht werden, wie sensitiv die Wolkenbasishöhe auf kleinere Störungen reagiert (\ref{SECSens}). Ebenso kann auch validiert werden in wie weit die Entfernung der beiden Kameras zueinander und räumliche Auflösung dieser ausreicht, um die Wolkenbasishöhe zu berechnen. Im letzten Evaluierungsschritt werden die berechneten Wolkenbasishöhen für ein Fallbeispiel mit den Wolkenbasishöhen aus dem Ceilometer verglichen.
 \subsection{Sensitivität der Wolkenbasishöhe}
 \label{SECSens}
