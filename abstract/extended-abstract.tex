@@ -429,33 +429,32 @@ Bild zu segmentieren. In diesem Ansatz wurden Algorithmen gewählt, die in
 die Gruppierung der sogenannten unüberwachten Algorithmen fallen. Die
 Algorithmen basieren darauf, dass die Farben der Bildpixel einer bimodalen
 Verteilung folgen, also zwischen Wolke und nicht Wolke aufgeteilt werden können.
-Im Raum der RGB-Farbkanäle ist die Wolkensegmentierung durch hier nicht gennante
-Gründe nicht sauber möglich \citep{dev_14_color}, sodass vorbereitende Schritte
-nötig sind, um Wolken unüberwacht aus einem Wolkenkamerabild zu
-segmentieren.\absatz Im ersten vorbereitenden Schritt werden die Bilder lokal
-zentriert. Beim lokalen Zentrieren wird die mittlere Helligkeit in einem Bereich
-um diesen Pixel herum abgezogen. Dadurch wird die Helligkeit der Kamera
-zentriert und der Einfluss der Sonne auf die Bildkanäle verringert. Im zweiten
-vorbereitenden Schritt werden die drei Farbkanäle zu einem einzelnen
-$\frac{Blau-Rot}{Blau+Rot}$-Kanal kombiniert. Das Blau-Rot Verhältnis ist
-normalisiert und hat damit einen definierten Wertebereich zwischen -1 und 1. Bei
-einem blauen Pixel liegt der Wert bei Eins, während bei einem weißen Pixel der
-Wert bei Null ist. Durch das Blau-Rot Verhältnis ist es einfacher Wolken zu
-segmentieren.\absatz In unserem Ansatz wird das Wolkenkamerabild durch einen
-Schwellwert im Blau-Rot Verhältnis segmentiert. Unterhalb dieses Schwellwertes
-wird der Pixel als Wolke segmentiert. Der Schwellwert besteht zu gleichen Teilen
-aus einem vordefinierten und einem bildspezifischen Schwellwert. Der
-vordefinierte Schwellwert wurde durch den sogenannten K-Means Algorithmus
-\citep{james_13_introduction} an vier manuell ausgewählten Testbildern
-berechnet. Die vier Testbilder sind so ausgewählt, dass ein möglichst großes
-Spektrum an Bewölkungsgraden abgedeckt ist. Der K-Means Algorithmus berechnet
-die Mittelpunkte der beiden Cluster Wolke und nicht Wolke. Der Schwellwert
-entspricht dann dem Mittelwert dieser beiden Mittelpunkte. Für den
-bildspezifischen Schwellwert wird der sogenannte Otsu-Algorithmus benutzt
-\citep{otsu_75_threshold}. Durch die Kombination des vordefininerten und des
-bildspezifischen Schwellwertes wird sichergestellt, dass einerseits der
-Schwellwert für verschiedenste Wolkentypen verwendet werden kann und
-andererseits der Schwellwert für jedes Bild angepasst wird, um auch
+Im Raum der RGB-Farbkanäle ist die Wolkensegmentierung nicht einfach möglich
+\citep{dev_14_color}, sodass vorbereitende Schritte nötig sind, um Wolken
+unüberwacht aus einem Wolkenkamerabild zu segmentieren.\absatz Im ersten
+vorbereitenden Schritt werden die Bilder lokal zentriert. Beim lokalen
+Zentrieren wird die mittlere Helligkeit in einem Bereich um diesen Pixel herum
+abgezogen. Dadurch wird die Helligkeit der Kamera zentriert und der Einfluss der
+Sonne auf die Bildkanäle verringert. Im zweiten vorbereitenden Schritt werden
+die drei Farbkanäle zu einem einzelnen $\frac{Blau-Rot}{Blau+Rot}$-Kanal
+kombiniert. Das Blau-Rot Verhältnis ist normalisiert und hat damit einen
+definierten Wertebereich zwischen -1 und 1. Bei einem blauen Pixel liegt der
+Wert bei Eins, während bei einem weißen Pixel der Wert bei Null ist. Durch das
+Blau-Rot Verhältnis ist es einfacher Wolken zu segmentieren.\absatz In unserem
+Ansatz wird das Wolkenkamerabild durch einen Schwellwert im Blau-Rot Verhältnis
+segmentiert. Unterhalb dieses Schwellwertes wird der Pixel als Wolke
+segmentiert. Der Schwellwert besteht zu gleichen Teilen aus einem vordefinierten
+und einem bildspezifischen Schwellwert. Der vordefinierte Schwellwert wurde
+durch den sogenannten K-Means Algorithmus \citep{james_13_introduction} an vier
+manuell ausgewählten Testbildern berechnet. Die vier Testbilder sind so
+ausgewählt, dass ein möglichst großes Spektrum an Bewölkungsgraden abgedeckt
+ist. Der K-Means Algorithmus berechnet die Mittelpunkte der beiden Cluster Wolke
+und nicht Wolke. Der Schwellwert entspricht dann dem Mittelwert dieser beiden
+Mittelpunkte. Für den bildspezifischen Schwellwert wird der sogenannte
+Otsu-Algorithmus benutzt \citep{otsu_75_threshold}. Durch die Kombination des
+vordefininerten und des bildspezifischen Schwellwertes wird sichergestellt, dass
+einerseits der Schwellwert für verschiedenste Wolkentypen verwendet werden kann
+und andererseits der Schwellwert für jedes Bild angepasst wird, um auch
 bildspezifische Verteilungsbesonderheiten abzudecken.\absatz Aus der
 Wolkensegmentierung wird die Information pixelweise Wolke Ja oder Nein gewonnen.
 Mit Hilfe vpn binärer Öffnung und Schließung wird die Wolkensegementierung noch
@@ -469,11 +468,9 @@ Superpixel werden mit den segmentierten Wolkenpixel zusammengeführt. Dafür
 werden Wolkenpixel die die dem gleichen Superpixel entsprechen gruppiert. Durch
 den Superpixelansatz werden die Wolken in kleinere Wolkenteile gruppiert.
 Dadurch sollen im Datensatz richtig erkannte Wolkenbasishöhen überwiegen, sodass
-Rauschen herausgefiltert werden kann.
-\absatz
-Wenn die Wolken gruppiert sind, ist die Verarbeitung von einzelnen Bildern
-beendet und die Wolken von den Stereo-Wolkenkamerabildern werden
-zusammengeführt.
+Rauschen herausgefiltert werden kann.  \absatz Wenn die Wolken gruppiert sind,
+ist die Verarbeitung von einzelnen Bildern beendet und die Wolken von den
+Stereo-Wolkenkamerabildern werden zusammengeführt.
 
 %%%%%%%%%%%%%%%%%%%%%%
 %%% Wolkenmatching %%%
