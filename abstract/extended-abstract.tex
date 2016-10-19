@@ -183,7 +183,7 @@ Büchau, Yann Georg & Finn, Tobias Sebastian & Schaper, Maximilian \\
 %%%%%%%%%%%%%%%%%%
 %%% Motivation %%%
 %%%%%%%%%%%%%%%%%%
-\section{Motivation}
+\section{Einleitung}
 Die Wolkenbasishöhe ist eine wichtige Größe in der Charakterisierung von Wolken,
 da sie unter anderem maßgeblichen Einfluss auf ihre langwellige Ausstrahlung
 hat.  Das klassische Gerät zur Ermittlung der Wolkenbasishöhe ist das
@@ -212,7 +212,7 @@ Kapitel\;\ref{SECValidation}.
 \section{Geräte}
 \label{SECGeraete}
 
-Die verwendeten zwei Kameras (Abbildung \ref{FIGKameras}) werden im Folgenden
+Die verwendeten zwei Kameras (Abb. \ref{FIGKameras}) werden im Folgenden
 \enquote{Acker} und \enquote{Feld} genannt. Es handelt sich um
 Überwachungskameras VIVOTEK FE8174V mit einem Blickfeld von nahezu $180^\circ$
 und einer Bildauflösung von $1920\,\mathrm{px} \cdot 1920
@@ -280,10 +280,11 @@ in der Realität bekannt sind. Es bietet sich hierfür die Sonne an, deren reale
 Azimuth- und Elevationswinkel zu jedem Zeitpunkt berechenbar sind
 \citep{pysolar}.
 \absatz 
-Bedeckt man eine Kamera an einem nahezu wolkenlosen
-Tag mit Goldfolie und verringert die Belichtungszeit \citep{ingo}, erscheint die
-Sonne als einziger heller Fleck auf dem ansonsten dunklen Bild (Abbildung
-\ref{FIGFolie}).  Das ermöglicht die programmatische Bestimmung der
+Wird die Kamera an einem nahezu wolkenlosen Tag mit Goldfolie bedeckt und die Belichtungszeit verringert \citep{ingo},
+%Bedeckt man eine Kamera an einem nahezu wolkenlosen Tag mit Goldfolie und verringert die Belichtungszeit \citep{ingo}, 
+erscheint die
+Sonne als einziger heller Fleck auf dem ansonsten dunklen Bild (Abb.
+\ref{FIGFolie}). Das ermöglicht die automatische Bestimmung der
 Sonnenposition auf dem Bild mittels Weichzeichnung, Erosion kleiner Elemente und
 Mittelpunktsbestimmung des hellsten Bildbereichs.
 \absatz
@@ -314,7 +315,7 @@ korrigieren den Vektor um Fehler, die bei der Ze\-nit\-aus\-rich\-tung der
 Kamera gemacht wurden. Diese drei Winkel $\Phi_Z$, $\Phi_X$ und $\theta_Z$
 werden auch als Euler-Winkel bezeichnet.
 \absatz
-Die Kalibration kann somit als Optimierungsproblem betrachtet werden. Dazu
+Die Kalibration kann als Optimierungsproblem betrachtet werden. Dazu
 werden alle auf den Kamerabildern gefundenen Sonnenpositionen auf eine
 Einheitssphäre im realen Koordinatensystem projiziert. Der mittlere quadratische
 Abstand zu den tatsächlichen Sonnenpositionen auf der Einheitssphäre ist die zu
@@ -333,8 +334,8 @@ sich an, die Projektionsfunktion separat zu bestimmen und für jede
 Kameraaufstellung zu übernehmen. Für eine optimale Genauigkeit sind
 möglichst viele Sonnenpositionen auch in der Bildmitte erforderlich, was bei
 einer Ausrichtung in den Zenith in den mittleren Breiten nicht erfüllt ist.
-Richtet man die Kamera aber in Richtung der Mittagssonne aus, ist diese
-Vorraussetzung erfüllt, wie in Abbildung \ref{FIGFolie}(b) zu sehen ist.
+Wird die Kamera in Richtung der Mittagssonne ausgerichtet, ist diese
+Vorraussetzung erfüllt, wie in Abb. \ref{FIGFolie}(b) zu sehen ist.
 Mit dieser Aufstellung ergeben sich für die Kamera \enquote{Zaun} 
 die folgenden Radialprojektionsparameter:
 
@@ -347,10 +348,9 @@ p_1 = 658,265 \;\;\;\;
 
 Da die beiden hier verwendeten Kameras baugleich sind, wird für Kamera
 \enquote{Acker} dieselbe Projektionsfunktion angenommen.  Mit dieser
-Projektionsfunktion (Abbildung \ref{FIGProjektioncalib}) können jetzt die in den
-Zenith gerichteten Kameraaufstellungen kalibriert werden wie etwa in Abbildung
-\ref{FIGFolie}(a) zu sehen. Aus den daraus gewonnenen Parametern lassen sich wie
-gewünscht für jeden Bildpunkt ein Azimuth- und Elevationswinkel bestimmen. 
+Projektionsfunktion (Abb. \ref{FIGProjektioncalib}) können die in den
+Zenith gerichteten Kameraaufstellungen kalibriert werden, wie etwa in Abbildung
+\ref{FIGFolie}(a) zu sehen ist. Aus den daraus gewonnenen Parametern lassen sich für jeden Bildpunkt ein Azimuth- und Elevationswinkel bestimmen. 
 \absatz 
 Eine Koordinatentransformation kann dann dazu verwendet werden, die
 Bilder zu entzerren. Dazu wird ein Gitter aus equidistanten $X$ und $Y$
@@ -412,11 +412,11 @@ Vergleich zur equidistanten Fischaugenprojektion}
 \section{Wolkenerkennung}
 \label{SECWolkenErkennung}
 Die Wolkenerkennung ist der nächste Teil des hier verwendeten Ansatzes zur
-Bestimmung der Wolkenbasishöhe. Sie gliedert sich in die folgenden, aufeinander
-aufbauenden Schritte: Zunächst erfolgt für jeden Bildpunkt die Kategorisierung,
-ob es sich um einen Wolkenpunkt handelt oder nicht.  Dann werden die
-Wolkenpunkte zu zusammenhängenden Wolken gruppiert. Schließlich werden zwei
-zweitgleiche Bilder der unterschiedlichen Wolkenkameras zusammengeführt, um
+Bestimmung der Wolkenbasishöhe. Sie gliedert sich in die folgende aufeinander
+aufbauenden Schritte: Zunächst erfolgt für jeden Bildpixel die Kategorisierung,
+ob es sich um einen Wolkenpixel handelt oder nicht.  Dann werden die
+Wolkenpixel zu zusammenhängenden Wolken gruppiert. Schließlich werden zwei
+zeitgleiche Bilder der unterschiedlichen Wolkenkameras zusammengeführt, um
 passende Wolkenpaare zu finden. 
 
 \subsection{Wolkensegmentierung}
@@ -424,15 +424,11 @@ Der erste Schritt der Wolkenerkennung ist das Finden von Wolkenpixeln auf den
 Bildern, im weiteren Verlauf Wolkensegementierung genannt. Die
 Wolkensegmentierung soll dazu führen, ein möglichst fehlerfreies
 Wolke/keine-Wolke Bild zu erhalten, also die Wolken aus dem Bild
-herauszuschneiden.\absatz Es gibt unterschiedliche Methoden, die Wolken in dem
-Bild zu segmentieren. In diesem Ansatz wurden Algorithmen gewählt, die in
-die Gruppierung der sogenannten unüberwachten Algorithmen fallen. Die
-Algorithmen basieren darauf, dass die Farben der Bildpixel einer bimodalen
-Verteilung folgen, also zwischen Wolke und nicht Wolke aufgeteilt werden können.
-Im Raum der RGB-Farbkanäle ist die Wolkensegmentierung nicht einfach möglich
-\citep{dev_14_color}, sodass vorbereitende Schritte nötig sind, um Wolken
-unüberwacht aus einem Wolkenkamerabild zu segmentieren.\absatz Im ersten
-vorbereitenden Schritt werden die Bilder lokal zentriert. Beim lokalen
+herauszuschneiden.\absatz
+Die hier verwendeten Algorithmen basieren darauf, dass die Farben der Bildpixel einer bimodalen
+Verteilung folgen, also ein Schwellwert für die Segmentierung berechnet werden kann.
+Die Wolkensegmentierung ist mit den unbearbeiteteden RGB-Kanälen schwierig \citep{dev_14_color}, sodass vorbereitende Schritte nötig sind, um Wolken aus einem Wolkenkamerabild zu segmentieren.\absatz
+Im ersten vorbereitenden Schritt werden die Bilder lokal zentriert. Beim lokalen
 Zentrieren wird die mittlere Helligkeit in einem Bereich um diesen Pixel herum
 abgezogen. Dadurch wird die Helligkeit der Kamera zentriert und der Einfluss der
 Sonne auf die Bildkanäle verringert. Im zweiten vorbereitenden Schritt werden
@@ -440,37 +436,32 @@ die drei Farbkanäle zu einem einzelnen $\frac{Blau-Rot}{Blau+Rot}$-Kanal
 kombiniert. Das Blau-Rot Verhältnis ist normalisiert und hat damit einen
 definierten Wertebereich zwischen -1 und 1. Bei einem blauen Pixel liegt der
 Wert bei Eins, während bei einem weißen Pixel der Wert bei Null ist. Durch das
-Blau-Rot Verhältnis ist es einfacher Wolken zu segmentieren.\absatz In unserem
-Ansatz wird das Wolkenkamerabild durch einen Schwellwert im Blau-Rot Verhältnis
+Blau-Rot Verhältnis ist es einfacher Wolken zu finden.\absatz
+In unserem Ansatz wird das Wolkenkamerabild durch einen Schwellwert im Blau-Rot Verhältnis
 segmentiert. Unterhalb dieses Schwellwertes wird der Pixel als Wolke
-segmentiert. Der Schwellwert besteht zu gleichen Teilen aus einem vordefinierten
+kategorisiert. Der Schwellwert besteht zu gleichen Teilen aus einem vordefinierten
 und einem bildspezifischen Schwellwert. Der vordefinierte Schwellwert wurde
 durch den sogenannten K-Means Algorithmus \citep{james_13_introduction} an vier
 manuell ausgewählten Testbildern berechnet. Die vier Testbilder sind so
-ausgewählt, dass ein möglichst großes Spektrum an Bewölkungsgraden abgedeckt
-ist. Der K-Means Algorithmus berechnet die Mittelpunkte der beiden Cluster Wolke
-und nicht Wolke. Der Schwellwert entspricht dann dem Mittelwert dieser beiden
+ausgewählt, dass ein möglichst großes Spektrum an Bewölkungsgraden und -arten abgedeckt
+ist. Der K-Means Algorithmus berechnet die Mittelpunkte der beiden Kategorien – Wolke
+und nicht Wolke. Der Schwellwert entspricht dem Mittelwert dieser beiden
 Mittelpunkte. Für den bildspezifischen Schwellwert wird der sogenannte
 Otsu-Algorithmus benutzt \citep{otsu_75_threshold}. Durch die Kombination des
 vordefininerten und des bildspezifischen Schwellwertes wird sichergestellt, dass
 einerseits der Schwellwert für verschiedenste Wolkentypen verwendet werden kann
 und andererseits der Schwellwert für jedes Bild angepasst wird, um auch
-bildspezifische Verteilungsbesonderheiten abzudecken.\absatz Aus der
-Wolkensegmentierung wird die Information pixelweise Wolke Ja oder Nein gewonnen.
-Mit Hilfe vpn binärer Öffnung und Schließung wird die Wolkensegementierung noch
-von kleineren Löchern und als Wolke erkannten Rauschen bereinigt. Im nächsten
-Schritt werden die Wolkenpixel gruppiert, sodass zusammengehörige Wolkenpixel
-als Teil einer Wolke erkannt werden.\absatz Um die Wolken zu gruppieren wird das
-RGB-Bild mit dem Slic-Algorithmus in sogenannte Superpixel unterteilt. Der
-Slic-Algorithmus basiert auf dem K-Means Algorithmus und sorgt dafür das
-benachbarte Pixel, die ähnliche Farbwerte haben, gruppiert werden. Diese
+bildspezifische Verteilungsbesonderheiten abzudecken.\absatz
+Aus der Wolkensegmentierung wird die Information Wolke oder keine Wolke Pixelweise gewonnen. Im nächsten Schritt werden die Wolkenpixel gruppiert, sodass zusammengehörige Wolkenpixel
+als Teil einer Wolke erkannt werden.\absatz
+Um die Wolken zu gruppieren wird das RGB-Bild mit dem Slic-Algorithmus in sogenannte Superpixel unterteilt. Der Slic-Algorithmus basiert auf dem K-Means Algorithmus und sorgt dafür das benachbarte Pixel, die ähnliche Farbwerte haben, gruppiert werden. Diese
 Superpixel werden mit den segmentierten Wolkenpixel zusammengeführt. Dafür
 werden Wolkenpixel die die dem gleichen Superpixel entsprechen gruppiert. Durch
 den Superpixelansatz werden die Wolken in kleinere Wolkenteile gruppiert.
 Dadurch sollen im Datensatz richtig erkannte Wolkenbasishöhen überwiegen, sodass
 Rauschen herausgefiltert werden kann.  \absatz Wenn die Wolken gruppiert sind,
 ist die Verarbeitung von einzelnen Bildern beendet und die Wolken von den
-Stereo-Wolkenkamerabildern werden zusammengeführt.
+Stereo-Wolkenkamerabildern können zusammengeführt werden.
 
 %%%%%%%%%%%%%%%%%%%%%%
 %%% Wolkenmatching %%%
@@ -478,21 +469,21 @@ Stereo-Wolkenkamerabildern werden zusammengeführt.
 \subsection{Wolkenabgleich}
 Für die Positionierung der Wolke muss erkannt werden
 welche Wolkenteile auf beiden Bildern wo zusammengehören. Dafür werden aus
-beiden Wolkenkamerabilder die guppierten Wolkenteile einzeln rechteckig
-ausgeschnitten.\absatz Im nächsten Schritt werden die ausgeschnittenen Wolkenteile
-aus beiden Kameras miteinander verglichen. Der Vergleich zwischen zwei
+beiden Wolkenkamerabildern die guppierten Wolkenteile einzeln rechteckig
+ausgeschnitten.\absatz
+Im nächsten Schritt werden die ausgeschnittenen Wolkenteile aus beiden Kameras miteinander verglichen. Der Vergleich zwischen zwei
 Wolkenteilen wird durch Korrelationen gebildet. Hierfür werden die Wolkenteile
 gegeneinander verschoben und für jede Verschiebung wird die normierte
 Grauwertkorrelation der überlappenden Bildteile berechnet. Damit bei der
 Korrelation Helligkeits- und Kontrasteffekt der Wolkenkamera keine Rolle spielen
 werden die ausgeschnittenen Wolkenteile vor der Korrelationsbildung
-standarisiert, sodass der Mittelwert des Grauwertes $0$ entspricht und die die
-Standardabweichung $1$ ist. Es wird angenommen, dass Wolkenteile die zusammen
-gehörig sind, die höchste Korrelation zueinander haben und einen bestimmten
+standarisiert, sodass der Mittelwert des Grauwertes $0$ entspricht und die Standardabweichung $1$ ist. Es wird angenommen, dass Wolkenteile die zusammen
+gehörig sind die höchste Korrelation zueinander haben und einen bestimmten
 Korrelationsschwellwert ($0,95$) überschreiten. Desweiteren gibt es die Annahme,
 dass die Wolkenteile um den Punkt der höchsten Korrelation gegeneinander
-verschoben sind.\absatz Nachdem die Zusammengehörigkeit von zwei Wolkenteilen erkannt
-worden ist, muss die Höhe aus den dazugehörigen Winkeln berechnet werden.
+verschoben sind.\absatz
+Nachdem die Zusammengehörigkeit von zwei Wolkenteilen erkannt
+worden ist, kann die Höhe aus den dazugehörigen Winkeln berechnet werden.
 %\newpage
 
 
@@ -501,24 +492,24 @@ worden ist, muss die Höhe aus den dazugehörigen Winkeln berechnet werden.
 %%%%%%%%%%%%%%%%%%%%%%%
 \section{Berechnung der Wolkenbasishöhe}
 \label{SECHoehenbestimmung}
-Wie in Abschnitt \ref{SECCalib} beschrieben hat jedes Wolkenkamerabild zusätzlich zu den drei Farbkanälen eine Azimuth- und Elevationsmatrix, die für jeden Pixel definiert ist. Diese Winkelinformation werden benutzt, um die Wolkenbasishöhe aus den zusammengehörigen Wolkenteilen zu berechnen. Die Wolkenbasishöhe wird für jeden überlappenden Pixel mit Hilfe des Doppelanschnitts berechnet. Der Algorithmus des Doppelanschnitts ist im Unterkapitel \ref{SECDoppel} beschrieben. Es kann davon ausgegangen werden, dass jeder der bisherigen Schritte Fehler produziert, die sich aufsummieren und so die berechnete Wolkenbasishöhe beeinflussen. Deshalb werden die Daten des Doppelanschnitt nachbearbeitet, bevor diese evaluiert werden. Dieser Filterungsprozess wird in Unterkapitel \ref{SECHeightPost} aufgezeigt.
+Wie in Abschnitt \ref{SECCalib} beschrieben hat jedes Wolkenkamerabild zusätzlich zu den drei Farbkanälen eine Azimuth- und Elevationsmatrix, die für jeden Pixel definiert ist. Diese Winkelinformation werden benutzt, um die Wolkenbasishöhe aus den zusammengehörigen Wolkenteilen zu berechnen. Die Wolkenbasishöhe wird für jeden überlappenden Pixel mit Hilfe des Doppelanschnitts berechnet. Der Algorithmus des Doppelanschnitts ist im Unterkapitel \ref{SECDoppel} beschrieben. Es kann davon ausgegangen werden, dass jeder der bisherigen Schritte Fehler produziert, die sich aufsummieren und so die berechnete Wolkenbasishöhe beeinflussen. Deshalb werden die Daten des Doppelanschnitt nachbearbeitet. Dieser Filterungsprozess wird in Unterkapitel \ref{SECHeightPost} aufgezeigt.
 \subsection{Doppelanschnitt}
 \label{SECDoppel}
 Aus den Kamerabildern erhalten wir pro Pixelpaar 4 Winkelinformationen. Um die Position im Raum zu bestimmen werden jedoch nur drei Informationen benötigt, somit gibt es eine Information zu viel. Dadurch haben ein überbestimmtes Gleichungssystem. Mit Hilfe des Doppelanschnitts wird versucht eine bestmögliche Position aus diesem Gleichungssystem zu berechnen \citep{lange_16_praktikum}.
 \clearpage
-Aus den beiden Winkeln die sich für einen Pixel auf der Wolkenkamera ergeben lässt sich ein Vektor im 3D-Raum formen (im folgenden Sichtlinie genannt), der jedoch eine unbekannte Länge hat. Es ist bekannt welche Pixel auf den beiden Kameras zusammengehören und so können Paare von Sichtlinien gebildet werden. Die beiden Sichtlinien schneiden sich allerdings durch das überbestimmte Gleichungssystem im 3D-Raum nie. Um dieses Problem zu lösen wird im Doppelanschnitt angenommen, dass der Mittelpunkt der kürzesten Verbindungsgerade zwischen den beiden Sichtlinien der Position im 3D-Raum entspricht (Abb. \ref{FIGDoppel3d}).\absatz
+Aus den beiden Winkeln die sich für einen Pixel auf der Wolkenkamera ergeben lässt sich ein Vektor im 3D-Raum formen (im folgenden Sichtlinie genannt), der jedoch eine unbekannte Länge hat. Es ist bekannt welche Pixel auf den beiden Kameras zusammengehören und so können Paare von Sichtlinien gebildet werden. Zwei Sichtlinien schneiden sich allerdings durch das überbestimmte Gleichungssystem im 3D-Raum nie. Um dieses Problem zu lösen wird im Doppelanschnitt angenommen, dass die Position im 3D-Raum dem Mittelpunkt der kürzesten Verbindungsgerade zwischen den beiden Sichtlinien entspricht (Abb. \ref{FIGDoppel3d}).\absatz
 \begin{figure}[h]
 	\begin{center}
 		\includegraphics[width=0.6\textwidth]{media/3d.png}
-		\caption[Darstellung des Doppelanschnitts]{Darstellung eines Wolkenpunktes im 3D-Raum mit den beiden Sichtlinien der Kameras und der kürzesten Verbindungsgeraden}
+		\caption[Darstellung des Doppelanschnitts]{Darstellung eines Wolkenpunktes im 3D-Raum mit den beiden Sichtlinien der Kameras und der kürzesten Verbindungsgeraden \footnotemark}
 		\label{FIGDoppel3d}
 	\end{center}
 \end{figure}
 \subsection{Nachbearbeitung der Wolkenbasishöhen}
 \label{SECHeightPost}
-Die Wolkenbasishöhen aus dem Doppelanschnitt können für jedes Wolkenteilpaar gebildet werden. Diese Daten können als zusätzliche Rohdaten angesehen werden, die aus den Kamerainformationen gewonnen werden. Durch unterschiedlichste Gründe sind diese Rohdaten noch fehlerbehaftet. Deshalb wird im folgenden die Nachbereitung der Rohdaten beschrieben, damit die berechnete Wolkenbasishöhen mit den Ceilometer-Wolkenbasishöhen vergleichbar sind.\absatz
-Es wird davon ausgegangen, dass Wolkenbasishöhen nur in einem bestimmten Höhenbereich Sinn ergeben, von daher werden alle Wolkenhöhen die negative oder über 10.000 m sind aus den Datensatz herausgenommen.\absatz
-Durch Verschmutzung der Kamera und eine nicht perfekte Wolkenerkennung können Wolkenfragmente entstehen, die keine Wolke darstellen. Solange diese in einem realistischen Höhenbereich sind, können diese durch den vorherigen Schritt nicht aus dem Datensatz herausgenommen werden. Da aber davon ausgegangen werden kann, dass die richtig erkannten Wolkenteile überwiegen, kann der Median für einen Zeitpunkt gebildet werden. Der Median hat den Vorteil, dass Ausreißer, z.B. falsch erkannte Wolkenfragmente, keinen so großen Einfluss auf das Maß haben, wie bei dem Erwartungswert.\absatz
+Die Wolkenbasishöhen aus dem Doppelanschnitt können für jedes Wolkenteilpaar gebildet werden. Diese Daten können als zusätzliche Rohdaten angesehen werden, die aus den Kamerainformationen gewonnen werden. Durch unterschiedlichste Gründe sind die Rohdaten fehlerbehaftet. Deshalb wird im folgenden die Nachbereitung der Rohdaten beschrieben, damit die berechnete Wolkenbasishöhen mit den Ceilometer-Wolkenbasishöhen vergleichbar sind.\footnotetext{Map data copyrighted OpenStreetMap contributors and available from \url{http://www.openstreetmap.org}}\absatz
+Es wird davon ausgegangen, dass Wolkenbasishöhen nur in einem bestimmten Höhenbereich Sinn ergeben, von daher werden alle Wolkenhöhen die Negativ oder über 10.000 m sind aus den Datensatz herausgenommen.\absatz
+Durch Verschmutzung der Kamera und eine nicht perfekte Wolkenerkennung können Wolkenfragmente entstehen, die keine Wolke darstellen. Solange diese in einem realistischen Höhenbereich sind, können diese durch den vorherigen Schritt nicht aus dem Datensatz herausgenommen werden. Da aber davon ausgegangen werden kann, dass die richtig erkannten Wolkenteile überwiegen, kann der Median für einen Zeitpunkt gebildet werden. Der Median hat den Vorteil, dass Ausreißer, z.B. falsch erkannte Wolkenfragmente, keinen so großen Einfluss auf den Mittelwert haben, wie bei dem Erwartungswert.\absatz
 Die Kameras haben nur eine begrenzte räumliche Auflösung und zusätzlich ist der Wolkenerkennungsansatz ein statistischer Ansatz, deshalb kann es innerhalb der Zeitreihe größere Schwankungen geben. Um diese Schwankungen zu filtern wird ein gleitender Median über einen Zeitraum von 15 Minuten gebildet. Durch die gleitende Medianbildung entsteht eine glatte Zeitreihe und ist der letzte Schritt in der Filterung der Wolkenkamera-Rohdaten.\absatz
 
 %\newpage
@@ -528,18 +519,18 @@ Die Kameras haben nur eine begrenzte räumliche Auflösung und zusätzlich ist d
 %%%%%%%%%%%%%%%%%%%
 \section{Validierung}
 \label{SECValidation}
-Mit Hilfe der vorgestellten Methoden wird für ein Zeitpunkt eine Wolkenhöhe berechnet. Um diese auf ihre Richtigkeit zu überprüfen muss diese Evaluiert werden. Es kann untersucht werden, wie sensitiv die Wolkenbasishöhe auf kleinere Störungen reagiert (\ref{SECSens}). Ebenso kann auch validiert werden in wie weit die Entfernung der beiden Kameras zueinander und räumliche Auflösung dieser ausreicht, um die Wolkenbasishöhe zu berechnen. Im letzten Evaluierungsschritt werden die berechneten Wolkenbasishöhen für ein Fallbeispiel mit den Wolkenbasishöhen aus dem Ceilometer verglichen.
+Mit Hilfe der vorgestellten Methoden werden Wolkenbasishöhen berechnet. Um diese auf ihre Richtigkeit zu überprüfen muss diese Evaluiert werden. Es kann untersucht werden, wie sensitiv die Wolkenbasishöhe auf kleinere Störungen reagiert (\ref{SECSens}). Ebenso kann auch validiert werden in wie weit die Entfernung der beiden Kameras zueinander und die räumliche Auflösung dieser ausreicht, um die Wolkenbasishöhe zu berechnen. Im letzten Evaluierungsschritt werden die berechneten Wolkenbasishöhen für ein Fallbeispiel mit den Wolkenbasishöhen aus dem Ceilometer verglichen.
 \subsection{Sensitivität der Wolkenbasishöhe}
 \label{SECSens}
 Um die Sensitivität der Wolkenbasishöhe auf Störung zu untersuchen wird hier exemplarisch die Sensitivität des Wolkenpunktes aus Abb. \ref{FIGDoppel3d} untersucht.\absatz
-Die berechnete Wolkenbasishöhe kann einerseits durch den Wolkenabgleich einen Fehler enthalten und andererseits ist der Doppelanschnitt nur eine Abschätzung der tatsächlichen Wolkenbasishöhe. Es wird angenommen, dass die Störungen einem gaußischem Rauschen mit einer Standardabweichung von $1\deg$ entspricht ($~7$ Pixel) und durch die Fehler kein Bias entsteht. Die Winkel der Wolkenkameras werden unabhängig von einander 100.000 gestört, um eine Verteilung an möglichen Wolkenhöhen zu erhalten (Abb. \ref{FIGSens}).\absatz
-Durch die Störungen entsteht eine schiefe Verteilung, die wie wir annehmen einer rechtslastigen Gumbel-Verteilung folgt. Die Verteilung hat ihren Modus bei einer geringeren Wolkenhöhe (zwischen 1000 und 1050 m) als die Wolkenhöhe aus den Daten berechnet wurde (Wahrheit genannt, $~1085$ m Höhe). Der Median und der Mittelwert stimmen mit der Wahrheit bis auf wenige Meter überein. Die Standardabweichung aus der Gumbel-Verteilung zeigt eine Schwankung von 160 m. Das Minimum und das Maximum der Höhe liegt zwischen 706 m und 2352 m.\absatz
-Es zeigt sich, dass durch die Störungen eine große Schwankungsbreite in der Wolkenbasishöhe entsteht. Die Schwankungen bleiben jedoch in einem Rahmen, der es erlaubt mit unseren Methoden die Wolkenbasishöhe zu bestimmen.
+Die berechnete Wolkenbasishöhe kann einerseits durch den Wolkenabgleich einen Fehler enthalten und andererseits ist der Doppelanschnitt nur eine Abschätzung der tatsächlichen Wolkenbasishöhe. Es wird angenommen, dass die Störungen einem gaußischem Rauschen mit einer Standardabweichung von $1^{\circ}$ entspricht ($\sim7$ Pixel) und durch die Fehler kein Bias entsteht. Die Winkel der Wolkenkameras werden unabhängig voneinander 100.000 Mal gestört, um eine Verteilung an möglichen Wolkenhöhen zu erhalten (Abb. \ref{FIGSens}).\absatz
+Durch die Störungen entsteht eine schiefe Verteilung, die wie wir annehmen einer rechtslastigen Gumbel-Verteilung folgt. Die Verteilung hat ihren Modus bei einer geringeren Wolkenhöhe (zwischen $1000$ und $1050$ m) als die Wolkenhöhe aus den Daten berechnet wurde (Wahrheit genannt, $~1085$ m Höhe). Der Median und der Mittelwert stimmen mit der Wahrheit bis auf wenige Meter überein.\absatz
+Es zeigt sich, dass durch die Störungen eine Schwankungsbreite von $\sim320$ m in der Wolkenbasishöhe entsteht. Die Schwankungen bleiben jedoch in einem Rahmen, der es erlaubt mit unseren Methoden die Wolkenbasishöhe zu bestimmen.
 \clearpage
 \begin{figure}[h]
 	\begin{center}
 		\includegraphics[width=0.75\textwidth]{media/sens_prob_height.pdf}
-		\caption[Wolkenhöhenverteilung von gestörten Wolkenkamerawinkeln]{Darstellung einer Verteilung von Wolkenbasishöhen bei gestörten Wolkenkamerawinkeln. In Blau ist die berechnete Gumbel-Verteilung zu sehen. Der Median, der Mittelwert und die nicht gestörte Wolkenhöhe (Wahrheit) sind mit einem roten, grünen bzw. gelben Strich gekennzeichnet. Das 10\% bis 90\%-Perzentil wird im Hintergrund mit einer rötlichen Fläche gezeigt. Die Standardabweichung wurde mit der gezeigten Gumbel-Verteilung berechnet.}
+		\caption[Wolkenhöhenverteilung von gestörten Wolkenkamerawinkeln]{Darstellung einer Verteilung von Wolkenbasishöhen bei gestörten Wolkenkamerawinkeln. In Blau ist die berechnete Gumbel-Verteilung zu sehen. Der Median, der Mittelwert und die nicht gestörte Wolkenhöhe (Wahrheit) sind mit einem roten, grünen bzw. gelben Strich gekennzeichnet. Das 10\% bis 90\%-Perzentil wird im Hintergrund mit einer rötlichen Fläche gezeigt. Die Standardabweichung wurde mit der gezeigten Gumbel-Verteilung berechnet}
 		\label{FIGSens}
 	\end{center}
 \end{figure}
@@ -547,7 +538,7 @@ Es zeigt sich, dass durch die Störungen eine große Schwankungsbreite in der Wo
 \label{SECDragon}
 Um zu überprüfen ob die Entfernung und räumliche Auflösung der beiden Wolkenkameras ausreicht, werden die Daten von Theodolitenmessungen für ein bestimmtes Sichtziel (Lastendrachen) mit den berechneten Höhen der beiden Wolkenkameras verglichen.\absatz
 Die beiden Theodoliten werden neben die Kameras gestellt, damit die beiden Messsysteme vergleichbare Ergebnisse liefern. Die Theodoliten nehmen in fünf sekündigen Schritten die anvisierten Raumwinkel auf. Aus den vier Raumwinkeln kann wie bei den Wolkenkameras mit Hilfe des Doppelanschnitts die Position des Sichtziels berechnet werden.\absatz
-Das Sichtziel ist in diesem Experiment ein Lastendrachen mit einer Spannweite von 3 m x 1,80 m. Der Drachen stieg bei den beiden Aufstiegen bis um 100 m Höhe.\absatz
+Das Sichtziel ist in diesem Experiment ein Lastendrachen mit einer Spannweite von\\$3~\text{m}~\cdot~1,80~\text{m}$. Der Drachen stieg bei den beiden Aufstiegen bis auf um die $100$ m Höhe.\absatz
 In diesem Experiment wird die Drachenposition bei den beiden Wolkenkamerabildern manuell markiert, um ausschlißen zu können, dass der Fehler durch Algorithmen entsteht. Die jeweilige Drachenposition für zwei Winkelpaare wird mit dem Doppelanschnitt ohne Nachbearbeitung berechnet.\absatz
 \begin{figure}[h]
 	\begin{center}
@@ -556,12 +547,12 @@ In diesem Experiment wird die Drachenposition bei den beiden Wolkenkamerabildern
 		\label{FIGTheoDragon}
 	\end{center}
 \end{figure}
-Wie in Abb. \ref{FIGTheoDragon} zu sehen ist, stimmen die berechneten Positionen der beiden Messsysteme bis auf wenige Meter überein. In den Daten ist eindeutig zu sehen, dass die Wolkenkameras eine gerignere zeitliche Auflösung als die Theodoliten haben und so den zeitlichen Verlauf der beiden Drachenaufstiege nicht so genau wiedergeben kann. Zwischen den beiden Drachenaufstiegen lag eine Pause von ca. 10 Minuten, bei der die Position des Drachen geändert wurde. Es ist ersichtlich, dass trotz der veränderten Drachenposition der Positionsunterschied zwischen den beiden Messsystemen sich nicht geändert hat und somit das Ergebnis aussagekräftig ist.\absatz
-Dadurch, dass die Wolkenkameramessungen mit den Theodolitenmessungen bis auf wenige Meter übereinstimmen, kann geschlussfolgert werden, dass der Abstand und die räumliche Auflösung der beiden Kameras ausreicht, um die Wolkenbasishöhe zu bestimmen. Die Unterschiede zwischen den Messsystemen ist durch die räumliche und zeitliche Auflösung dieser, sowie durch die manuelle Markierung der Drachen auf den Kamerabildern, zu erklären. Die Ergebnisse zeigen, dass Fehler bei der Bestimmung der Wolkenbasishöhe vorallem durch die Wolkenerkennung und nicht durch den Doppelanschnitt oder die räumliche Auflösung entstehen.
+Wie in Abb. \ref{FIGTheoDragon} zu sehen ist, stimmen die berechneten Positionen der beiden Messsysteme bis auf wenige Meter überein. In den Daten ist eindeutig zu sehen, dass die Wolkenkameras eine geringere zeitliche Auflösung als die Theodoliten haben und so den zeitlichen Verlauf der beiden Drachenaufstiege nicht so genau wiedergeben kann. Zwischen den beiden Drachenaufstiegen lag eine Pause von ca. 10 Minuten, bei der die Position des Drachen geändert wurde. Es ist ersichtlich, dass trotz der veränderten Drachenposition der Unterschied in der Wolkenhöhe, berechnet mit den beiden Messsystemen, sich nicht geändert hat und somit das Ergebnis aussagekräftig ist.\absatz
+Dadurch, dass die Wolkenkameramessungen mit den Theodolitenmessungen bis auf wenige Meter übereinstimmen, kann geschlussfolgert werden, dass der Abstand und die räumliche Auflösung der beiden Kameras ausreicht, um die Wolkenbasishöhe zu bestimmen. Die Unterschiede zwischen den Messsystemen sind durch die räumliche und zeitliche Auflösung dieser, sowie durch die manuelle Markierung der Drachen auf den Kamerabildern, zu erklären. Die Ergebnisse zeigen, dass Fehler bei der Bestimmung der Wolkenbasishöhe vorallem durch die Wolkenerkennung und nicht durch den Doppelanschnitt oder die räumliche Auflösung entstehen.
 
 \subsection{Vergleich der Wolkenbasishöhen aus Wolkenkameras mit einem Ceilometer}
 \label{SECCeilo}
-Um die berechneten Wolkenbasishöhen der Wolkenkameras mit den aus dem Ceilometer zu vergleichen, wird im folgenden ein Fallbeispiel gezeigt, wo anfägnlich cumuliforme Bewölkung dominiert hat, während es gegen Ende einen Warmluftaufzug mit der dazugehörigen Bewölkung gab.\absatz
+Um die berechneten Wolkenbasishöhen der Wolkenkameras mit den aus dem Ceilometer zu vergleichen, wird im folgenden ein Fallbeispiel gezeigt, wo anfägnlich Cumulus-Bewölkung dominiert hat, während es gegen Ende einen Warmluftaufzug mit den dazugehörigen Cirren und stratiformer Bewölkung gab.\absatz
 Die Wolkenbasishöhen sind mit den vorherig beschriebenen Methoden aus den beiden Wolkenkameras bestimmt worden. Als Referenzdaten werden die untersten erkannten Ceilometerhöhen im gleichen Zeitraum benutzt.\absatz
 \begin{figure}[h]
 	\begin{center}
@@ -570,18 +561,18 @@ Die Wolkenbasishöhen sind mit den vorherig beschriebenen Methoden aus den beide
 		\label{FIGCeilo}
 	\end{center}
 \end{figure}
-In Abb. \ref{FIGCeilo} zeigt sich, dass bis zum frühen Nachmittag (ca. 13:40 Uhr) die Wolkenbasishöhen mit den beiden Methoden übereinstimmen. Dieser Abschnitt ist durch cumuliforme Bewölkung geprägt und kann somit durch niedrige Wolken charakterisiert werden. Die Zeitreihe des gleitenden Median kann die zwischenzeitlich erhöhte Wolkenhöhen nicht wiedergeben. Die erhöhten Schwankungen im gleichen Zeitraum, dargestellt mit den gleitenden Perzentilen, zeigt jedoch, dass die Wolkenkamera auch Wolken in den Höhen erkannt hat. Daraus kann geschlussfolgert werden, dass in den Perioden die falsch erkannten Wolkenteile einen größeren Einfluss haben, als die richtig erkannten Wolkenteile. Dies kann unterschiedlichste Gründe haben. Einerseits kann die Kamera verschmutzt gewesen sein, sodass die Sonne in der Kamera reflektiert worden ist und diese Reflektionen als Wolke erkannt worden sind. Diese These wird dadurch unterstützt, dass in Perioden, in denen das Ceilometer keine Wolken erkannt hat, die Wolkenkamera Wolken in der gleichen Höhe wie am Vormittag erkannt hat. Anderseits kann auch die angewendete Methodik zur Wolkenerkennung Fehler haben, sodass z.B. beleuchteter Himmel auch als Wolke erkannt wird.\absatz
-Die Periode in der es den Warmluftauzug gibt und die somit mit hohen Cirren bzw. stratiformer Bewölkung beschrieben werden kann, ist in den Daten der Wolkenbasishöhen aus der Wolkenkamera nicht ersichtlich. Dies bedeutet, dass diese Wolken durch die Wolkenkamera nicht oder zu wenig erkannt worden sind. Dadurch lässt sich sagen, dass in dem Fall der hohen Bewölkung mit sehr großer Wahrscheinlichkeit die Wolkenerkennung nicht funktioniert hat und somit nur noch das Rauschen durch falsch erkannte Wolkenteile zu erkennen ist. Gegenüber der berechneten Wolkenbasishöhen am Vormittag sind auch die Schwankungen innerhalb der Zeitreihe größer geworden. Sodass auf Basis von diesen Erkenntnissen davon ausgegangen werden kann, dass die berechneten Höhen bei der cumuliformen Bewölkung durch richtig erkannte Wolken entstanden sind. Deshalb kann gesagt werden, dass die Methodik bei tiefer, cumuliformer Bewölkung funktioniert, während die bei hoher Cirrus, bzw. stratiformer Bewölkung Probleme zeigt.  
+In Abb. \ref{FIGCeilo} zeigt sich, dass bis zum frühen Nachmittag (ca. 13:40 Uhr) die Wolkenbasishöhen der beiden Methoden übereinstimmen. Diese Periode ist durch Cumulus-Bewölkung geprägt und kann somit durch niedrige Wolken charakterisiert werden. Die Zeitreihe des gleitenden Median kann die zwischenzeitlich erhöhte Wolkenhöhen nicht wiedergeben. Die erhöhten Schwankungen im gleichen Zeitraum, dargestellt mit den gleitenden Perzentilen, zeigt jedoch, dass die Wolkenkamera auch Wolken in den Höhen erkannt hat. Daraus kann geschlussfolgert werden, dass in den Perioden die falsch erkannten Wolkenteile einen größeren Einfluss haben, als die richtig erkannten Wolkenteile. Dies kann unterschiedlichste Gründe haben. Die Kamera kann verschmutzt gewesen sein, sodass die Sonne in der Kamera reflektiert worden ist und diese Reflektionen als Wolke erkannt worden sind. Diese These wird dadurch unterstützt, dass in Perioden, in denen das Ceilometer keine Wolken erkannt hat, die Wolkenkamera Wolken in ähnlichen Höhen wie am Vormittag erkannt hat. Es kann auch die angewendete Methodik zur Wolkenerkennung Fehler haben, sodass z.B. beleuchteter Himmel auch als Wolke erkannt wird.\absatz
+Die Periode in der es den Warmluftauzug gibt und die somit mit hohen Cirren bzw. stratiformer Bewölkung beschrieben werden kann, ist in den Daten der Wolkenbasishöhen aus der Wolkenkamera nicht ersichtlich. Dies bedeutet, dass diese Wolken durch die Wolkenkamera nicht oder zu wenig erkannt worden sind. Dadurch lässt sich sagen, dass in dem Fall der hohen Bewölkung mit sehr großer Wahrscheinlichkeit die Wolkenerkennung nicht funktioniert hat und somit nur noch das Rauschen durch falsch erkannte Wolkenteile zu erkennen ist. Die Schwankungen innerhalb der Zeitreihe sind gegenüber der berechneten Wolkenbasishöhen am Vormittag größer geworden. Deshalb kann auf Basis von diesen Erkenntnissen davon ausgegangen werden, dass die berechneten Höhen bei der Cumulus-Bewölkung durch richtig erkannte Wolken entstanden sind. Deshalb kann gesagt werden, dass die Methodik bei tiefer, cumuliformer Bewölkung funktioniert, während sie bei hoher Cirrus, bzw. stratiformer Bewölkung Probleme zeigt.  
 
-%\newpage
+%\clearpage
 
 
 %%%%%%%%%%%%%
 %%% Fazit %%%
 %%%%%%%%%%%%%
 \section{Fazit}
-Es wurde eine neue Methode zur Kalibration von Wolkenkameras entwickelt. Anhand der Sonnenposition auf den Wolkenkamerabildern wurden die Bildkoordinaten, sowie die Projektion der Kamera, kalibriert und ausgerichtet. Dadurch ist es nicht mehr notwendig die Wolkenkamera gerade aufzubauen und zu norden. Zusätzlich ist es möglich jegliche Projektion zu korrigieren. In den weiteren Teilen wurde eine Methode gezeigt, um aus einem Stereo-Wolkenkamera-Aufbau die Wolkenpositionen abzuschätzen. Mit statistischen Algorithmen wurden Wolkenteile auf den Bildern erkannt. Mit dem Doppelanschnitts konnte aus den Wolkenpixelpaaren die Position dieser im 3D-Raum bestimmt werden. Es zeigte sich, dass durch Ungenauigkeiten eine Schwankung von um die 100 m entstehen kann, diese jedoch gegenüber den Fehlern der Wolkenerkennung vernachlässigbar sind. Es zeigt sich ebenso, dass diese Fehler in den Algorithmen der Wolkenerkennung entstehen, da ein direkter Vergleich zwischen Theodoliten und Wolkenkameramessungen, ohne die Wolkenerkennung, vergleichbare Ergebnisse liefert.\absatz
-So muss als Fazit gezogen werden, dass noch einiges an Arbeit hinein gesteckt werden muss, damit ein Stereo-Wolkenkamera-Aufbau vergleichbare Ergebnisse wie ein Ceilometer liefern kann. Diese Arbeit muss vorallem in die Algorithmen der Wolkenerkennung gesteckt werden. Eine genauere Analyse von längeren Zeitreihen kann Erkentnisse liefern, wie dies möglich ist.
+Es wurde eine neue Methode zur Kalibration von Wolkenkameras entwickelt. Anhand der Sonnenposition auf den Wolkenkamerabildern wurden die Bildkoordinaten, sowie die Projektion der Kamera, kalibriert und ausgerichtet. Dadurch ist es nicht mehr notwendig die Wolkenkamera gerade aufzubauen und zu norden. Zusätzlich ist es möglich jegliche Projektion zu korrigieren. In den weiteren Teilen wurde eine Methode gezeigt, um aus einem Stereo-Wolkenkamera-Aufbau die Wolkenpositionen abzuschätzen. Mit statistischen Algorithmen wurden Wolkenteile auf den Bildern erkannt. Mit dem Doppelanschnitts konnte aus Wolkenpixelpaaren die Position dieser im 3D-Raum bestimmt werden. Es zeigte sich, dass durch Ungenauigkeiten eine Schwankung von um die 100 m entstehen kann, diese jedoch gegenüber den Fehlern der Wolkenerkennung vernachlässigbar sind. Es zeigt sich ebenso, dass diese Fehler in den Algorithmen der Wolkenerkennung entstehen, da ein direkter Vergleich zwischen Theodoliten und Wolkenkameramessungen, ohne die Wolkenerkennung, vergleichbare Ergebnisse liefert. Ein Vergleich mit dem Ceilometer hat gezeigt, dass die Algorithmen bei tiefen Wolken funktionieren, während mittelhohe und hohe Bewölkung Probleme bereiten.\absatz
+So muss als Fazit gezogen werden, dass noch einiges an Arbeit hinein gesteckt werden muss, damit ein Stereo-Wolkenkamera-Aufbau vergleichbare Ergebnisse zu einem Ceilometer liefern kann. Diese Arbeit muss vorallem in die Algorithmen der Wolkenerkennung gesteckt werden. Eine genauere Analyse von längeren Zeitreihen kann Erkentnisse liefern, wie dies möglich ist.
 %Als neuartige Methode könnten sich neuronale Netzwerke anbieten, die in anderen Bereichen der Bilderkennung neue State-of-the-Art Ergebnisse liefern.
 
 
